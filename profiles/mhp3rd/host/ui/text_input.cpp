@@ -5,6 +5,7 @@
 #include "ui/localization.hpp"
 
 #include "gpu/vulkan_renderer.hpp"
+#include "testing/game_observers.hpp"
 
 #include "imgui.h"
 
@@ -201,6 +202,7 @@ void begin(TextInputRequest request, TextInputDone on_done, bool over_game) {
     k.opened = Clock::now();
     if (const char *hint = SDL_GetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD)) k.saved_screen_keyboard_hint = hint;
     start_system_text_input(false);
+    if (const auto observer = testing::active_observer()) observer->text_input(true);
 }
 
 void finish(bool confirmed) {
@@ -208,6 +210,7 @@ void finish(bool confirmed) {
     if (!k.open) return;
     k.open = false;
     stop_system_text_input();
+    if (const auto observer = testing::active_observer()) observer->text_input(false);
     if (k.over_game) {
         Layer &layer = Layer::get();
         layer.set_interactive(false);

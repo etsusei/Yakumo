@@ -10,6 +10,8 @@
 #include "hle/hle_common.hpp"
 #include "overlay_module.hpp"
 #include "psprecomp/common.hpp"
+#include "testing/game_observers.hpp"
+#include "testing/overlay_observation.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -104,6 +106,21 @@ std::uint64_t header_hash(const psprecomp::GuestMemory &memory, std::uint32_t ba
     if (const std::uint8_t *head = memory.raw_pointer(base, kOverlayHeaderBytes); head != nullptr)
         return fnv1a64(head, kOverlayHeaderBytes);
     return fnv1a64(read_guest(memory, base, kOverlayHeaderBytes));
+}
+
+void observe_slot(Runtime &runtime, std::uint32_t base) noexcept {
+    const auto observer = testing::active_observer();
+    if (!observer) return;
+    auto observed = testing::read_overlay_identity(runtime.memory(), base);
+    if (!observed) {
+        observer->overlay_unload(base, "identity_unavailable");
+        return;
+    }
+    for (const auto &corpus : overlay_corpora())
+        if (corpus.base == base && corpus.hash == observed->corpus_hash &&
+            corpus.size == observed->identity.image_size && corpus.code_size == observed->identity.code_size)
+            observed->identity.matched_corpus = true;
+    observer->overlay(observed->identity);
 }
 
 // Slot containing `address`, or {0, 0}.
@@ -280,6 +297,7 @@ bool install_overlay_for(Runtime &runtime, std::uint32_t pc) {
         corpus.install(runtime);
         installed[slot_start] = corpus.hash;
         installed_headers()[slot_start] = header_hash(runtime.memory(), slot_start);
+        observe_slot(runtime, slot_start);
         std::cout << "[overlay] installed " << corpus.name << " (" << corpus.size / 1024u << " KiB) at "
                   << psprecomp::hex32(slot_start) << "\n";
         return true;
@@ -291,6 +309,7 @@ bool install_overlay_for(Runtime &runtime, std::uint32_t pc) {
                  " loaded at " + psprecomp::hex32(slot_start));
     dump_slot(runtime.memory(), slot_start, slot_end);
     unmatched_slots()[slot_start] = header_hash(runtime.memory(), slot_start);
+    observe_slot(runtime, slot_start);
     return false;
 }
 
@@ -321,6 +340,7 @@ void revalidate_overlays(Runtime &runtime) {
             if (candidate.base == slot_start && candidate.hash == hash) corpus = &candidate;
         }
         if (corpus == nullptr) {
+            if (auto observer = testing::active_observer()) observer->overlay_unload(slot_start, "corpus_unavailable");
             installed_headers().erase(slot_start);
             it = installed_overlays().erase(it);
             continue;
@@ -334,12 +354,14 @@ void revalidate_overlays(Runtime &runtime) {
         }
         if (identity_hash(runtime.memory(), *corpus) == hash) {
             installed_headers()[slot_start] = header_hash(runtime.memory(), slot_start);
+            observe_slot(runtime, slot_start);
             ++it;
             continue;
         }
         // A different overlay now occupies the slot: drop the stale code so the
         // next dispatch there goes through the miss hook.
         runtime.unregister_functions(corpus->base, corpus->base + corpus->size);
+        if (auto observer = testing::active_observer()) observer->overlay_unload(slot_start, "image_replaced");
         std::cout << "[overlay] " << corpus->name << " was replaced in " << psprecomp::hex32(slot_start) << "\n";
         installed_headers().erase(slot_start);
         it = installed_overlays().erase(it);
@@ -347,6 +369,15 @@ void revalidate_overlays(Runtime &runtime) {
 }
 
 void forget_unmatched_overlays() { unmatched_slots().clear(); }
+
+void observe_overlay_code_epoch(Runtime &runtime, std::string_view reason) noexcept {
+    if (auto observer = testing::active_observer()) {
+        observer->time(kernel().now_us(), kernel().vblank_count());
+        observer->code_epoch(reason);
+        for (std::size_t i = 0; i + 1 < std::size(kOverlaySlots); ++i)
+            observe_slot(runtime, kOverlaySlots[i]);
+    }
+}
 
 void install_overlay_support(Runtime &runtime) {
     (void)runtime;

@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 23,
+  "revision": 27,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T16:19:42Z",
+  "updated_at": "2026-09-26T17:54:11Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -130,6 +130,38 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/certified_probe_audit",
+      "type": "agent",
+      "role": "Certified AOT seam audit and guarded build-local instrumentation tooling",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/game_observer_core",
+      "type": "agent",
+      "role": "Portable observational event builders and synthetic tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/window_observation",
+      "type": "agent",
+      "role": "SDL/UI domain and script adapters with synthetic event checks",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/recording_runtime",
+      "type": "agent",
+      "role": "Opt-in recording lifecycle and metadata validation",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -169,9 +201,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": null,
-    "next_task_id": "OBS-002",
-    "next_action": "Add opt-in runtime session lifecycle and observational input/timeline/camera/overlay adapters; separately certify probe entry/return semantics without replacing Baseline AOT with interpreter execution.",
+    "current_task_id": "OBS-003",
+    "next_task_id": "OBS-004",
+    "next_action": "Implement certified AOT/native probe callbacks, runtime span guards and read-only state/performance observations. Build only the two instrumented AOT copies and validate their exact entry/return semantics offline before claiming timing coverage.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": []
   },
@@ -183,7 +215,8 @@
     "resource_preparation_pr": "https://github.com/etsusei/Yakumo/pull/4",
     "offline_native_pr": "https://github.com/etsusei/Yakumo/pull/5",
     "offline_gate_guide": "docs/OFFLINE_VALIDATION.md",
-    "session_recording_pr": "https://github.com/etsusei/Yakumo/pull/6"
+    "session_recording_pr": "https://github.com/etsusei/Yakumo/pull/6",
+    "game_observation_pr": "https://github.com/etsusei/Yakumo/pull/7"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -608,7 +641,7 @@
         "/root"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T15:04:22Z",
+      "updated_at": "2026-09-26T17:54:11Z",
       "started_at": "2026-09-26T14:22:54Z",
       "completed_at": "2026-09-26T14:33:08Z",
       "timestamp_note": null,
@@ -697,6 +730,15 @@
           "from_status": "completed",
           "to_status": "completed",
           "description": "Refreshed durable continuation pointer, task-field/status documentation and actual implementation progress. Retained the complete 28-task checklist and scoped acceptance boundaries."
+        },
+        {
+          "recorded_at": "2026-09-26T17:54:11Z",
+          "occurred_at": "2026-09-26T17:54:11Z",
+          "actor_id": "/root",
+          "action": "handoff_refreshed",
+          "from_status": "completed",
+          "to_status": "completed",
+          "description": "Reconciled the existing 28-task plan and ledger for the requested durable handoff. Added a context-recovery procedure and explicit tracking-field map. Preserved prior task statuses, original attribution, implementation evidence, and the OBS-003 continuation pointer; no gameplay or implementation work was performed in this documentation refresh. Validation passed for all 28 task IDs, checklist/status agreement, acyclic dependencies, timestamp formats, actor references, existing deliverable paths, continuation pointers, and diff whitespace."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -2030,32 +2072,133 @@
       "title": "Observational input and timeline adapters",
       "phase": "milestone_2",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "completed",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/game_observer_core",
+        "/root/window_observation",
+        "/root/recording_runtime"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-26T17:48:19Z",
+      "started_at": "2026-09-26T16:32:02Z",
+      "completed_at": "2026-09-26T17:48:19Z",
       "timestamp_note": null,
       "scope": "Record window/UI events, final applied game controls, camera input and overlay generations.",
       "depends_on": [
         "OBS-001"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Connected opt-in runtime recording to final controller-buffer delivery, guest frame/vblank coordinates, actual camera operations, SDL window/UI/script domains, effective settings and overlay code-validation epochs. Preserved control bytes and camera results in synthetic enabled/disabled tests; retained click/touch/geometry details and filtered unrelated input. Thirteen regular CTests, five ASan/UBSan suites, two TSan suites and full renderer host compilation passed. No game launch; paired input identity and live acceptance remain pending.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/host/testing/game_observers.cpp",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "profiles/mhp3rd/tests/game_observer_tests.cpp",
           "kind": "test",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/game_observers.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/runtime_recording.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/runtime_recording.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/sdl_observers.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/sdl_observers.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/overlay_observation.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/overlay_observation.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/hle/control_delivery.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/hle/control_delivery.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/runtime_recording_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/sdl_observer_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/observation_hook_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/overlay_observation_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/control_delivery_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/GAME_OBSERVATION.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/game-observation-validation.json",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -2064,13 +2207,81 @@
         "No unrelated application input; no merged identities across overlay reuse."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Headless observation, delivery and regression suites",
+            "status": "passed",
+            "ctest_suites": 12,
+            "evidence": "out/testing/game-observation-tests.log"
+          },
+          {
+            "name": "SDL synthetic decoder and journal forwarding",
+            "status": "passed",
+            "ctest_suites": 1,
+            "evidence": "out/testing/sdl-observation-tests.log"
+          },
+          {
+            "name": "ASan/UBSan observation integration",
+            "status": "passed",
+            "ctest_suites": 5,
+            "evidence": "out/testing/game-observation-asan.log"
+          },
+          {
+            "name": "TSan observer/runtime integration",
+            "status": "passed",
+            "ctest_suites": 2,
+            "evidence": "out/testing/game-observation-tsan.log"
+          },
+          {
+            "name": "Complete renderer-enabled host build",
+            "status": "passed",
+            "evidence": "out/testing/game-observation-host-final.log",
+            "note": "Application was not launched."
+          }
+        ],
+        "limitations": [
+          "No live game hook coverage or gameplay acceptance.",
+          "Complete ISO/starting-save/package identity validation remains a paired-delivery task.",
+          "Code generations are conservative validation epochs, not measured load counts.",
+          "Function timing probes are not yet implemented/certified; metadata labels this pending.",
+          "macOS Apple Silicon only; other platforms unverified."
+        ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "f44dc67"
+      ],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T16:32:02Z",
+          "occurred_at": "2026-09-26T16:32:02Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Implementing opt-in runtime recording, observational input/domain/timeline/camera hooks and code-epoch overlay identities; static source seams audited, no game launch."
+        },
+        {
+          "recorded_at": "2026-09-26T16:53:48Z",
+          "occurred_at": "2026-09-26T16:53:48Z",
+          "actor_id": "/root",
+          "action": "integration_in_progress",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Observer core, SDL/UI/script adapters and opt-in runtime lifecycle are implemented; root integrated final pad, guest frame/vblank, actual camera operations, settings fingerprints and overlay code epochs. Synthetic core/runtime/camera suites passed initially; full host integration and additional hook-specific checks are in progress."
+        },
+        {
+          "recorded_at": "2026-09-26T17:48:19Z",
+          "occurred_at": "2026-09-26T17:48:19Z",
+          "actor_id": "/root",
+          "action": "offline_integration_completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Connected opt-in runtime recording to final controller-buffer delivery, guest frame/vblank coordinates, actual camera operations, SDL window/UI/script domains, effective settings and overlay code-validation epochs. Preserved control bytes and camera results in synthetic enabled/disabled tests; retained click/touch/geometry details and filtered unrelated input. Thirteen regular CTests, five ASan/UBSan suites, two TSan suites and full renderer host compilation passed. No game launch; paired input identity and live acceptance remain pending.",
+          "evidence": "out/testing/game-observation-validation.json"
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
@@ -2078,13 +2289,16 @@
       "title": "Certified probes and read-only state observations",
       "phase": "milestone_2",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "in_progress",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/certified_probe_audit"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
+      "updated_at": "2026-09-26T17:48:19Z",
+      "started_at": "2026-09-26T16:32:02Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Record accurate boundary-specific counts/timings and explicit coverage gaps.",
@@ -2092,7 +2306,7 @@
         "OBS-001",
         "OFF-006"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "A guarded generated-source instrumenter and eight synthetic tests are implemented. Static read-only validation accepted the two current main AOT units. Actual callback implementation, full-span runtime guards, generated-copy compilation and state/performance probes remain pending.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/host/testing/probes.cpp",
@@ -2105,6 +2319,18 @@
           "kind": "test",
           "state": "planned",
           "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/instrument_probes.py",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_probe_instrumentation.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
         }
       ],
       "acceptance_criteria": [
@@ -2114,13 +2340,42 @@
         "Detailed tracing overhead and incomplete scopes are labeled."
       ],
       "validation": {
-        "checks": [],
+        "checks": [
+          {
+            "name": "Synthetic guarded instrumenter suite",
+            "status": "passed",
+            "tests": 8,
+            "evidence": "out/testing/game-observation-tests.log",
+            "note": "Source-shape checks only; no AOT timing certification."
+          }
+        ],
         "limitations": []
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "f44dc67"
+      ],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T16:32:02Z",
+          "occurred_at": "2026-09-26T16:32:02Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Audited exact AOT entry/return seams. Preparing build-local instrumentation that preserves direct chaining; actual probe counters/state/performance integration is still pending."
+        },
+        {
+          "recorded_at": "2026-09-26T16:53:48Z",
+          "occurred_at": "2026-09-26T16:53:48Z",
+          "actor_id": "/root",
+          "action": "instrumenter_prepared",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "A guarded generated-source instrumenter and eight synthetic tests are implemented. Static read-only validation accepted the two current main AOT units. Actual callback implementation, full-span runtime guards, generated-copy compilation and state/performance probes remain pending."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {

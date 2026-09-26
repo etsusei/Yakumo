@@ -4,6 +4,9 @@
 #include "native/translation_matrix.hpp"
 #include "native/vector_construct.hpp"
 #include "native/matrix_copy.hpp"
+#include "testing/runtime_recording.hpp"
+#include "settings/settings.hpp"
+#include "yakumo_version.hpp"
 
 #include "app_paths.hpp"
 
@@ -330,6 +333,7 @@ int main(int argc, char **argv) {
 #if defined(__linux__) && !defined(MHP3RD_ANDROID_APP)
     ensure_main_stack(argv);
 #endif
+    std::unique_ptr<mhp3rd::testing::RuntimeRecording> recording;
     try {
         if (argc > 1 && std::string(argv[1]) == "--adhoc-server") return run_adhoc_server(argc, argv);
         Options options;
@@ -344,6 +348,32 @@ int main(int argc, char **argv) {
             return 2;
         }
         if (options.install_image) return install_from_command_line(options);
+        if (const auto recording_options = mhp3rd::testing::recording_options_from_environment()) {
+            mhp3rd::testing::Fields metadata{
+                {"build_version", std::string(mhp3rd::kYakumoVersion)},
+                {"recording_mode", std::string("observational-summary")},
+                {"probe_coverage", std::string("pending_certification")},
+#if defined(MHP3RD_HAS_RENDERER)
+                {"renderer_compiled", true},
+#else
+                {"renderer_compiled", false},
+#endif
+            };
+            for (const char *name : {"MHP3RD_NO_RENDER", "MHP3RD_NO_AUDIO", "MHP3RD_INPUT_SCRIPT",
+                    "MHP3RD_INPUT_LIVE", "PSPRECOMP_NO_CHAIN", "PSPRECOMP_COUNT_PC"})
+                metadata.push_back({std::string(name) + "_present", std::getenv(name) != nullptr});
+            for (const char *name : {"MHP3RD_NATIVE_ANGLE_STEP", "MHP3RD_NATIVE_SCALE_MATRIX",
+                    "MHP3RD_NATIVE_TRANSLATION_MATRIX", "MHP3RD_NATIVE_VECTOR_CONSTRUCT", "MHP3RD_NATIVE_MATRIX_COPY"}) {
+                const char *value = std::getenv(name);
+                const auto mode = mhp3rd::native::parse_native_mode(value);
+                if (recording_options->role == "baseline" && mode != mhp3rd::native::NativeMode::Off)
+                    throw std::runtime_error("Baseline recording requires every native replacement to be off");
+                metadata.push_back({name, std::string(value ? value : "off")});
+            }
+            const auto binary = mhp3rd::executable_path();
+            if (!binary.empty()) metadata.push_back({"binary_sha256", psprecomp::sha256_file(binary)});
+            recording = std::make_unique<mhp3rd::testing::RuntimeRecording>(*recording_options, std::move(metadata));
+        }
 #if defined(MHP3RD_ANDROID_APP)
         {
             // "Set up game data again" from the menu, left for this start.
@@ -355,7 +385,10 @@ int main(int argc, char **argv) {
 #endif
 
         const std::optional<GameFiles> files = locate_game(options);
-        if (!files) return 1;
+        if (!files) {
+            if (recording) (void)recording->close("setup_cancelled", false);
+            return 1;
+        }
         const std::filesystem::path &executable = files->executable;
         mhp3rd::ProfilePaths paths;
         paths.disc_image = files->disc_image;
@@ -366,6 +399,16 @@ int main(int argc, char **argv) {
         const std::string sha256 = psprecomp::sha256_file(executable);
         if (sha256 != mhp3rd::install::kExecutableSha256)
             std::cerr << "warning: unsupported executable hash " << sha256 << "\n";
+        if (recording) {
+            recording->observer()->emit(mhp3rd::testing::EventKind::State, "runtime.inputs", {
+                {"elf_sha256", sha256},
+                {"supported_elf", sha256 == mhp3rd::install::kExecutableSha256},
+                {"input_identity_status", std::string(sha256 == mhp3rd::install::kExecutableSha256
+                    ? "elf_verified_other_inputs_pending" : "unsupported_elf")},
+                {"disc_present", !paths.disc_image.empty()},
+            }, true);
+            mhp3rd::settings::record_snapshot();
+        }
 
         const psprecomp::Elf32Image elf = psprecomp::Elf32Image::from_file(executable);
         if (elf.required_ram_size(mhp3rd::kLoadBase) != mhp3rd::kGuestRamBytes)
@@ -376,6 +419,10 @@ int main(int argc, char **argv) {
         (void)elf.load_and_relocate(runtime.memory(), mhp3rd::kLoadBase);
         psprecomp::register_generated_functions(runtime);
         mhp3rd::install_profile(runtime, elf, paths);
+        if (recording) mhp3rd::kernel().add_vblank_hook([] {
+            if (auto observer = mhp3rd::testing::active_observer())
+                observer->time(mhp3rd::kernel().now_us(), mhp3rd::kernel().vblank_count());
+        });
         mhp3rd::native::configure_angle_step(runtime);
         mhp3rd::native::configure_scale_matrix(runtime);
         mhp3rd::native::configure_translation_matrix(runtime);
@@ -398,14 +445,22 @@ int main(int argc, char **argv) {
                   << "Functions:  " << runtime.function_count() << "\n";
         if (runtime.function_count() == 0u) {
             std::cout << "No generated functions are linked. Run profiles/mhp3rd/scripts/generate.sh and rebuild.\n";
+            if (recording) (void)recording->close("no_generated_functions", false);
             return 3;
         }
 
+        if (recording) recording->observer()->domain(mhp3rd::testing::InputDomain::Game);
         runtime.run(elf.runtime_entry(mhp3rd::kLoadBase), configured_max_dispatches());
         std::cout << "Runtime stopped: " << runtime.stop_reason() << "\n";
         // Quit from the menu, a closed window or the game ending: the network
         // threads stop here, while everything they use still exists.
         mhp3rd::adhoc_shutdown();
+        if (recording) {
+            const auto &reason = runtime.stop_reason();
+            const bool completed = reason.empty() || reason == "window closed" || reason == "quit from the menu";
+            if (!recording->close(reason.empty() ? "guest_finished" : reason, completed))
+                std::cerr << "[recording] run evidence is incomplete; see recorder health\n";
+        }
         // "Set up game data again" in the in-game menu.
         if (mhp3rd::install::setup_requested_on_exit()) return mhp3rd::install::restart_for_setup(argv[0]);
         // "Restart now" after importing a save.
@@ -419,6 +474,11 @@ int main(int argc, char **argv) {
         mhp3rd::native::report_matrix_copy();
         return runtime.stop_reason().empty() ? 0 : 4;
     } catch (const std::exception &e) {
+        if (recording) {
+            recording->observer()->emit(mhp3rd::testing::EventKind::Error, "runtime.exception",
+                                        {{"message", std::string(e.what())}}, true);
+            (void)recording->close("host_exception", false);
+        }
         mhp3rd::adhoc_shutdown();
         std::cerr << "Yakumo error: " << e.what() << "\n";
         return 1;

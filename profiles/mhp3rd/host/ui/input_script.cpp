@@ -3,6 +3,7 @@
 #include "ui/layer.hpp"
 
 #include "gpu/vulkan_renderer.hpp"
+#include "testing/sdl_observers.hpp"
 
 #include <SDL3/SDL.h>
 
@@ -14,6 +15,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -97,8 +99,32 @@ std::pair<std::string, std::uint64_t> name_and_frames(const std::string &argumen
 
 bool mouse_step(const std::string &action) { return action == "mouse" || action == "click"; }
 
+std::string_view safe_script_argument(const Step &step) noexcept {
+    if (step.action != "key" && step.action != "mouse" && step.action != "click" &&
+        step.action != "pad" && step.action != "axis")
+        return {};
+    if (step.argument.size() > 96u) return {};
+    for (const unsigned char c : step.argument)
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+              (c >= '0' && c <= '9') || c == ' ' || c == '+' || c == '-' ||
+              c == '.' || c == '_'))
+            return {};
+    return step.argument;
+}
+
+std::string_view safe_script_action(const Step &step) noexcept {
+    if (step.action == "key" || step.action == "mouse" || step.action == "click" ||
+        step.action == "pad" || step.action == "axis" || step.action == "text" ||
+        step.action == "drop" || step.action == "shot" || step.action == "quit")
+        return step.action;
+    return "unknown";
+}
+
 void run(const Step &step) {
     State &s = state();
+    const std::string_view action = safe_script_action(step);
+    const std::string_view argument = safe_script_argument(step);
+    if (const auto observer = testing::active_observer()) observer->script(action, s.frame, argument);
     std::cout << "[script] frame " << s.frame << ": " << step.action << " " << step.argument << std::endl;
     if (step.action == "key") {
         const auto [name, frames] = name_and_frames(step.argument, kHoldFrames);
@@ -238,7 +264,9 @@ void attach() {
     s.attached = true;
     bool uses_pad = false;
     bool uses_mouse = false;
+    bool override_active = false;
     if (const char *live = std::getenv("MHP3RD_INPUT_LIVE"); live != nullptr && *live != '\0') {
+        override_active = true;
         s.live_path = live;
         // Only what is appended after start-up counts.
         std::ifstream file(s.live_path, std::ios::binary | std::ios::ate);
@@ -258,8 +286,10 @@ void attach() {
             s.steps.push_back(step);
         }
         sort_steps(s);
+        override_active = override_active || !s.steps.empty();
         std::cout << "[script] " << s.steps.size() << " steps" << std::endl;
     }
+    testing::set_scripted_override_active(override_active);
     if (uses_pad) attach_pad(s);
     if (uses_mouse) Layer::get().renderer().set_scripted_input(true);
 }

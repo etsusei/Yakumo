@@ -31,6 +31,7 @@
 #include "perf/frame_stats.hpp"
 #include "save_data/save_transfer.hpp"
 #include "settings/settings.hpp"
+#include "testing/game_observers.hpp"
 #include "yakumo_version.hpp"
 #if defined(MHP3RD_ANDROID_APP)
 #include "platform/android_documents.hpp"
@@ -1424,6 +1425,8 @@ void draw_over_game() {
     if (menu && !menu->frame()) {
         const bool quit = menu->quit() || layer.window_closed();
         menu.reset();
+        if (const auto observer = testing::active_observer())
+            observer->domain(testing::InputDomain::Game);
         layer.set_interactive(false);
         layer.renderer().set_game_input(true);
         note_menu_closed(quit);
@@ -1445,6 +1448,8 @@ void open_menu_over_game() {
     layer.renderer().set_game_input(false);
     layer.set_interactive(true);
     menu.emplace(false);
+    if (const auto observer = testing::active_observer())
+        observer->domain(testing::InputDomain::OverGameUi);
 }
 
 bool menu_over_game() { return menu_over_game_state().has_value(); }

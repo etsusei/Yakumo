@@ -153,6 +153,9 @@ inline constexpr Platform kPlatform = Platform::Desktop;
 // Writes current() to settings.ini, leaving values set by environment
 // variables at what the file had. Failures are reported on the console.
 void save();
+// Emit changed effective settings for an active test run; sensitive values are
+// fingerprinted rather than copied. No-op when observation is disabled.
+void record_snapshot() noexcept;
 
 // The environment variable that decides the setting stored under `key`
 // (for example "video.internal_scale") for this run, or null.
