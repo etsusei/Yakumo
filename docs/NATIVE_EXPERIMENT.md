@@ -1,8 +1,34 @@
-# Native angle-step experiment
+# Native helper experiments
 
-This is a small, opt-in experiment in preserving original game behavior while replacing a recompiled function with independently written native C++. It does not replace the animation system, monster AI, combat, or the PSP runtime.
+These small, opt-in experiments preserve original behavior while replacing recompiled functions with independently written native C++. They do not replace the animation system, monster AI, combat, or the PSP runtime.
 
-## Boundary
+| Helper | Purpose | Switch |
+| --- | --- | --- |
+| Scale matrix | Construct the 4x4 scale matrix used by the game's graphics code | `MHP3RD_NATIVE_SCALE_MATRIX` |
+| Angle step | Move a circular angle towards a target with a bounded step | `MHP3RD_NATIVE_ANGLE_STEP` |
+
+Both switches accept `off` (the default), `verify`, and `native`. Enable one at a time when measuring behavior.
+
+## Scale matrix
+
+The supported executable's 36-byte leaf at `0x08878B28` takes the output address in `a0` and x/y/z scale values in scalar floating-point registers 12/13/14. It writes a 4x4 diagonal scale matrix to memory and leaves an identity matrix in VFPU matrix M000. Its return instruction has a memory-writing delay slot, which the reference includes.
+
+The portable `scale_matrix()` builder only manipulates IEEE-754 bit patterns and has no PSP dependencies. The adapter preserves all other CPU state. Signed zeros and NaN payloads are copied exactly; there is no rounding or approximate arithmetic. Only the standard VFPU prefix state uses the native path. Unusual prefixes fall back to the original instructions, and the fallback count is reported.
+
+`verify` compares all CPU registers and all 64 output bytes for each accepted call, restoring inputs and retaining the original result. `native` uses the replacement for standard prefixes. Either mode checks the entire function's fingerprint before installing the hook. A mismatch disables native use for the rest of the run. Logs start with `[native-scale]` and include `calls`, `verified`, `native`, `fallbacks` and `mismatches`.
+
+The original-code test covers 100,512 inputs, including arbitrary floating-point bit patterns, signed zero, infinities, quiet/signaling NaNs, scratch-memory canaries, RAM aliases, and 10,000 unusual-prefix fallbacks. No game instructions are embedded in the test:
+
+```bash
+cmake --build out/mhp3rd --target mhp3rd_native_scale_tests -j2
+out/mhp3rd/bin/mhp3rd_native_scale_tests profiles/mhp3rd/game/EBOOT.ELF
+```
+
+A bounded dispatch sample of the read-save / character-select / village-walk route observed 47,872 entries at this address, making it suitable for live validation. The same route did not call the angle-step helper; its isolated tests must not be mistaken for in-game coverage.
+
+## Angle step
+
+### Boundary
 
 The supported NPJB-40001 executable contains a bounded circular-angle helper at `0x088775AC`, ending at `0x08877610`. Inspection of the user's executable established these facts:
 
@@ -17,7 +43,7 @@ The portable calculation is in `host/native/angle_step.cpp`. It has no guest-mem
 
 There are 17 direct call sites in the inspected main executable and no direct calls in the inspected 355 overlays. Those call sites have not been assigned complete gameplay meanings. Do not describe this experiment as a replacement for monster turning or attack logic without tracing those callers.
 
-## Modes
+### Modes
 
 Set `MHP3RD_NATIVE_ANGLE_STEP` before starting a source build:
 
@@ -31,13 +57,13 @@ Verification reports call, comparison, and mismatch counts under `[native-angle]
 
 Choose the mode at process startup; switching it in a running game is not supported. Restart without the variable to restore the original implementation. Other mods that patch this function while the game runs are outside this experiment's tested scope.
 
-## Verification
+## Verification workflow
 
 Build the targeted tests:
 
 ```bash
-cmake --build out/mhp3rd --target mhp3rd_native_angle_tests mhp3rd_savedata_tests -j2
-ctest --test-dir out/mhp3rd -R 'mhp3rd_(native_angle|savedata)_tests' --output-on-failure
+cmake --build out/mhp3rd --target mhp3rd_native_angle_tests mhp3rd_native_scale_tests mhp3rd_savedata_tests -j2
+ctest --test-dir out/mhp3rd -R 'mhp3rd_(native_angle|native_scale|savedata)_tests' --output-on-failure
 out/mhp3rd/bin/mhp3rd_native_angle_tests profiles/mhp3rd/game/EBOOT.ELF
 ```
 
@@ -47,4 +73,4 @@ For an in-game check, use a separate data directory and a **copy** of the user's
 
 Keep the ELF, ISO, saves, instruction dumps, generated source, logs, and captures in ignored local directories. Reusing release overlay libraries requires unchanged runtime headers and sources **and** matching header/code fingerprints for the user's overlays.
 
-Passing this experiment establishes equivalence for one small integer helper under the tested inputs. It does not establish an entire game's compatibility, combat timing, multiplayer correctness, or performance improvement.
+Passing these experiments establishes equivalence only for these small helpers under the tested inputs. It does not establish an entire game's compatibility, combat timing, multiplayer correctness, or performance improvement.
