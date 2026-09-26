@@ -125,3 +125,9 @@ ctest --test-dir out/resource-validation -R 'mhp3rd_(case_catalog|case_controlle
 
 Live display, physical input behavior, trigger coverage and usability remain
 pending for user-led acceptance. No game was started for these checks.
+
+On 2026-09-27 (Asia/Tokyo), Apple Silicon macOS passed twelve integrated CTests,
+five ASan/UBSan suites and one TSan suite. The renderer-enabled application
+compiled and linked. Exact source/binary/log identities and the four pipeline
+outcomes are recorded in local `out/testing/test-panel-validation.json`;
+synthetic reports are under `out/testing/reports/pair001/`.

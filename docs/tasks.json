@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 35,
+  "revision": 36,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T19:20:13Z",
+  "updated_at": "2026-09-26T20:08:46Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -265,9 +265,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "PAIR-001",
-    "next_task_id": "PAIR-002",
-    "next_action": "Implement the Chinese in-game finite case panel with explicit normal/abnormal/uncertain/skipped outcomes, tagged begin/end probe snapshots in one counter epoch, checkpoint/anomaly detail flushes and protected observational state. Follow docs/RUN_COMPARISON.md case contracts. Validate controller/lifecycle logic offline; live usability waits for user-led paired acceptance.",
+    "current_task_id": "PAIR-002",
+    "next_task_id": "PAIR-003",
+    "next_action": "Package independent Baseline B0/candidate Mac applications with identical observation/panel revisions, immutable common resources and isolated writable saves/run directories. Implement supervisor context/preparation, exit collection and local packaging, preserving normal close code 4 versus recording failure code 5. Supply bound catalogs and shared prerequisite basis per docs/TEST_SESSION_PANEL.md; keep gameplay user-led. PAIR-003 supplies the final case pack and synthetic delivery readiness checks.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": []
   },
@@ -284,7 +284,9 @@
     "certified_probes_pr": "https://github.com/etsusei/Yakumo/pull/8",
     "certified_probe_guide": "docs/CERTIFIED_PROBES.md",
     "run_comparison_guide": "docs/RUN_COMPARISON.md",
-    "run_comparison_pr": "https://github.com/etsusei/Yakumo/pull/9"
+    "run_comparison_pr": "https://github.com/etsusei/Yakumo/pull/9",
+    "test_panel_pr": "https://github.com/etsusei/Yakumo/pull/10",
+    "test_panel_guide": "docs/TEST_SESSION_PANEL.md"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -2778,7 +2780,7 @@
       "title": "Chinese in-game case panel",
       "phase": "milestone_2",
       "kind": "finite",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -2788,9 +2790,9 @@
         "/root/test_panel_ui"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T19:20:13Z",
+      "updated_at": "2026-09-26T20:08:46Z",
       "started_at": "2026-09-26T19:20:13Z",
-      "completed_at": null,
+      "completed_at": "2026-09-26T20:08:46Z",
       "timestamp_note": null,
       "scope": "Expose case steps and markers while keeping recording automatic and observational.",
       "depends_on": [
@@ -2798,12 +2800,12 @@
         "OBS-002",
         "OBS-003"
       ],
-      "work_summary": "Implementing a bounded canonical case catalog, portable marker controller, Chinese menu panel and runtime lifecycle integration without starting the game.",
+      "work_summary": "Implemented the Chinese case panel, noninteractive running hint, bounded canonical C++ catalog, portable lifecycle controller and bound runtime integration. Explicit outcomes, ordered checkpoints, fresh read-only state, batch probe retention and interruption handling passed offline checks. Twelve integrated CTests, five ASan/UBSan suites, one TSan suite and the full application build passed; no game was started.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/host/ui/test_session_screen.cpp",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
@@ -2811,6 +2813,90 @@
           "kind": "translation_catalog",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/ui/test_session_screen.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/case_catalog.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/case_catalog.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/case_controller.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/case_controller.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/case_runtime.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/case_runtime.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/case_catalog_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/case_controller_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_session_screen_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/case_runtime_fixture.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_case_runtime_pipeline.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEST_SESSION_PANEL.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/test-panel-validation.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -2819,10 +2905,29 @@
         "Live usability remains pending until CASE-001."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Case panel and runtime integration",
+            "status": "passed",
+            "evidence": "out/testing/test-panel-validation.json",
+            "integrated_ctests": 12,
+            "asan_ubsan_ctests": 5,
+            "tsan_ctests": 1,
+            "full_application_build": "passed",
+            "game_launched": false
+          }
+        ],
+        "limitations": [
+          "No full game launch or live trigger coverage.",
+          "Headless ImGui checks use widget/Layer stubs; final pixels, physical controls and live menu usability await user acceptance.",
+          "Paired app packaging/supervision and first user case pack remain PAIR-002/003.",
+          "Only Apple Silicon macOS was built/tested; other platforms remain unverified.",
+          "Prerequisites bind registered inputs and known configuration, not full hidden game state or RNG."
+        ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "dcc4ad4"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -2834,6 +2939,15 @@
           "from_status": "not_started",
           "to_status": "in_progress",
           "description": "Implementing a bounded canonical case catalog, portable marker controller, Chinese menu panel and runtime lifecycle integration without starting the game."
+        },
+        {
+          "recorded_at": "2026-09-26T20:08:46Z",
+          "occurred_at": "2026-09-26T20:08:46Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented the Chinese case panel, noninteractive running hint, bounded canonical C++ catalog, portable lifecycle controller and bound runtime integration. Explicit outcomes, ordered checkpoints, fresh read-only state, batch probe retention and interruption handling passed offline checks. Twelve integrated CTests, five ASan/UBSan suites, one TSan suite and the full application build passed; no game was started. The headless fixture initially lacked a built font atlas; this was fixed, as were its Next-label and real-recorder-failure assertions. Clean closure preserves completed Normal cases. Published in draft PR #10, stacked on #9."
         }
       ],
       "updated_by_agent_id": "/root"
