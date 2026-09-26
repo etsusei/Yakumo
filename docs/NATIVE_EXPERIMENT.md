@@ -74,3 +74,20 @@ For an in-game check, use a separate data directory and a **copy** of the user's
 Keep the ELF, ISO, saves, instruction dumps, generated source, logs, and captures in ignored local directories. Reusing release overlay libraries requires unchanged runtime headers and sources **and** matching header/code fingerprints for the user's overlays.
 
 Passing these experiments establishes equivalence only for these small helpers under the tested inputs. It does not establish an entire game's compatibility, combat timing, multiplayer correctness, or performance improvement.
+
+## Recorded local result
+
+On 2026-09-26, macOS 27 / Apple M5 / MoltenVK, code commit `f60e77f`:
+
+- The graphical source build and the angle, scale-matrix and save-data tests passed.
+- The user's supported HD image matched the expected executable. All 355 overlay header/code fingerprints matched the published libraries; runtime headers and sources matched the release too.
+- An independent copy of the user's save passed SFO/data hashes, decryption and round-trip checks. The original archive and the untouched source copy were verified unchanged afterward.
+- The scale-matrix differential test matched 100,512 cases, including 10,000 prefix-fallback cases. The angle test matched 806,432 cases.
+- A bounded read-save, character-select, village-load and walking route completed in the baseline, verification, and native runs.
+- Live scale verification: **48,365 calls, 48,365 comparisons, zero mismatches and zero fallbacks**. The original result remained authoritative in this mode.
+- Native scale execution: **48,405 calls used the native implementation, zero fallbacks**. Captures of the village and walking route were inspected; the sampled village section ran at about 30 fps / 100% game speed. This was not a benchmark or a full-game regression test.
+- The angle helper had **zero calls** on this route. Its isolated equivalence checks passed, but its in-game behavior has not been exercised.
+
+Separate runs used the same initial save and frame-indexed input script, but the guest wall clock was not pinned. Their images and call counts are therefore not claimed to be bit-identical. The live verifier compares original and replacement on the same actual input within a single call.
+
+Audio output was disabled for these bounded runs. Combat, quests, multiplayer, nonstandard mods, other platforms and long-session stability were not verified. No whole-game rewrite or measured speed improvement is claimed. Both replacements remain off by default.

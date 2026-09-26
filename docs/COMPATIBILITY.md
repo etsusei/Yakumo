@@ -51,6 +51,12 @@ Rows marked ❌ on every platform are missing features rather than platform prob
 | Windows 11 Pro | x64 PC | AMD Radeon RX 6500 XT | `b67cd7a` (saving and loading) | 2026-09-20 |
 | Android 15 emulator (API 35, arm64) | Apple M1, 8 GB | Apple M1 through the emulator's gfxstream | `7b87a57` | 2026-09-23 |
 
+## Native helper experiment
+
+On 2026-09-26, code commit `f60e77f` was checked on macOS 27 / Apple M5 with MoltenVK. A copied save loaded through character selection into the village, followed by a short walking route. The scale-matrix verifier compared 48,365 live calls with no mismatch; a separate native run executed 48,405 calls without fallback. Captures were visually inspected. Both replacements remain opt-in.
+
+This result covers that route and helper only. The angle-step helper was not called on the route. Audio output was disabled, and combat, quests, multiplayer, other platforms and long sessions were not checked. See [the experiment guide](NATIVE_EXPERIMENT.md#recorded-local-result) for isolated differential tests and limits.
+
 ## Updating this page
 
 Run through [the smoke test](TESTING.md) on the platform, then change the cells you checked in the same pull request as the fix, or in a pull request of their own. Add a row to *Tested hardware* with the commit you tested. A result without a commit cannot be compared with anything later, so it does not go in the table.
