@@ -142,6 +142,10 @@ The panel must follow this order on the emulation thread:
 3. Record ordered checkpoints and user anomalies. Call `flush_native_probe_detail()` at these markers to preserve recent detail.
 4. Call `flush_native_probes(false, "case_end")` before CaseEnd; then record the user's explicit outcome.
 
+The implemented panel/controller and launcher binding recipe are described in
+[TEST_SESSION_PANEL.md](TEST_SESSION_PANEL.md). It samples guarded state at
+checkpoints and leaves unfinished application-close cases interrupted.
+
 Both tagged summaries must have the same `counter_epoch`. It changes whenever
 a new probe session is configured. Comparisons subtract cumulative counters;
 they never sum summaries or assume that a single row describes one case.

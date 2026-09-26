@@ -6,6 +6,7 @@
 #include "native/matrix_copy.hpp"
 #include "testing/runtime_recording.hpp"
 #include "testing/runtime_diagnostics.hpp"
+#include "testing/case_runtime.hpp"
 #include "perf/frame_stats.hpp"
 #include "settings/settings.hpp"
 #include "yakumo_version.hpp"
@@ -337,6 +338,7 @@ int main(int argc, char **argv) {
 #endif
     std::unique_ptr<mhp3rd::testing::RuntimeRecording> recording;
     std::shared_ptr<mhp3rd::testing::RuntimeDiagnostics> diagnostics;
+    std::shared_ptr<mhp3rd::testing::CaseController> cases;
     try {
         if (argc > 1 && std::string(argv[1]) == "--adhoc-server") return run_adhoc_server(argc, argv);
         Options options;
@@ -352,7 +354,8 @@ int main(int argc, char **argv) {
         }
         if (options.install_image) return install_from_command_line(options);
         std::uint32_t probe_mask{};
-        if (const auto recording_options = mhp3rd::testing::recording_options_from_environment()) {
+        const auto recording_options = mhp3rd::testing::recording_options_from_environment();
+        if (recording_options) {
             const char *selection = std::getenv("MHP3RD_RECORD_PROBES");
             probe_mask = mhp3rd::testing::parse_probe_selection(selection ? selection : "");
             mhp3rd::testing::Fields metadata{
@@ -444,6 +447,12 @@ int main(int argc, char **argv) {
         mhp3rd::native::configure_translation_matrix(runtime);
         mhp3rd::native::configure_vector_construct(runtime);
         mhp3rd::native::configure_matrix_copy(runtime);
+        if (recording && !recording_options->case_catalog.empty()) {
+            if (sha256 != mhp3rd::install::kExecutableSha256)
+                throw std::runtime_error("Case recording requires the supported executable");
+            cases = mhp3rd::testing::start_case_session(*recording_options, recording->observer(),
+                diagnostics, std::string(mhp3rd::kYakumoVersion));
+        }
         if (sha256 == mhp3rd::install::kExecutableSha256) (void)mhp3rd::camera::prepare_game_aspect(runtime);
 #if defined(MHP3RD_CAMERA_HELPER_UNIT)
         // CMake names the generated unit that holds the camera's rotation
@@ -461,6 +470,7 @@ int main(int argc, char **argv) {
                   << "Functions:  " << runtime.function_count() << "\n";
         if (runtime.function_count() == 0u) {
             std::cout << "No generated functions are linked. Run profiles/mhp3rd/scripts/generate.sh and rebuild.\n";
+            mhp3rd::testing::close_case_session(cases, "no_generated_functions");
             if (diagnostics) diagnostics->close();
             if (recording) (void)recording->close("no_generated_functions", false);
             return 3;
@@ -472,6 +482,7 @@ int main(int argc, char **argv) {
         // Quit from the menu, a closed window or the game ending: the network
         // threads stop here, while everything they use still exists.
         mhp3rd::adhoc_shutdown();
+        mhp3rd::testing::close_case_session(cases, runtime.stop_reason().empty() ? "guest_finished" : runtime.stop_reason());
         if (diagnostics) diagnostics->close();
         if (recording) {
             const auto &reason = runtime.stop_reason();
@@ -496,6 +507,7 @@ int main(int argc, char **argv) {
         mhp3rd::native::report_matrix_copy();
         return runtime.stop_reason().empty() ? 0 : 4;
     } catch (const std::exception &e) {
+        mhp3rd::testing::close_case_session(cases, "host_exception");
         if (diagnostics) diagnostics->close();
         if (recording) {
             recording->observer()->emit(mhp3rd::testing::EventKind::Error, "runtime.exception",

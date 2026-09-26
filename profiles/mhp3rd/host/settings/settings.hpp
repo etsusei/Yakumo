@@ -156,6 +156,9 @@ void save();
 // Emit changed effective settings for an active test run; sensitive values are
 // fingerprinted rather than copied. No-op when observation is disabled.
 void record_snapshot() noexcept;
+// Current case prerequisites exclude navigation history and per-instance
+// network identities. Values stay local; only the digest enters case markers.
+[[nodiscard]] std::string case_configuration_sha256();
 
 // The environment variable that decides the setting stored under `key`
 // (for example "video.internal_scale") for this run, or null.

@@ -609,6 +609,10 @@ void configure_native_probes(std::shared_ptr<GameObserver> observer, std::uint32
     if (previous) previous->emit_snapshot(true);
 }
 
+std::uint32_t selected_native_probes() noexcept {
+    return current_mask.load(std::memory_order_acquire);
+}
+
 void flush_native_probes(bool final, std::string_view boundary) noexcept {
     std::shared_ptr<NativeProbeSession> session;
     if (final) {

@@ -147,6 +147,7 @@ private:
 // Selection is local to one recording session; a zero mask is the cheap path.
 // The caller must enable this only after accepting the supported ELF identity.
 void configure_native_probes(std::shared_ptr<GameObserver> observer, std::uint32_t mask) noexcept;
+[[nodiscard]] std::uint32_t selected_native_probes() noexcept;
 // final=true detaches the session and marks outstanding scopes incomplete.
 void flush_native_probes(bool final = false, std::string_view boundary = {}) noexcept;
 void flush_native_probe_detail() noexcept;

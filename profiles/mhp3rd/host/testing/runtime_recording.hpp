@@ -19,6 +19,9 @@ struct RecordingOptions {
     // Canonical launch-context digest supplied by the paired launcher. Empty
     // keeps legacy diagnostic runs inspectable but unbound for comparison.
     std::string context_sha256;
+    std::filesystem::path case_catalog{};
+    std::string case_catalog_sha256{};
+    std::string prerequisite_basis_sha256{};
 };
 [[nodiscard]] std::string_view recording_revision() noexcept;
 

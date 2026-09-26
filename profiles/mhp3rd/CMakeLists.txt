@@ -98,6 +98,7 @@ if(MHP3RD_RENDERER)
             host/ui/mods_screen.cpp
             host/ui/save_screen.cpp
             host/ui/setup_screens.cpp
+            host/ui/test_session_screen.cpp
             host/ui/text_input.cpp
             host/ui/touch_overlay.cpp
             host/ui/texture_pack_screen.cpp
@@ -478,7 +479,12 @@ file(GLOB MHP3RD_RECORDING_REVISION_INPUTS CONFIGURE_DEPENDS
 list(APPEND MHP3RD_RECORDING_REVISION_INPUTS
     "${MHP3RD_PROFILE_DIR}/tools/instrument_probes.py"
     "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.hpp"
-    "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.cpp")
+    "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.cpp"
+    "${MHP3RD_PROFILE_DIR}/host/settings/settings.cpp"
+    "${MHP3RD_PROFILE_DIR}/host/settings/settings.hpp"
+    "${MHP3RD_PROFILE_DIR}/host/ui/test_session_screen.cpp"
+    "${MHP3RD_PROFILE_DIR}/host/ui/test_session_screen.hpp"
+    "${MHP3RD_PROFILE_DIR}/host/ui/translations/zh_cn.inc")
 set(MHP3RD_RECORDING_DIGESTS "")
 foreach(source IN LISTS MHP3RD_RECORDING_REVISION_INPUTS)
     file(SHA256 "${source}" digest)
@@ -506,7 +512,44 @@ add_library(mhp3rd_state_observation STATIC host/testing/state_observation.cpp)
 target_link_libraries(mhp3rd_state_observation PUBLIC mhp3rd_overlay_observation mhp3rd_game_observation)
 add_library(mhp3rd_runtime_diagnostics STATIC host/testing/runtime_diagnostics.cpp)
 target_link_libraries(mhp3rd_runtime_diagnostics PUBLIC mhp3rd_native_probes mhp3rd_state_observation)
-target_link_libraries(Yakumo PRIVATE mhp3rd_runtime_diagnostics)
+add_library(mhp3rd_case_catalog STATIC host/testing/case_catalog.cpp)
+target_include_directories(mhp3rd_case_catalog PUBLIC "${MHP3RD_PROFILE_DIR}/host")
+target_link_libraries(mhp3rd_case_catalog PUBLIC psprecomp_core)
+add_library(mhp3rd_case_controller STATIC host/testing/case_controller.cpp)
+target_link_libraries(mhp3rd_case_controller PUBLIC mhp3rd_case_catalog mhp3rd_native_probes)
+add_library(mhp3rd_case_runtime STATIC host/testing/case_runtime.cpp)
+target_link_libraries(mhp3rd_case_runtime PUBLIC mhp3rd_case_controller mhp3rd_runtime_diagnostics)
+target_link_libraries(Yakumo PRIVATE mhp3rd_case_runtime)
+add_executable(mhp3rd_case_runtime_fixture tests/case_runtime_fixture.cpp
+    host/settings/settings.cpp host/install/user_data.cpp host/input/bindings.cpp)
+target_link_libraries(mhp3rd_case_runtime_fixture PRIVATE mhp3rd_case_runtime)
+set_target_properties(mhp3rd_case_runtime_fixture PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(PSPRECOMP_BUILD_TESTS AND Python3_Interpreter_FOUND)
+    add_test(NAME mhp3rd_case_runtime_pipeline_tests COMMAND "${Python3_EXECUTABLE}"
+        "${MHP3RD_PROFILE_DIR}/tests/test_case_runtime_pipeline.py" "$<TARGET_FILE:mhp3rd_case_runtime_fixture>")
+    set_tests_properties(mhp3rd_case_runtime_pipeline_tests PROPERTIES ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
+endif()
+foreach(suite case_catalog case_controller)
+    add_executable(mhp3rd_${suite}_tests tests/${suite}_tests.cpp)
+    target_link_libraries(mhp3rd_${suite}_tests PRIVATE mhp3rd_${suite})
+    set_target_properties(mhp3rd_${suite}_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    if(PSPRECOMP_BUILD_TESTS)
+        add_test(NAME mhp3rd_${suite}_tests COMMAND mhp3rd_${suite}_tests)
+        set_tests_properties(mhp3rd_${suite}_tests PROPERTIES TIMEOUT 30)
+    endif()
+endforeach()
+add_executable(mhp3rd_test_session_screen_tests tests/test_session_screen_tests.cpp
+    host/ui/test_session_screen.cpp host/ui/localization.cpp
+    host/settings/settings.cpp host/install/user_data.cpp host/input/bindings.cpp
+    third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp
+    third_party/imgui/imgui_tables.cpp third_party/imgui/imgui_widgets.cpp)
+target_include_directories(mhp3rd_test_session_screen_tests PRIVATE "${MHP3RD_PROFILE_DIR}/third_party/imgui")
+target_link_libraries(mhp3rd_test_session_screen_tests PRIVATE mhp3rd_case_controller)
+set_target_properties(mhp3rd_test_session_screen_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(PSPRECOMP_BUILD_TESTS)
+    add_test(NAME mhp3rd_test_session_screen_tests COMMAND mhp3rd_test_session_screen_tests)
+    set_tests_properties(mhp3rd_test_session_screen_tests PROPERTIES TIMEOUT 30)
+endif()
 if(MHP3RD_PROBE_INSTRUMENTED_SOURCES)
     target_compile_definitions(Yakumo PRIVATE MHP3RD_CERTIFIED_AOT_PROBES=1)
 endif()

@@ -483,6 +483,21 @@ void save() {
     }
 }
 
+std::string case_configuration_sha256() {
+    State &s = state();
+    if (!s.loaded) load(s);
+    testing::Fields fields;
+    for (const auto &field : all_fields()) {
+        const std::string key = field.key;
+        if (key == "ui.last_folder" || key == "ui.menu_hint_seen" || key == "network.mac" ||
+            key == "network.nickname" || key == "network.recent") continue;
+        fields.push_back({key, field.format(s.values)});
+    }
+    const auto serialized = testing::fields_json(fields);
+    return psprecomp::sha256_bytes(std::span<const std::uint8_t>(
+        reinterpret_cast<const std::uint8_t *>(serialized.data()), serialized.size()));
+}
+
 void record_snapshot() noexcept {
     const auto observer = testing::active_observer();
     if (!observer) return;

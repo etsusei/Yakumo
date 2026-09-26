@@ -208,6 +208,27 @@ class PackageTests(unittest.TestCase):
         return package.package_run(self.run, self.ctx_path, self.output,
                                    self.supervisor_path if with_supervisor else None)
 
+    def test_case_basis_uses_shared_inputs_and_validates_panel_bindings(self):
+        basis = package.prerequisite_basis_sha256(self.ctx, "B0", "4292eb6")
+        peer = dict(self.ctx, run_id="other-run", source_commit="b" * 40)
+        self.assertEqual(basis, package.prerequisite_basis_sha256(peer, "B0", "4292eb6"))
+        self.assertNotEqual(basis, package.prerequisite_basis_sha256(dict(peer, starting_save_sha256="b" * 64), "B0", "4292eb6"))
+        data = package._read_journal_bytes(journal(self.ctx))
+        begin = data["records"][0]["fields"]
+        begin.update(case_catalog_sha256=self.ctx["case_catalog_sha256"], prerequisite_basis_sha256=basis)
+        self.assertTrue(package._validate(data, self.ctx, supervisor())["metadata_complete"])
+        begin["prerequisite_basis_sha256"] = "0" * 64
+        self.assertFalse(package._validate(data, self.ctx, supervisor())["metadata_complete"])
+        begin["prerequisite_basis_sha256"] = basis
+        begin["case_catalog_sha256"] = "0" * 64
+        self.assertFalse(package._validate(data, self.ctx, supervisor())["metadata_complete"])
+
+    def test_legacy_identity_does_not_require_panel_fields(self):
+        manifest = self.build()
+        self.assertNotIn("case_catalog_sha256", manifest["identity"])
+        self.assertNotIn("prerequisite_basis_sha256", manifest["identity"])
+        self.assertTrue(package.load_package(self.output)["validation"]["metadata_complete"])
+
     def test_package_fixed_artifacts_identity_and_source_unchanged(self):
         events = [
             (3, {"event": "case.begin", "case_id": "REC-03"}),

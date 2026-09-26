@@ -16,6 +16,7 @@
 #include "ui/texture_pack_screen.hpp"
 #include "ui/text_input.hpp"
 #include "ui/touch_overlay.hpp"
+#include "ui/test_session_screen.hpp"
 #include "ui/widgets.hpp"
 #include "ui/localization.hpp"
 
@@ -162,26 +163,29 @@ bool Menu::frame() {
     bool font_list_was_open = (tab_ == 0 && (font_list_open() || texture_pack_screen_open())) ||
                               (tab_ == 4 && mods_screen_open()) || (tab_ == 5 && save_screen_open());
 #if defined(MHP3RD_DEBUG_MENU)
-    font_list_was_open = font_list_was_open || (tab_ == 6 && debug_screen_open());
+    font_list_was_open = font_list_was_open || (debug::enabled() && tab_ == 6 && debug_screen_open());
 #endif
     back_ = back || pad_back;
 
     begin_panel("##menu", "Yakumo", paused_ ? tr("Paused") : tr("Running"), true);
-    const char *const kTabs[] = {tr("Video"), tr("Audio"), tr("Controls"), tr("Network"), tr("Mods"), tr("System"), tr("Debug")};
+    std::vector<const char *> tabs{tr("Video"), tr("Audio"), tr("Controls"), tr("Network"), tr("Mods"), tr("System")};
 #if defined(MHP3RD_DEBUG_MENU)
     // The developer tools' page, in developer builds run with MHP3RD_DEBUG_MENU=1.
-    const int tab_count = debug::enabled() ? 7 : 6;
-#else
-    const int tab_count = 6;
+    if (debug::enabled()) tabs.push_back(tr("Debug"));
 #endif
-    const bool switched = tab_bar(kTabs, tab_count, tab_) || first_frame_;
+    const int test_tab = test_screen_available() ? static_cast<int>(tabs.size()) : -1;
+    if (test_tab >= 0) tabs.push_back(tr("Test session"));
+    tab_ = std::clamp(tab_, 0, static_cast<int>(tabs.size()) - 1);
+    const bool switched = tab_bar(tabs.data(), static_cast<int>(tabs.size()), tab_) || first_frame_;
     first_frame_ = false;
     begin_content();
     if (switched) {
         focus_next_row();
         ImGui::SetScrollY(0.0f);
     }
-    switch (tab_) {
+    if (tab_ == test_tab) {
+        if (draw_test_session_screen()) close_ = true;
+    } else switch (tab_) {
     case 0: video(); break;
     case 1: audio(); break;
     case 2: controls(); break;
@@ -1417,11 +1421,13 @@ void draw_over_game() {
     const double hint_left = menu || settings::current().menu_hint_seen ? -1.0 : hint_seconds_left();
     const bool overlay = network_overlay();
     const bool touch = !menu && layer.renderer().touch_controls_visible();
-    if (hint_left <= 0.0 && !overlay && !menu && !touch) return;
+    const bool test_hint = !menu && test_screen_available();
+    if (hint_left <= 0.0 && !overlay && !menu && !touch && !test_hint) return;
     layer.begin_frame();
     if (touch) draw_touch_controls(layer.renderer().touch_controls(), settings::current().touch_opacity);
     if (hint_left > 0.0) draw_hint(hint_left);
     if (overlay) draw_network_overlay();
+    if (test_hint) draw_test_session_hint();
     if (menu && !menu->frame()) {
         const bool quit = menu->quit() || layer.window_closed();
         menu.reset();

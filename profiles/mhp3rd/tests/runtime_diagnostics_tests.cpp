@@ -56,6 +56,23 @@ void lifecycle(bool supported) {
     check(probes == (supported ? 10u : 0u), "supported session emits periodic and final zero-coverage rows");
     check(performance == 0, "close suppresses later performance emission");
 }
+
+void case_selection_preserves_batch_probes() {
+    std::vector<std::uint8_t> bytes;
+    auto recorder = std::make_shared<SessionRecorder>(std::make_unique<Sink>(bytes), Fields{});
+    auto observer = std::make_shared<GameObserver>(recorder);
+    psprecomp::GuestMemory memory;
+    RuntimeDiagnostics diagnostics(observer, memory, true, kProbeVector);
+    diagnostics.select_case_probes(kProbeScale);
+    check(selected_native_probes() == (kProbeVector | kProbeScale), "case adds required probes to batch selection");
+    diagnostics.select_case_probes(0);
+    check(selected_native_probes() == kProbeVector, "recorder-only case retains batch diagnostic probes");
+    diagnostics.close();
+    bool rejected{};
+    try { diagnostics.select_case_probes(kProbeScale); } catch (const std::runtime_error &) { rejected = true; }
+    check(rejected && selected_native_probes() == 0, "closed runtime cannot reactivate case probes");
+    check(recorder->close("done"), "case selection journal closes");
+}
 } // namespace
 int main() {
     check(parse_probe_selection("") == 0 && parse_probe_selection("off") == 0, "selection disabled by default");
@@ -68,6 +85,7 @@ int main() {
     }
     lifecycle(false);
     lifecycle(true);
+    case_selection_preserves_batch_probes();
     std::cout << "runtime diagnostics failures=" << failures << '\n';
     return failures ? 1 : 0;
 }

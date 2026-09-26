@@ -57,13 +57,20 @@ void validate_options(const RecordingOptions &options) {
         throw std::invalid_argument("recording identity must be a nonempty ASCII-safe ID of at most 96 bytes");
     if (!hex_commit(options.baseline_commit))
         throw std::invalid_argument("baseline commit must be 7 to 40 hexadecimal digits");
-    if (!options.context_sha256.empty()) {
-        if (options.context_sha256.size() != 64)
+    for (const auto *digest : {&options.context_sha256, &options.case_catalog_sha256,
+                               &options.prerequisite_basis_sha256}) {
+        if (digest->empty()) continue;
+        if (digest->size() != 64)
             throw std::invalid_argument("recording context digest must contain 64 lowercase hexadecimal digits");
-        for (const char c : options.context_sha256)
+        for (const char c : *digest)
             if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
                 throw std::invalid_argument("recording context digest must contain 64 lowercase hexadecimal digits");
     }
+    const bool any_case_option = !options.case_catalog.empty() || !options.case_catalog_sha256.empty() ||
+                                 !options.prerequisite_basis_sha256.empty();
+    if (any_case_option && (options.context_sha256.empty() || options.case_catalog.empty() ||
+                           options.case_catalog_sha256.empty() || options.prerequisite_basis_sha256.empty()))
+        throw std::invalid_argument("case recording requires a bound context, catalog and prerequisite basis");
 }
 
 Fields begin_fields(const RecordingOptions &options, Fields app_metadata) {
@@ -79,6 +86,10 @@ Fields begin_fields(const RecordingOptions &options, Fields app_metadata) {
         {"input_identity_status", std::string("pending")},
     };
     if (!options.context_sha256.empty()) fields.push_back({"context_sha256", options.context_sha256});
+    if (!options.case_catalog.empty()) {
+        fields.push_back({"case_catalog_sha256", options.case_catalog_sha256});
+        fields.push_back({"prerequisite_basis_sha256", options.prerequisite_basis_sha256});
+    }
     fields.insert(fields.end(), std::make_move_iterator(app_metadata.begin()),
                   std::make_move_iterator(app_metadata.end()));
     // This validates all caller fields and catches duplicate reserved names
@@ -145,6 +156,12 @@ std::optional<RecordingOptions> recording_options_from_environment() {
         options.baseline_commit = value;
     if (const char *value = std::getenv("MHP3RD_RECORD_CONTEXT_SHA256"))
         options.context_sha256 = value;
+    if (const char *value = std::getenv("MHP3RD_RECORD_CASE_CATALOG"))
+        options.case_catalog = value;
+    if (const char *value = std::getenv("MHP3RD_RECORD_CASE_CATALOG_SHA256"))
+        options.case_catalog_sha256 = value;
+    if (const char *value = std::getenv("MHP3RD_RECORD_PREREQUISITES_SHA256"))
+        options.prerequisite_basis_sha256 = value;
     validate_options(options);
     return options;
 }
