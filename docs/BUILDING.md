@@ -207,6 +207,7 @@ MHP3RD_DATA_DIR=~/yakumo-a MHP3RD_GAME_DIR=~/game-a MHP3RD_WINDOW_TITLE="Yakumo 
 
 - `cmake --build out/mhp3rd --target psprecomp_tests mhp3rd_savedata_tests`, then `ctest --test-dir out/mhp3rd`, builds and runs the unit tests of the recompiler framework and of the save-data format. Neither needs game data.
 - With Python 3.9 or newer available at configure time, CTest also registers the synthetic baseline-registration and resource-preparation suites. `cmake --build out/mhp3rd --target mhp3rd_resource_crosscheck -j2` builds the offline DATA.BIN byte comparison tool; its separate CLI requires a validated local image and extracted entries. See [resource preparation](RESOURCE_PREPARATION.md) for commands and boundaries.
+- [OFFLINE_VALIDATION.md](OFFLINE_VALIDATION.md) describes the repeatable native migration gate, including full local-ELF differential tests without launching Yakumo.
 - [TESTING.md](TESTING.md) is the manual smoke test: about fifteen minutes through every part of the game that works.
 - `MHP3RD_PERF=1`, or F3 in the game, shows the performance overlay. The `MHP3RD_TRACE_*` variables log individual subsystems. All of them are listed under *Diagnostics* in the [profile README](../profiles/mhp3rd/README.md#diagnostics).
 - `MHP3RD_NO_RENDER=1` runs without a window, which is useful for quick boot checks in scripts. Bound such runs with `timeout`.

@@ -1,4 +1,4 @@
-#include "native/scale_matrix.hpp"
+#include "native/translation_matrix.hpp"
 #include "psprecomp/allegrex_context.hpp"
 #include "psprecomp/elf32.hpp"
 #include "psprecomp/interpreter.hpp"
@@ -22,10 +22,10 @@ bool same_cpu(const psprecomp::AllegrexContext &a, const psprecomp::AllegrexCont
            std::memcmp(a.vfpu.data(), b.vfpu.data(), sizeof(a.vfpu)) == 0;
 }
 void examples() {
-    const auto result = mhp3rd::native::scale_matrix(0x80000000u, 0x7fc01234u, 0x40000000u);
+    const auto result = mhp3rd::native::translation_matrix(0x80000000u, 0x7fc01234u, 0x40000000u);
     for (unsigned i = 0; i < 16; ++i)
-        check(result[i] == (i == 0 ? 0x80000000u : i == 5 ? 0x7fc01234u : i == 10 ? 0x40000000u :
-                            i == 15 ? 0x3f800000u : 0u), "scale matrix preserves input bits and homogeneous identity");
+        check(result[i] == (i == 12 ? 0x80000000u : i == 13 ? 0x7fc01234u : i == 14 ? 0x40000000u :
+                            i % 5u == 0u ? 0x3f800000u : 0u), "translation matrix preserves input bits and homogeneous identity");
 }
 void differential(const char *path) {
     using namespace psprecomp;
@@ -35,16 +35,16 @@ void differential(const char *path) {
     (void)elf.load_and_relocate(oracle.memory());
     (void)elf.load_and_relocate(replacement.memory());
     Runtime unrecognized(elf.required_ram_size());
-    check(!install_scale_matrix(unrecognized, ScaleMatrixMode::Native) &&
-          scale_matrix_stats().calls == 0 && scale_matrix_stats().errors == 1 &&
-          !unrecognized.has_function(kScaleMatrixAddress),
+    check(!install_translation_matrix(unrecognized, TranslationMatrixMode::Native) &&
+          translation_matrix_stats().calls == 0 && translation_matrix_stats().errors == 1 &&
+          !unrecognized.has_function(kTranslationMatrixAddress),
           "failed installation records an error with zero calls and installs no hook");
-    check(!install_scale_matrix(replacement, ScaleMatrixMode::Off) &&
-          !replacement.has_function(kScaleMatrixAddress), "off mode installs no hook");
-    check(install_scale_matrix(replacement, ScaleMatrixMode::Native), "supported function fingerprint is accepted");
+    check(!install_translation_matrix(replacement, TranslationMatrixMode::Off) &&
+          !replacement.has_function(kTranslationMatrixAddress), "off mode installs no hook");
+    check(install_translation_matrix(replacement, TranslationMatrixMode::Native), "supported function fingerprint is accepted");
     if (failures) return;
     constexpr std::uint32_t scratch = 0x08010000u, return_pc = 0x08020000u;
-    std::mt19937 random(0x5343414cu);
+    std::mt19937 random(0x5452414eu);
     std::uint64_t cases = 0, fallbacks = 0;
     const auto run = [&](std::uint32_t x, std::uint32_t y, std::uint32_t z, bool unusual) {
         std::array<std::uint8_t, 96> initial{};
@@ -56,8 +56,8 @@ void differential(const char *path) {
         for (auto &r : expected.fpr) r = std::bit_cast<float>(static_cast<std::uint32_t>(random()));
         for (auto &r : expected.vfpu) r = std::bit_cast<float>(static_cast<std::uint32_t>(random()));
         for (auto &r : expected.vfpu_ctrl) r = random();
-        expected.gpr[0] = 0; expected.gpr[4] = (scratch + 16u) | (cases % 2 ? 0x40000000u : 0u);
-        expected.gpr[31] = return_pc; expected.pc = kScaleMatrixAddress;
+        expected.gpr[0] = 0; expected.gpr[4] = (scratch + 16u + static_cast<std::uint32_t>(cases % 4u)) | (cases % 2 ? 0x40000000u : 0u);
+        expected.gpr[31] = return_pc; expected.pc = kTranslationMatrixAddress;
         expected.hi = random(); expected.lo = random(); expected.fcr31 = random();
         expected.set_fpr_bits(12, x); expected.set_fpr_bits(13, y); expected.set_fpr_bits(14, z);
         expected.vfpu_ctrl[0] = unusual ? 0x0001f000u : 0xe4u;
@@ -68,14 +68,14 @@ void differential(const char *path) {
         for (unsigned slice = 0; slice < 12 && expected.pc != return_pc; ++slice)
             (void)interpret_allegrex(oracle, expected, 1);
         check(expected.pc == return_pc, "reference returns within the slice bound");
-        if (!apply_scale_matrix(replacement.memory(), actual)) {
+        if (!apply_translation_matrix(replacement.memory(), actual)) {
             ++fallbacks;
             check(same_cpu(actual, input), "prefix rejection leaves all registers untouched");
             // The rejected native call must not have changed the destination.
             std::array<std::uint8_t, 96> unchanged{};
             replacement.memory().copy_out(scratch, unchanged);
             check(unchanged == initial, "prefix rejection leaves output memory untouched");
-            check(replacement.invoke_isolated_aot(kScaleMatrixAddress, actual), "unusual prefix reaches original fallback");
+            check(replacement.invoke_isolated_aot(kTranslationMatrixAddress, actual), "unusual prefix reaches original fallback");
         }
         check(same_cpu(expected, actual), "all CPU registers match the original");
         std::array<std::uint8_t, 96> want{}, got{};
@@ -87,7 +87,17 @@ void differential(const char *path) {
                                                0x7f800000u, 0x7fc01234u, 0x7fa05678u};
     for (auto x : edges) for (auto y : edges) for (auto z : edges) run(x, y, z, false);
     for (unsigned i = 0; i < 100000 && failures == 0; ++i) run(random(), random(), random(), i % 10 == 0);
-    check(install_scale_matrix(replacement, ScaleMatrixMode::Native),
+    AllegrexContext invalid;
+    invalid.gpr[4] = 0xffffffffu; invalid.gpr[31] = return_pc;
+    invalid.vfpu_ctrl[0] = invalid.vfpu_ctrl[1] = 0xe4u;
+    const auto invalid_before = invalid;
+    std::array<std::uint8_t, 96> untouched_before{}, untouched_after{};
+    replacement.memory().copy_out(scratch, untouched_before);
+    check(!apply_translation_matrix(replacement.memory(), invalid) && same_cpu(invalid, invalid_before),
+          "invalid output span is rejected without changing CPU state");
+    replacement.memory().copy_out(scratch, untouched_after);
+    check(untouched_before == untouched_after, "invalid output rejection leaves scratch memory unchanged");
+    check(install_translation_matrix(replacement, TranslationMatrixMode::Native),
           "native hook resets counters after differential fallback cases");
     AllegrexContext native_ctx;
     native_ctx.gpr[4] = scratch + 16u; native_ctx.gpr[31] = return_pc;
@@ -97,55 +107,55 @@ void differential(const char *path) {
     native_ctx.set_fpr_bits(14, 0x3f800000u);
     check(replacement.memory().contains(native_ctx.gpr[4], 64u) &&
           native_ctx.vfpu_ctrl[0] == 0xe4u && native_ctx.vfpu_ctrl[1] == 0xe4u &&
-          native_ctx.vfpu_ctrl[2] == 0u, "native sample satisfies the scale contract");
-    check(replacement.invoke_isolated_aot(kScaleMatrixAddress, native_ctx), "native dispatch reaches the hook");
-    check(scale_matrix_stats().calls == 1 && scale_matrix_stats().native == 1 &&
-          scale_matrix_stats().verified == 0 && scale_matrix_stats().fallbacks == 0 &&
-          scale_matrix_stats().mismatches == 0 && scale_matrix_stats().errors == 0,
+          native_ctx.vfpu_ctrl[2] == 0u, "native sample satisfies the translation contract");
+    check(replacement.invoke_isolated_aot(kTranslationMatrixAddress, native_ctx), "native dispatch reaches the hook");
+    check(translation_matrix_stats().calls == 1 && translation_matrix_stats().native == 1 &&
+          translation_matrix_stats().verified == 0 && translation_matrix_stats().fallbacks == 0 &&
+          translation_matrix_stats().mismatches == 0 && translation_matrix_stats().errors == 0,
           "native call commits one replacement and reports all six counters");
-    check(install_scale_matrix(replacement, ScaleMatrixMode::Verify), "runtime verifier installs");
+    check(install_translation_matrix(replacement, TranslationMatrixMode::Verify), "runtime verifier installs");
     AllegrexContext ctx;
-    ctx.pc = kScaleMatrixAddress; ctx.gpr[4] = scratch + 16; ctx.gpr[31] = kScaleMatrixAddress;
+    ctx.pc = kTranslationMatrixAddress; ctx.gpr[4] = scratch + 16; ctx.gpr[31] = kTranslationMatrixAddress;
     ctx.vfpu_ctrl[0] = ctx.vfpu_ctrl[1] = 0xe4u;
     ctx.fpr[12] = 2.f; ctx.fpr[13] = 3.f; ctx.fpr[14] = 4.f;
-    check(replacement.invoke_isolated_aot(kScaleMatrixAddress, ctx), "dispatch reaches live verifier");
-    check(scale_matrix_stats().calls == 1 && scale_matrix_stats().verified == 1 &&
-          scale_matrix_stats().native == 0 && scale_matrix_stats().fallbacks == 0 &&
-          scale_matrix_stats().mismatches == 0 && scale_matrix_stats().errors == 0,
+    check(replacement.invoke_isolated_aot(kTranslationMatrixAddress, ctx), "dispatch reaches live verifier");
+    check(translation_matrix_stats().calls == 1 && translation_matrix_stats().verified == 1 &&
+          translation_matrix_stats().native == 0 && translation_matrix_stats().fallbacks == 0 &&
+          translation_matrix_stats().mismatches == 0 && translation_matrix_stats().errors == 0,
           "verifier accepts matching outputs and internal return PC with six counters");
     ctx = {};
     ctx.gpr[4] = scratch + 16u; ctx.gpr[31] = return_pc;
     ctx.vfpu_ctrl[0] = 0x1f000u; ctx.vfpu_ctrl[1] = 0xe4u;
     ctx.fpr[12] = 2.f; ctx.fpr[13] = 3.f; ctx.fpr[14] = 4.f;
-    check(replacement.invoke_isolated_aot(kScaleMatrixAddress, ctx), "unusual prefix reaches original fallback");
-    check(scale_matrix_stats().calls == 2 && scale_matrix_stats().verified == 1 &&
-          scale_matrix_stats().fallbacks == 1 && scale_matrix_stats().mismatches == 0 &&
-          scale_matrix_stats().errors == 0, "unsupported prefix increments only the fallback counter");
-    replacement.memory().store32(kScaleMatrixAddress, replacement.memory().load32(kScaleMatrixAddress) ^ 1u);
-    check(!install_scale_matrix(replacement, ScaleMatrixMode::Native), "modified function is refused");
-    check(scale_matrix_stats().errors == 1 && scale_matrix_stats().calls == 2,
+    check(replacement.invoke_isolated_aot(kTranslationMatrixAddress, ctx), "unusual prefix reaches original fallback");
+    check(translation_matrix_stats().calls == 2 && translation_matrix_stats().verified == 1 &&
+          translation_matrix_stats().fallbacks == 1 && translation_matrix_stats().mismatches == 0 &&
+          translation_matrix_stats().errors == 0, "unsupported prefix increments only the fallback counter");
+    replacement.memory().store32(kTranslationMatrixAddress, replacement.memory().load32(kTranslationMatrixAddress) ^ 1u);
+    check(!install_translation_matrix(replacement, TranslationMatrixMode::Native), "modified function is refused");
+    check(translation_matrix_stats().errors == 1 && translation_matrix_stats().calls == 2,
           "fingerprint failure increments errors without replacing the installed hook");
-    replacement.memory().store32(kScaleMatrixAddress, replacement.memory().load32(kScaleMatrixAddress) ^ 1u);
+    replacement.memory().store32(kTranslationMatrixAddress, replacement.memory().load32(kTranslationMatrixAddress) ^ 1u);
 
-    check(install_scale_matrix(replacement, ScaleMatrixMode::Verify), "verifier reinstalls for bounded failure check");
-    const auto return_word = replacement.memory().load32(kScaleMatrixAddress + 28u);
-    replacement.memory().store32(kScaleMatrixAddress + 28u, 0u);
+    check(install_translation_matrix(replacement, TranslationMatrixMode::Verify), "verifier reinstalls for bounded failure check");
+    const auto return_word = replacement.memory().load32(kTranslationMatrixAddress + 28u);
+    replacement.memory().store32(kTranslationMatrixAddress + 28u, 0u);
     ctx = {};
     ctx.gpr[4] = scratch + 16u; ctx.gpr[31] = return_pc;
     ctx.vfpu_ctrl[0] = ctx.vfpu_ctrl[1] = 0xe4u;
     ctx.fpr[12] = 2.f; ctx.fpr[13] = 3.f; ctx.fpr[14] = 4.f;
-    check(replacement.invoke_isolated_aot(kScaleMatrixAddress, ctx), "broken return reaches bounded reference");
-    check(replacement.stopped() && scale_matrix_stats().calls == 1 &&
-          scale_matrix_stats().verified == 0 && scale_matrix_stats().native == 0 &&
-          scale_matrix_stats().errors == 1, "bounded reference failure stops and counts one error");
-    replacement.memory().store32(kScaleMatrixAddress + 28u, return_word);
-    std::cout << "Scale differential cases: " << cases << ", prefix fallbacks: " << fallbacks << '\n';
+    check(replacement.invoke_isolated_aot(kTranslationMatrixAddress, ctx), "broken return reaches bounded reference");
+    check(replacement.stopped() && translation_matrix_stats().calls == 1 &&
+          translation_matrix_stats().verified == 0 && translation_matrix_stats().native == 0 &&
+          translation_matrix_stats().errors == 1, "bounded reference failure stops and counts one error");
+    replacement.memory().store32(kTranslationMatrixAddress + 28u, return_word);
+    std::cout << "Translation differential cases: " << cases << ", prefix fallbacks: " << fallbacks << '\n';
 }
 }
 int main(int argc, char **argv) {
-    if (argc > 2) { std::cerr << "Usage: mhp3rd_native_scale_tests [local EBOOT.ELF]\n"; return 2; }
+    if (argc > 2) { std::cerr << "Usage: mhp3rd_native_translation_matrix_tests [local EBOOT.ELF]\n"; return 2; }
     try { examples(); if (argc == 2) differential(argv[1]); }
     catch (const std::exception &e) { std::cerr << "Test setup failed: " << e.what() << '\n'; return 1; }
-    std::cout << "Native scale failures: " << failures << '\n';
+    std::cout << "Native translation failures: " << failures << '\n';
     return failures ? 1 : 0;
 }

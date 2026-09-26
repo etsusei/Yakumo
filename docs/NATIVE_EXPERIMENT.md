@@ -6,8 +6,21 @@ These small, opt-in experiments preserve original behavior while replacing recom
 | --- | --- | --- |
 | Scale matrix | Construct the 4x4 scale matrix used by the game's graphics code | `MHP3RD_NATIVE_SCALE_MATRIX` |
 | Angle step | Move a circular angle towards a target with a bounded step | `MHP3RD_NATIVE_ANGLE_STEP` |
+| Translation matrix | Construct a raw-bit 4x4 translation matrix | `MHP3RD_NATIVE_TRANSLATION_MATRIX` |
+| Vector constructor | Store three raw scalar values and a literal zero | `MHP3RD_NATIVE_VECTOR_CONSTRUCT` |
+| Matrix-layout copy | Copy nine words with the original ordered overlap behavior | `MHP3RD_NATIVE_MATRIX_COPY` |
 
-Both switches accept `off` (the default), `verify`, and `native`. Enable one at a time when measuring behavior.
+All five switches accept `off` (the default), `verify`, and `native`. Enable one at a time when measuring behavior.
+
+The current [development plan](DEVELOPMENT_PLAN.md) is offline-first. Its user-led paired acceptance workflow supersedes the historical agent-driven village checks described below.
+
+## Additional offline leaves
+
+Translation, vector construction and matrix-layout copying now have portable data logic, guarded guest adapters, independent switches and original-code tests. Their exact spans, fingerprints, CPU/memory contracts and limitations are in [NATIVE_MODULES.md](NATIVE_MODULES.md).
+
+On Apple Silicon macOS, the new local-ELF suites passed 100,512 translation cases (including 10,000 unusual-prefix fallbacks), 100,512 vector cases and 100,348 ordered-copy cases. They compare full CPU state, raw-bit edge values, seeded inputs, aliases, unaligned memory, canaries and mode/error behavior. The copy suite includes overlapping rows in both directions and verifies padding preservation. The complete host application also compiled and linked after integration, without being launched.
+
+These leaves remain off by default. Live call coverage, animation/combat behavior and user experience acceptance are pending. The combined gate retains the full offline evidence before manual delivery.
 
 ## Scale matrix
 
@@ -15,7 +28,7 @@ The supported executable's 36-byte leaf at `0x08878B28` takes the output address
 
 The portable `scale_matrix()` builder only manipulates IEEE-754 bit patterns and has no PSP dependencies. The adapter preserves all other CPU state. Signed zeros and NaN payloads are copied exactly; there is no rounding or approximate arithmetic. Only the standard VFPU prefix state uses the native path. Unusual prefixes fall back to the original instructions, and the fallback count is reported.
 
-`verify` compares all CPU registers and all 64 output bytes for each accepted call, restoring inputs and retaining the original result. `native` uses the replacement for standard prefixes. Either mode checks the entire function's fingerprint before installing the hook. A mismatch disables native use for the rest of the run. Logs start with `[native-scale]` and include `calls`, `verified`, `native`, `fallbacks` and `mismatches`.
+`verify` predicts all CPU registers and all 64 output bytes without speculative guest-memory writes, then compares them with bounded original execution and retains the original result. `native` uses the replacement for standard prefixes. Either mode checks the entire function's fingerprint before installing the hook. A mismatch disables native use for the rest of the run. Logs start with `[native-scale]` and include `calls`, `verified`, `native`, `fallbacks`, `mismatches` and `errors`.
 
 The original-code test covers 100,512 inputs, including arbitrary floating-point bit patterns, signed zero, infinities, quiet/signaling NaNs, scratch-memory canaries, RAM aliases, and 10,000 unusual-prefix fallbacks. No game instructions are embedded in the test:
 
@@ -50,10 +63,10 @@ Set `MHP3RD_NATIVE_ANGLE_STEP` before starting a source build:
 | Value | Behavior |
 | --- | --- |
 | unset, `off`, or `0` | Original generated code; no hook is installed |
-| `verify` | Predict the native result, restore inputs, execute the original instructions in bounded interpreter slices, and compare the entire CPU context and both output words. The original result drives the game |
+| `verify` | Predict the native result in a small byte shadow that preserves memory overlap and aliases, execute the original instructions in bounded interpreter slices, and compare the entire CPU context and output bytes. The original result drives the game |
 | `native` | Execute the new native implementation through the ABI adapter |
 
-Verification reports call, comparison, and mismatch counts under `[native-angle]`. A mismatch keeps the original result and uses the reference for the remainder of the run. An unexpected reference control-flow exit stops the test rather than running arbitrary caller code. Verification is deliberately slower and is not a performance mode. The registration can also disable an AOT unit's direct-call shortcut, so this experiment makes no speedup claim.
+Verification reports the shared call, comparison, native, fallback, mismatch and error counters under `[native-angle]`; their definitions are in [NATIVE_MODULES.md](NATIVE_MODULES.md). A mismatch keeps the original result and uses the reference for the remainder of the run. An unexpected reference control-flow exit stops the test rather than running arbitrary caller code. Verification is deliberately slower and is not a performance mode. The registration can also disable an AOT unit's direct-call shortcut, so this experiment makes no speedup claim.
 
 Choose the mode at process startup; switching it in a running game is not supported. Restart without the variable to restore the original implementation. Other mods that patch this function while the game runs are outside this experiment's tested scope.
 

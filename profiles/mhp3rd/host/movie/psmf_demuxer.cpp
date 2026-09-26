@@ -34,17 +34,23 @@ bool PsmfDemuxer::push_pack(std::span<const std::uint8_t> pack) {
         const std::uint8_t stream = pack[offset + 3u];
         const std::size_t length = be16(&pack[offset + 4u]);
         const std::size_t body = offset + 6u;
-        const std::size_t end = std::min(body + length, pack.size());
-        offset = body + length;
-        if ((stream != kVideoStream && stream != kPrivateStream1) || end < body + 3u) continue;
+        if (length > pack.size() - body) break;
+        const std::size_t end = body + length;
+        offset = end;
+        if ((stream != kVideoStream && stream != kPrivateStream1) || length < 3u) continue;
         // MPEG-2 PES header: flags, then the length of the optional fields.
         const std::uint8_t flags = pack[body + 1u];
-        const std::size_t header = body + 3u + pack[body + 2u];
+        const std::size_t optional_size = pack[body + 2u];
+        const std::size_t header = body + 3u + optional_size;
         if (header > end) continue;
+        const std::uint8_t timestamp_flags = flags & 0xC0u;
+        if ((timestamp_flags == 0x80u && optional_size < 5u) ||
+            (timestamp_flags == 0xC0u && optional_size < 10u) || timestamp_flags == 0x40u)
+            continue;
         std::int64_t pts = -1;
         std::int64_t dts = -1;
-        if ((flags & 0x80u) != 0u && body + 8u <= end) pts = timestamp(&pack[body + 3u]);
-        if ((flags & 0x40u) != 0u && body + 13u <= end) dts = timestamp(&pack[body + 8u]);
+        if ((timestamp_flags & 0x80u) != 0u) pts = timestamp(&pack[body + 3u]);
+        if (timestamp_flags == 0xC0u) dts = timestamp(&pack[body + 8u]);
         const auto payload = pack.subspan(header, end - header);
         if (stream == kVideoStream) {
             add_video(payload, pts, dts);

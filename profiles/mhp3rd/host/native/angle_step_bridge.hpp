@@ -1,5 +1,7 @@
 #pragma once
 
+#include "native/contracts.hpp"
+
 #include <cstdint>
 
 namespace psprecomp { class Runtime; class GuestMemory; struct AllegrexContext; }
@@ -7,8 +9,8 @@ namespace psprecomp { class Runtime; class GuestMemory; struct AllegrexContext; 
 namespace mhp3rd::native {
 inline constexpr std::uint32_t kAngleStepAddress = 0x088775acu;
 inline constexpr std::uint32_t kAngleStepCodeSize = 100u;
-enum class AngleStepMode { Off, Verify, Native };
-struct AngleStepStats { std::uint64_t calls{}, verified{}, mismatches{}; };
+using AngleStepMode = NativeMode;
+using AngleStepStats = NativeStats;
 
 // A thin ABI adapter. Game resources and callers keep their original layout;
 // the math in angle_step.hpp itself has no PSP/runtime dependency.

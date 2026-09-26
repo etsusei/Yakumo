@@ -142,6 +142,12 @@ set(MHP3RD_HOST_SOURCES
     host/native/angle_step_bridge.cpp
     host/native/scale_matrix.cpp
     host/native/scale_matrix_bridge.cpp
+    host/native/translation_matrix.cpp
+    host/native/translation_matrix_bridge.cpp
+    host/native/vector_construct.cpp
+    host/native/vector_construct_bridge.cpp
+    host/native/matrix_copy.cpp
+    host/native/matrix_copy_bridge.cpp
     host/gpu/ge_state.cpp
     host/gpu/texture_decode.cpp
     host/input/bindings.cpp
@@ -353,7 +359,7 @@ set_target_properties(mhp3rd_resource_crosscheck PROPERTIES RUNTIME_OUTPUT_DIREC
 if(PSPRECOMP_BUILD_TESTS)
     find_package(Python3 3.9 QUIET COMPONENTS Interpreter)
     if(Python3_Interpreter_FOUND)
-        foreach(suite baseline_registration resource_preparation)
+        foreach(suite baseline_registration resource_preparation offline_gate)
             add_test(NAME mhp3rd_${suite}_tests
                 COMMAND "${Python3_EXECUTABLE}" -m unittest discover
                     -s "${MHP3RD_PROFILE_DIR}/tests" -p "test_${suite}.py" -v)
@@ -361,6 +367,23 @@ if(PSPRECOMP_BUILD_TESTS)
                 ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
         endforeach()
     endif()
+endif()
+
+add_executable(mhp3rd_iso_image_tests
+    tests/iso_image_tests.cpp
+    host/kernel/iso_image.cpp)
+target_include_directories(mhp3rd_iso_image_tests PRIVATE
+    "${MHP3RD_PROFILE_DIR}/host" "${CMAKE_SOURCE_DIR}/include")
+set_target_properties(mhp3rd_iso_image_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+add_executable(mhp3rd_psmf_demuxer_tests
+    tests/psmf_demuxer_tests.cpp
+    host/movie/psmf_demuxer.cpp)
+target_include_directories(mhp3rd_psmf_demuxer_tests PRIVATE "${MHP3RD_PROFILE_DIR}/host")
+set_target_properties(mhp3rd_psmf_demuxer_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(PSPRECOMP_BUILD_TESTS)
+    add_test(NAME mhp3rd_iso_image_tests COMMAND mhp3rd_iso_image_tests)
+    add_test(NAME mhp3rd_psmf_demuxer_tests COMMAND mhp3rd_psmf_demuxer_tests)
 endif()
 
 # Save-data checks that need no game data: crypto test vectors and round trips.
@@ -402,6 +425,39 @@ target_link_libraries(mhp3rd_native_scale_tests PRIVATE psprecomp_core)
 set_target_properties(mhp3rd_native_scale_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 if(PSPRECOMP_BUILD_TESTS)
     add_test(NAME mhp3rd_native_scale_tests COMMAND mhp3rd_native_scale_tests)
+endif()
+
+add_executable(mhp3rd_native_translation_matrix_tests
+    tests/native_translation_matrix_tests.cpp
+    host/native/translation_matrix.cpp
+    host/native/translation_matrix_bridge.cpp)
+target_include_directories(mhp3rd_native_translation_matrix_tests PRIVATE "${MHP3RD_PROFILE_DIR}/host")
+target_link_libraries(mhp3rd_native_translation_matrix_tests PRIVATE psprecomp_core)
+set_target_properties(mhp3rd_native_translation_matrix_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(PSPRECOMP_BUILD_TESTS)
+    add_test(NAME mhp3rd_native_translation_matrix_tests COMMAND mhp3rd_native_translation_matrix_tests)
+endif()
+
+add_executable(mhp3rd_native_vector_construct_tests
+    tests/native_vector_construct_tests.cpp
+    host/native/vector_construct.cpp
+    host/native/vector_construct_bridge.cpp)
+target_include_directories(mhp3rd_native_vector_construct_tests PRIVATE "${MHP3RD_PROFILE_DIR}/host")
+target_link_libraries(mhp3rd_native_vector_construct_tests PRIVATE psprecomp_core)
+set_target_properties(mhp3rd_native_vector_construct_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(PSPRECOMP_BUILD_TESTS)
+    add_test(NAME mhp3rd_native_vector_construct_tests COMMAND mhp3rd_native_vector_construct_tests)
+endif()
+
+add_executable(mhp3rd_native_matrix_copy_tests
+    tests/native_matrix_copy_tests.cpp
+    host/native/matrix_copy.cpp
+    host/native/matrix_copy_bridge.cpp)
+target_include_directories(mhp3rd_native_matrix_copy_tests PRIVATE "${MHP3RD_PROFILE_DIR}/host")
+target_link_libraries(mhp3rd_native_matrix_copy_tests PRIVATE psprecomp_core)
+set_target_properties(mhp3rd_native_matrix_copy_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(PSPRECOMP_BUILD_TESTS)
+    add_test(NAME mhp3rd_native_matrix_copy_tests COMMAND mhp3rd_native_matrix_copy_tests)
 endif()
 
 # Camera dispatch, ownership and integration checks without game data.
