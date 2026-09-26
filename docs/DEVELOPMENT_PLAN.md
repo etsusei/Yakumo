@@ -53,7 +53,7 @@ Task IDs match the ledger. A checked box means the task's stated scope is comple
 
 ### Milestone 0 — Freeze inputs and prepare raw resources
 
-- [ ] **RES-001** — Register B0, source/build/dependency identities, input fingerprints, and immutable starting-save snapshots.
+- [x] **RES-001** — Register B0, source/build/dependency identities, input fingerprints, and immutable starting-save snapshots.
 - [ ] **RES-002** — Build and test a guarded resource-preparation command around the existing ISO/DATA.BIN readers.
 - [ ] **RES-003** — Extract the full raw image contents and DATA.BIN entries locally; generate and validate the manifest.
 

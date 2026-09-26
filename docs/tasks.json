@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 4,
+  "revision": 6,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T14:39:49Z",
+  "updated_at": "2026-09-26T14:56:49Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -66,6 +66,14 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/resource_preparation_tests",
+      "type": "agent",
+      "role": "Independent synthetic ISO/DATA.BIN preparation fixtures and tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -105,9 +113,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "RES-001",
-    "next_task_id": "RES-002",
-    "next_action": "Finish the B0/input freeze, then implement and validate guarded raw extraction.",
+    "current_task_id": "RES-002",
+    "next_task_id": "RES-003",
+    "next_action": "Complete guarded extraction and synthetic tests, then publish and independently verify the local resource workspace.",
     "implementation_after_documentation_started": true
   },
   "references": {
@@ -628,7 +636,7 @@
       "title": "Freeze Baseline B0 and register test inputs",
       "phase": "milestone_0",
       "kind": "finite",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root/baseline_registration",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -636,38 +644,44 @@
         "/root/baseline_registration"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:39:49Z",
+      "updated_at": "2026-09-26T14:53:00Z",
       "started_at": "2026-09-26T14:38:15Z",
-      "completed_at": null,
+      "completed_at": "2026-09-26T14:53:00Z",
       "timestamp_note": null,
       "scope": "Freeze 4292eb6 with all native replacements off; register independent starting-save snapshots.",
       "depends_on": [
         "PLAN-002"
       ],
-      "work_summary": "Freezing the B0 source identity, current build/dependency evidence and immutable local input/save snapshots without launching the game.",
+      "work_summary": "Implemented and ran source-frozen B0 registration twice on the local inputs. Pinned 4292eb6 source/tree, archived 362 source/historical evidence files, recorded source/dependency fingerprints, and created a verified read-only content-addressed starting-save snapshot. Reuse verified all archived output hashes; original ISO/ELF/archive fingerprints stayed unchanged. Existing binary provenance is explicitly historical, not a newly built B0 application.",
       "deliverables": [
         {
           "path": "out/testing/baselines/B0/manifest.json",
           "kind": "manifest",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
           "path": "profiles/mhp3rd/analysis/testing/start-saves",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
           "path": "profiles/mhp3rd/tools/register_baseline.py",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "profiles/mhp3rd/tests/test_baseline_registration.py",
           "kind": "test",
-          "state": "planned",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/RESOURCE_PREPARATION.md",
+          "kind": "documentation",
+          "state": "existing",
           "local_only": false
         }
       ],
@@ -677,8 +691,34 @@
         "Snapshot restoration cannot overwrite a running process."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "synthetic registration suite",
+            "status": "passed",
+            "tests": 11,
+            "evidence": "out/testing/baseline-unit-tests.log"
+          },
+          {
+            "name": "actual creation and verified reuse",
+            "status": "passed",
+            "passes": 2,
+            "evidence": "out/testing/baselines/B0/manifest.json"
+          },
+          {
+            "name": "source fingerprints and snapshot file modes",
+            "status": "passed"
+          },
+          {
+            "name": "fresh run destination guard",
+            "status": "passed",
+            "note": "Existing destination is rejected without modification."
+          }
+        ],
+        "limitations": [
+          "No full game was launched.",
+          "B0 paired application remains pending PAIR-002; archived binary is historical evidence.",
+          "Full extraction has not run yet."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
@@ -701,6 +741,15 @@
           "from_status": "in_progress",
           "to_status": "in_progress",
           "description": "Assigned the registration tool and synthetic tests to /root/baseline_registration; root retains actual-data verification, integration, ledger and publication."
+        },
+        {
+          "recorded_at": "2026-09-26T14:53:00Z",
+          "occurred_at": "2026-09-26T14:53:00Z",
+          "actor_id": "/root",
+          "action": "verified_completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented and ran source-frozen B0 registration twice on the local inputs. Pinned 4292eb6 source/tree, archived 362 source/historical evidence files, recorded source/dependency fingerprints, and created a verified read-only content-addressed starting-save snapshot. Reuse verified all archived output hashes; original ISO/ELF/archive fingerprints stayed unchanged. Existing binary provenance is explicitly historical, not a newly built B0 application."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -710,20 +759,24 @@
       "title": "Guarded raw-resource preparation tool",
       "phase": "milestone_0",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "in_progress",
+      "owner_agent_id": "/root/resource_format_audit",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/resource_format_audit",
+        "/root/resource_preparation_tests"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
+      "updated_at": "2026-09-26T14:56:49Z",
+      "started_at": "2026-09-26T14:53:00Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Wrap existing extractors with safe bounds, staging, manifest and repeatability checks.",
       "depends_on": [
         "RES-001"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Implementing guarded ISO/DATA.BIN preparation after B0 registration. The read-only audit identified unsafe legacy bounds/path handling and full-entry decryption memory use; independent C++ directory preflight agrees with the supplied archive inventory.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/tools/prepare_resources.py",
@@ -750,7 +803,26 @@
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T14:53:00Z",
+          "occurred_at": "2026-09-26T14:53:00Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Implementing guarded ISO/DATA.BIN preparation after B0 registration. The read-only audit identified unsafe legacy bounds/path handling and full-entry decryption memory use; independent C++ directory preflight agrees with the supplied archive inventory."
+        },
+        {
+          "recorded_at": "2026-09-26T14:56:49Z",
+          "occurred_at": "2026-09-26T14:56:49Z",
+          "actor_id": "/root",
+          "action": "delegated",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "The format-audit agent owns guarded extraction implementation; a separate agent owns independent synthetic fixtures/tests. Root owns integration, independent C++ checks, actual extraction and ledger."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
