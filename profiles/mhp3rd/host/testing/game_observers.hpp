@@ -22,7 +22,7 @@ struct Timeline {
 };
 enum class WindowEventKind {
     Key, MouseButton, MouseMotion, MouseWheel, Touch,
-    GamepadButton, GamepadAxis, DeviceAdded, DeviceRemoved, Text, FileDrop, Focus, Close,
+    GamepadButton, GamepadAxis, DeviceAdded, DeviceRemoved, Text, FileDrop, Focus, Close, Geometry,
 };
 struct WindowObservation {
     WindowEventKind kind{};
@@ -33,6 +33,7 @@ struct WindowObservation {
     bool down{};
     bool repeat{};
     std::uint32_t window_id{};
+    std::uint32_t source_event_type{};
     std::uint64_t source_timestamp_ns{};
     std::int64_t device_id{};
     std::int64_t code{};

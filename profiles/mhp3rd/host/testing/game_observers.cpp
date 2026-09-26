@@ -37,6 +37,7 @@ const char *window_event_name(WindowEventKind kind) noexcept {
     case WindowEventKind::FileDrop: return "window.file_drop";
     case WindowEventKind::Focus: return "input.focus";
     case WindowEventKind::Close: return "window.close";
+    case WindowEventKind::Geometry: return "window.geometry";
     }
     return nullptr;
 }
@@ -62,7 +63,7 @@ void add_finite(Fields &fields, const char *name, double value) {
 
 bool valid_overlay(const OverlayIdentity &identity) noexcept {
     if (identity.image_size == 0 || identity.code_size == 0 ||
-        identity.code_size > identity.image_size ||
+        std::uint64_t{identity.code_size} + 64u > identity.image_size ||
         identity.header_fingerprint.empty() || identity.code_fingerprint.empty())
         return false;
     // An exclusive end of 2^32 is valid: the last covered address is UINT32_MAX.
@@ -308,10 +309,12 @@ void GameObserver::window(const WindowObservation &observation) noexcept {
             return;
         }
         const bool allowed_when_unfocused = observation.kind == WindowEventKind::Close ||
+            observation.kind == WindowEventKind::Geometry ||
             observation.kind == WindowEventKind::DeviceAdded ||
             observation.kind == WindowEventKind::DeviceRemoved;
         if (!impl_->timeline.focused && !allowed_when_unfocused) return;
         Fields fields{{"window_id", static_cast<std::uint64_t>(observation.window_id)},
+                      {"source_event_type", static_cast<std::uint64_t>(observation.source_event_type)},
                       {"owned_window", observation.owned_window},
                       {"source_timestamp_ns", observation.source_timestamp_ns},
                       {"ui_consumed", observation.ui_consumed},
@@ -324,15 +327,21 @@ void GameObserver::window(const WindowObservation &observation) noexcept {
             fields.push_back({"code", observation.code});
             fields.push_back({"down", observation.down});
             fields.push_back({"repeat", observation.repeat});
+            if (observation.kind == WindowEventKind::MouseButton) {
+                add_finite(fields, "x", observation.x);
+                add_finite(fields, "y", observation.y);
+            }
             break;
         case WindowEventKind::MouseMotion:
         case WindowEventKind::MouseWheel:
         case WindowEventKind::Touch:
         case WindowEventKind::GamepadAxis:
+        case WindowEventKind::Geometry:
             fields.push_back({"device_id", observation.device_id});
             fields.push_back({"code", observation.code});
             add_finite(fields, "x", observation.x);
             add_finite(fields, "y", observation.y);
+            if (observation.kind == WindowEventKind::Touch) fields.push_back({"down", observation.down});
             break;
         case WindowEventKind::DeviceAdded:
         case WindowEventKind::DeviceRemoved:
@@ -474,6 +483,11 @@ void GameObserver::overlay(const OverlayIdentity &identity) noexcept {
         }
     } catch (...) {
         impl_->fail();
+        try {
+            std::lock_guard lock(impl_->mutex);
+            if (auto it = impl_->overlays.find(identity.base); it != impl_->overlays.end())
+                it->second.active = false;
+        } catch (...) {}
     }
 }
 

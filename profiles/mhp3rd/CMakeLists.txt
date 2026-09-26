@@ -360,7 +360,7 @@ set_target_properties(mhp3rd_resource_crosscheck PROPERTIES RUNTIME_OUTPUT_DIREC
 if(PSPRECOMP_BUILD_TESTS)
     find_package(Python3 3.9 QUIET COMPONENTS Interpreter)
     if(Python3_Interpreter_FOUND)
-        foreach(suite baseline_registration resource_preparation offline_gate)
+        foreach(suite baseline_registration resource_preparation offline_gate probe_instrumentation)
             add_test(NAME mhp3rd_${suite}_tests
                 COMMAND "${Python3_EXECUTABLE}" -m unittest discover
                     -s "${MHP3RD_PROFILE_DIR}/tests" -p "test_${suite}.py" -v)
@@ -472,7 +472,10 @@ add_library(mhp3rd_game_observation STATIC
     host/testing/runtime_recording.cpp)
 file(GLOB MHP3RD_RECORDING_REVISION_INPUTS CONFIGURE_DEPENDS
     "${MHP3RD_PROFILE_DIR}/host/testing/*.cpp" "${MHP3RD_PROFILE_DIR}/host/testing/*.hpp")
-list(APPEND MHP3RD_RECORDING_REVISION_INPUTS "${MHP3RD_PROFILE_DIR}/tools/instrument_probes.py")
+list(APPEND MHP3RD_RECORDING_REVISION_INPUTS
+    "${MHP3RD_PROFILE_DIR}/tools/instrument_probes.py"
+    "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.hpp"
+    "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.cpp")
 set(MHP3RD_RECORDING_DIGESTS "")
 foreach(source IN LISTS MHP3RD_RECORDING_REVISION_INPUTS)
     file(SHA256 "${source}" digest)
@@ -483,7 +486,27 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MHP3RD_RECORDIN
 target_compile_definitions(mhp3rd_game_observation PRIVATE
     MHP3RD_RECORDING_REVISION="source-sha256:${MHP3RD_RECORDING_REVISION}")
 target_link_libraries(mhp3rd_game_observation PUBLIC mhp3rd_session_recording)
-target_link_libraries(Yakumo PRIVATE mhp3rd_game_observation)
+add_library(mhp3rd_overlay_observation STATIC host/testing/overlay_observation.cpp)
+target_include_directories(mhp3rd_overlay_observation PUBLIC "${MHP3RD_PROFILE_DIR}/host")
+target_link_libraries(mhp3rd_overlay_observation PUBLIC psprecomp_core)
+target_link_libraries(Yakumo PRIVATE mhp3rd_overlay_observation)
+add_library(mhp3rd_control_delivery STATIC host/hle/control_delivery.cpp)
+target_link_libraries(mhp3rd_control_delivery PUBLIC psprecomp_core mhp3rd_game_observation)
+add_executable(mhp3rd_control_delivery_tests tests/control_delivery_tests.cpp)
+target_link_libraries(mhp3rd_control_delivery_tests PRIVATE mhp3rd_control_delivery)
+target_link_libraries(Yakumo PRIVATE mhp3rd_control_delivery)
+add_executable(mhp3rd_overlay_observation_tests tests/overlay_observation_tests.cpp)
+target_link_libraries(mhp3rd_overlay_observation_tests PRIVATE mhp3rd_overlay_observation)
+add_executable(mhp3rd_observation_hook_tests tests/observation_hook_tests.cpp
+    host/camera/camera_input.cpp host/settings/settings.cpp host/install/user_data.cpp host/input/bindings.cpp)
+target_link_libraries(mhp3rd_observation_hook_tests PRIVATE mhp3rd_game_observation psprecomp_core)
+foreach(suite overlay_observation observation_hook control_delivery)
+    set_target_properties(mhp3rd_${suite}_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    if(PSPRECOMP_BUILD_TESTS)
+        add_test(NAME mhp3rd_${suite}_tests COMMAND mhp3rd_${suite}_tests)
+        set_tests_properties(mhp3rd_${suite}_tests PROPERTIES TIMEOUT 30)
+    endif()
+endforeach()
 foreach(suite game_observer runtime_recording)
     add_executable(mhp3rd_${suite}_tests tests/${suite}_tests.cpp)
     target_link_libraries(mhp3rd_${suite}_tests PRIVATE mhp3rd_game_observation)

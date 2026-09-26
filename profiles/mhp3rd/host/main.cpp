@@ -354,11 +354,14 @@ int main(int argc, char **argv) {
                 {"recording_mode", std::string("observational-summary")},
                 {"probe_coverage", std::string("pending_certification")},
 #if defined(MHP3RD_HAS_RENDERER)
-                {"renderer_enabled", true},
+                {"renderer_compiled", true},
 #else
-                {"renderer_enabled", false},
+                {"renderer_compiled", false},
 #endif
             };
+            for (const char *name : {"MHP3RD_NO_RENDER", "MHP3RD_NO_AUDIO", "MHP3RD_INPUT_SCRIPT",
+                    "MHP3RD_INPUT_LIVE", "PSPRECOMP_NO_CHAIN", "PSPRECOMP_COUNT_PC"})
+                metadata.push_back({std::string(name) + "_present", std::getenv(name) != nullptr});
             for (const char *name : {"MHP3RD_NATIVE_ANGLE_STEP", "MHP3RD_NATIVE_SCALE_MATRIX",
                     "MHP3RD_NATIVE_TRANSLATION_MATRIX", "MHP3RD_NATIVE_VECTOR_CONSTRUCT", "MHP3RD_NATIVE_MATRIX_COPY"}) {
                 const char *value = std::getenv(name);

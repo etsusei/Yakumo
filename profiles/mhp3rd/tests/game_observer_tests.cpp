@@ -325,6 +325,26 @@ void test_modal_domain_restore() {
     common_fields(events(fixture.finish()));
 }
 
+void test_pointer_details() {
+    Fixture fixture;
+    fixture.observer->focus(true);
+    WindowObservation click{WindowEventKind::MouseButton};
+    click.owned_window = true; click.focused = true; click.down = true;
+    click.window_id = 4; click.source_event_type = 1025; click.code = 1;
+    click.x = 12.5; click.y = 34.25;
+    fixture.observer->window(click);
+    auto touch = click;
+    touch.kind = WindowEventKind::Touch; touch.source_event_type = 1793; touch.down = false;
+    fixture.observer->window(touch);
+    const auto decoded = events(fixture.finish());
+    const auto *button = find_event(decoded, "window.mouse_button");
+    const auto *finger = find_event(decoded, "window.touch");
+    check(button && std::stod(field(*button, "x").text) == 12.5 &&
+          std::stod(field(*button, "y").text) == 34.25, "click position survives journal serialization");
+    check(finger && !boolean(*finger, "down") && unsigned_number(*finger, "source_event_type") == 1793,
+          "touch release retains state and raw event type");
+}
+
 void test_window_filter_and_privacy() {
     Fixture fixture;
     auto &observer = *fixture.observer;
@@ -534,7 +554,7 @@ void test_overlay_epochs_and_ambiguity() {
     observer.overlay(invalid);
     invalid = {0x1000, 0x20, 0x40, "bad", "h", "c", true};
     observer.overlay(invalid);
-    invalid = {0x4000, 0x20, 0x10, std::string("\xff", 1), "h", "c", true};
+    invalid = {0x4000, 0x100, 0x10, std::string("\xff", 1), "h", "c", true};
     observer.overlay(invalid);
     check(observer.emission_errors() == 5 && !observer.overlay_at(0x3000) &&
           !observer.overlay_at(0x1000) && !observer.overlay_at(0x4000),
@@ -639,6 +659,7 @@ int main() {
         test_disabled_routing_and_lifetime();
         test_domain_focus_and_time();
         test_modal_domain_restore();
+        test_pointer_details();
         test_window_filter_and_privacy();
         test_frame_and_control_reads();
         test_camera_actions_and_nonfinite_values();

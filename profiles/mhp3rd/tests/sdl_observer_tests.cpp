@@ -2,12 +2,14 @@
 
 #include <SDL3/SDL.h>
 
+#include <array>
 #include <cstdint>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace {
@@ -40,6 +42,7 @@ void test_window_ownership_and_keys() {
               decoded->window_id == kOwnWindow && decoded->device_id == 7 &&
               decoded->code == SDL_SCANCODE_A && decoded->down && decoded->repeat &&
               decoded->ui_consumed && decoded->scripted_mode &&
+              decoded->source_event_type == SDL_EVENT_KEY_DOWN &&
               decoded->source_timestamp_ns == 123456789u,
           "own key keeps code, event timestamp, UI consumption, and override state");
     check(!decode_sdl_event(event, kOwnWindow, false, false, false), "unfocused key omitted");
@@ -197,6 +200,34 @@ void test_redaction_and_lifecycle() {
     check(!decode_sdl_event(event, kOwnWindow, true, false, false), "unsupported event omitted");
 }
 
+void test_geometry() {
+    constexpr std::array<SDL_EventType, 8> types{
+        SDL_EVENT_WINDOW_RESIZED, SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED,
+        SDL_EVENT_WINDOW_DISPLAY_CHANGED, SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED,
+        SDL_EVENT_WINDOW_ENTER_FULLSCREEN, SDL_EVENT_WINDOW_LEAVE_FULLSCREEN,
+        SDL_EVENT_WINDOW_MINIMIZED, SDL_EVENT_WINDOW_RESTORED,
+    };
+    for (std::size_t i = 0; i < types.size(); ++i) {
+        SDL_Event event{};
+        event.type = types[i];
+        event.window.windowID = kOwnWindow;
+        event.window.timestamp = 500u + i;
+        event.window.data1 = static_cast<Sint32>(200 + i);
+        event.window.data2 = static_cast<Sint32>(300 + i);
+        const auto decoded = decode_sdl_event(event, kOwnWindow, false, true, false);
+        check(decoded && decoded->kind == WindowEventKind::Geometry &&
+                  decoded->owned_window && decoded->window_id == kOwnWindow &&
+                  !decoded->focused && decoded->ui_consumed &&
+                  decoded->code == types[i] && decoded->source_event_type == types[i] &&
+                  decoded->source_timestamp_ns == 500u + i &&
+                  decoded->x == 200.0 + i && decoded->y == 300.0 + i,
+              "own geometry event preserves raw SDL type and data while unfocused");
+        event.window.windowID = kOtherWindow;
+        check(!decode_sdl_event(event, kOwnWindow, false, false, false),
+              "other window geometry omitted");
+    }
+}
+
 struct MemorySink final : mhp3rd::testing::JournalSink {
     explicit MemorySink(std::shared_ptr<std::vector<std::uint8_t>> bytes) : bytes(std::move(bytes)) {}
     bool write(std::span<const std::uint8_t> data) override {
@@ -206,6 +237,18 @@ struct MemorySink final : mhp3rd::testing::JournalSink {
     bool flush() override { return true; }
     std::shared_ptr<std::vector<std::uint8_t>> bytes;
 };
+
+const mhp3rd::testing::JournalRecord *find_window_record(
+    const mhp3rd::testing::JournalRecovery &recovered, std::string_view event_name,
+    SDL_EventType source_type) {
+    const std::string name = "\"event\":\"" + std::string(event_name) + "\"";
+    const std::string type = "\"source_event_type\":" + std::to_string(source_type);
+    for (const auto &record : recovered.records)
+        if (record.payload.find(name) != std::string::npos &&
+            record.payload.find(type) != std::string::npos)
+            return &record;
+    return nullptr;
+}
 
 void test_forwarding_and_journal_redaction() {
     using namespace mhp3rd::testing;
@@ -235,6 +278,37 @@ void test_forwarding_and_journal_redaction() {
     event.drop.data = "/secret/drop/path";
     observe_sdl_event(event, kOwnWindow, true, false, false);
 
+    event = {};
+    event.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
+    event.button.windowID = kOwnWindow;
+    event.button.which = 19u;
+    event.button.button = SDL_BUTTON_LEFT;
+    event.button.down = true;
+    event.button.x = 12.5f;
+    event.button.y = 34.25f;
+    observe_sdl_event(event, kOwnWindow, true, true, false);
+
+    event = {};
+    event.type = SDL_EVENT_FINGER_DOWN;
+    event.tfinger.windowID = kOwnWindow;
+    event.tfinger.touchID = 5u;
+    event.tfinger.fingerID = 6u;
+    event.tfinger.x = 0.5f;
+    event.tfinger.y = 0.25f;
+    observe_sdl_event(event, kOwnWindow, true, false, false);
+    event.type = SDL_EVENT_FINGER_UP;
+    observe_sdl_event(event, kOwnWindow, true, false, false);
+
+    observer->focus(false);
+    event = {};
+    event.type = SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED;
+    event.window.windowID = kOwnWindow;
+    event.window.data1 = 960;
+    event.window.data2 = 544;
+    observe_sdl_event(event, kOwnWindow, false, false, false);
+    event.window.windowID = kOtherWindow;
+    observe_sdl_event(event, kOwnWindow, false, false, false);
+
     set_active_observer(nullptr);
     event.type = SDL_EVENT_KEY_DOWN;
     event.key.windowID = kOwnWindow;
@@ -255,6 +329,26 @@ void test_forwarding_and_journal_redaction() {
     check(payloads.find("secret input") == std::string::npos &&
               payloads.find("/secret/drop/path") == std::string::npos,
           "text and dropped path are absent from journal");
+    const JournalRecord *mouse = find_window_record(recovered, "window.mouse_button", SDL_EVENT_MOUSE_BUTTON_DOWN);
+    check(mouse && mouse->payload.find("\"x\":12.5") != std::string::npos &&
+              mouse->payload.find("\"y\":34.25") != std::string::npos,
+          "mouse button position reaches journal");
+    const JournalRecord *touch_down = find_window_record(recovered, "window.touch", SDL_EVENT_FINGER_DOWN);
+    const JournalRecord *touch_up = find_window_record(recovered, "window.touch", SDL_EVENT_FINGER_UP);
+    check(touch_down && touch_down->payload.find("\"down\":true") != std::string::npos &&
+              touch_up && touch_up->payload.find("\"down\":false") != std::string::npos,
+          "touch down and up retain raw SDL type and state in journal");
+    const JournalRecord *geometry =
+        find_window_record(recovered, "window.geometry", SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED);
+    check(geometry && geometry->payload.find("\"x\":960") != std::string::npos &&
+              geometry->payload.find("\"y\":544") != std::string::npos &&
+              geometry->payload.find("\"window_id\":41") != std::string::npos,
+          "unfocused own-window geometry reaches journal with raw data");
+    int geometry_records = 0;
+    for (const JournalRecord &record : recovered.records)
+        if (record.payload.find("\"event\":\"window.geometry\"") != std::string::npos)
+            ++geometry_records;
+    check(geometry_records == 1, "other-window geometry is not forwarded");
     check(observer->emission_errors() == 0u, "forwarding has no observer emission errors");
 }
 
@@ -265,6 +359,7 @@ int main() {
     test_mouse_and_touch();
     test_gamepad_and_devices();
     test_redaction_and_lifecycle();
+    test_geometry();
     test_forwarding_and_journal_redaction();
     mhp3rd::testing::set_scripted_override_active(true);
     check(mhp3rd::testing::scripted_override_active(), "script override state can be enabled");

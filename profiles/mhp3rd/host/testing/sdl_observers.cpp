@@ -15,6 +15,7 @@ WindowObservation base(const SDL_Event &event, WindowEventKind kind, bool focuse
                        bool ui_consumed, bool scripted_mode) noexcept {
     WindowObservation result{};
     result.kind = kind;
+    result.source_event_type = event.type;
     result.focused = focused;
     result.ui_consumed = ui_consumed;
     result.scripted_mode = scripted_mode;
@@ -138,6 +139,25 @@ std::optional<WindowObservation> decode_sdl_event(
         result.window_id = event.window.windowID;
         result.owned_window = true;
         result.code = event.type;
+        break;
+    case SDL_EVENT_WINDOW_RESIZED:
+    case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+    case SDL_EVENT_WINDOW_DISPLAY_CHANGED:
+    case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+    case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
+    case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+    case SDL_EVENT_WINDOW_MINIMIZED:
+    case SDL_EVENT_WINDOW_RESTORED:
+        if (!own(event.window.windowID)) return std::nullopt;
+        result = base(event, WindowEventKind::Geometry, focused, ui_consumed, scripted_mode);
+        result.window_id = event.window.windowID;
+        result.owned_window = true;
+        result.code = event.type;
+        // SDL defines data1/data2 per event: dimensions for resize events,
+        // a display ID for DISPLAY_CHANGED, and other event-specific values.
+        // Keep them raw and use source_event_type to identify their units.
+        result.x = event.window.data1;
+        result.y = event.window.data2;
         break;
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
         if (!own(event.window.windowID)) return std::nullopt;

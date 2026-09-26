@@ -839,7 +839,11 @@ Five independent startup switches control certified native leaves: `MHP3RD_NATIV
 
 These opt-in experiments are not a performance feature or a replacement for animation, AI or combat systems. The new leaves have offline differential evidence only; no live coverage is claimed. See [native contracts](../../docs/NATIVE_MODULES.md), [the experiment guide](../../docs/NATIVE_EXPERIMENT.md), and [the current development plan](../../docs/DEVELOPMENT_PLAN.md) for boundaries and the user-led acceptance workflow.
 
-### Diagnostics
+### Test recording integration
+
+The shared recording core can observe delivered controls, game-frame/virtual-time coordinates, camera operations, UI domains and overlay validation epochs. It is disabled unless a fresh `MHP3RD_RECORD_DIR` and the required role/run/batch identifiers are supplied. The future paired launcher owns these settings; this is not yet a complete user acceptance package. [GAME_OBSERVATION.md](../../docs/GAME_OBSERVATION.md) defines the environment contract, evidence and remaining limitations. Function timing certification and the case panel follow separately.
+
+## Diagnostics
 
 | Variable | Effect |
 | --- | --- |
