@@ -6,8 +6,21 @@ These small, opt-in experiments preserve original behavior while replacing recom
 | --- | --- | --- |
 | Scale matrix | Construct the 4x4 scale matrix used by the game's graphics code | `MHP3RD_NATIVE_SCALE_MATRIX` |
 | Angle step | Move a circular angle towards a target with a bounded step | `MHP3RD_NATIVE_ANGLE_STEP` |
+| Translation matrix | Construct a raw-bit 4x4 translation matrix | `MHP3RD_NATIVE_TRANSLATION_MATRIX` |
+| Vector constructor | Store three raw scalar values and a literal zero | `MHP3RD_NATIVE_VECTOR_CONSTRUCT` |
+| Matrix-layout copy | Copy nine words with the original ordered overlap behavior | `MHP3RD_NATIVE_MATRIX_COPY` |
 
-Both switches accept `off` (the default), `verify`, and `native`. Enable one at a time when measuring behavior.
+All five switches accept `off` (the default), `verify`, and `native`. Enable one at a time when measuring behavior.
+
+The current [development plan](DEVELOPMENT_PLAN.md) is offline-first. Its user-led paired acceptance workflow supersedes the historical agent-driven village checks described below.
+
+## Additional offline leaves
+
+Translation, vector construction and matrix-layout copying now have portable data logic, guarded guest adapters, independent switches and original-code tests. Their exact spans, fingerprints, CPU/memory contracts and limitations are in [NATIVE_MODULES.md](NATIVE_MODULES.md).
+
+On Apple Silicon macOS, the new local-ELF suites passed 100,512 translation cases (including 10,000 unusual-prefix fallbacks), 100,512 vector cases and 100,348 ordered-copy cases. They compare full CPU state, raw-bit edge values, seeded inputs, aliases, unaligned memory, canaries and mode/error behavior. The copy suite includes overlapping rows in both directions and verifies padding preservation. The complete host application also compiled and linked after integration, without being launched.
+
+These leaves remain off by default. Live call coverage, animation/combat behavior and user experience acceptance are pending. The combined gate retains the full offline evidence before manual delivery.
 
 ## Scale matrix
 

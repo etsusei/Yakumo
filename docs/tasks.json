@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 14,
+  "revision": 16,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T15:24:59Z",
+  "updated_at": "2026-09-26T15:33:16Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -106,6 +106,14 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/offline_gate",
+      "type": "agent",
+      "role": "Reproducible offline gate, evidence reporting and runner tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -145,14 +153,11 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "OFF-002",
-    "next_task_id": "OFF-006",
-    "next_action": "Implement and differentially test translation/vector/copy leaves, integrate their disabled-by-default hooks, then run the complete offline gate.",
+    "current_task_id": "OFF-006",
+    "next_task_id": "OBS-001",
+    "next_action": "Build full host integration and run a reproducible combined offline gate with input-preservation hashes, then begin recorder implementation.",
     "implementation_after_documentation_started": true,
-    "parallel_task_ids": [
-      "OFF-003",
-      "OFF-004"
-    ]
+    "parallel_task_ids": []
   },
   "references": {
     "chinese_ui_pr": "https://github.com/etsusei/Yakumo/pull/1",
@@ -1229,34 +1234,53 @@
       "title": "Native translation-matrix leaf",
       "phase": "milestone_1",
       "kind": "finite",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
-        "/root"
+        "/root",
+        "/root/native_contract_audit"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T15:24:59Z",
+      "updated_at": "2026-09-26T15:33:16Z",
       "started_at": "2026-09-26T15:24:59Z",
-      "completed_at": null,
+      "completed_at": "2026-09-26T15:31:43Z",
       "timestamp_note": null,
       "scope": "Implement 0x08878B4C, 36 bytes, standard-prefix native path and exact original fallback.",
       "depends_on": [
         "OFF-001"
       ],
-      "work_summary": "Implementing the certified leaf and original-code differential tests on the completed common contracts; no full game execution.",
+      "work_summary": "Implemented translation matrix as portable data logic plus guarded guest adapter with independent off/verify/native switch and common counters. Root built and ran 100512 original-ELF differential cases with zero failures; tests cover raw bits, CPU state, canaries, aliases/unaligned memory, hook modes/errors/fingerprint and bounded returns. Startup/exit hooks are wired. Full application compilation and linking passed without launch; live coverage remains absent.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/host/native/translation_matrix.cpp",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "profiles/mhp3rd/tests/native_translation_matrix_tests.cpp",
           "kind": "test",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/translation_matrix.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/translation_matrix_bridge.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/native-translation-differential.log",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -1265,8 +1289,33 @@
         "Mode MHP3RD_NATIVE_TRANSLATION_MATRIX defaults off."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Root full local ELF differential suite",
+            "status": "passed",
+            "cases": 100512,
+            "evidence": "out/testing/native-translation-differential.log"
+          },
+          {
+            "name": "Root source and integration review",
+            "status": "passed"
+          },
+          {
+            "name": "Unusual-prefix fallback coverage",
+            "status": "passed",
+            "cases": 10000
+          },
+          {
+            "name": "Full Yakumo integration compilation and link",
+            "status": "passed",
+            "evidence": "out/testing/native-host-build.log",
+            "note": "Application was not launched."
+          }
+        ],
+        "limitations": [
+          "No full game boot or live call coverage.",
+          "Only Apple Silicon macOS and the registered ELF/GuestMemory behavior tested."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
@@ -1280,6 +1329,15 @@
           "from_status": "not_started",
           "to_status": "in_progress",
           "description": "Implementing the certified leaf and original-code differential tests on the completed common contracts; no full game execution."
+        },
+        {
+          "recorded_at": "2026-09-26T15:31:43Z",
+          "occurred_at": "2026-09-26T15:31:43Z",
+          "actor_id": "/root",
+          "action": "differential_verified",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented translation matrix as portable data logic plus guarded guest adapter with independent off/verify/native switch and common counters. Root built and ran 100512 original-ELF differential cases with zero failures; tests cover raw bits, CPU state, canaries, aliases/unaligned memory, hook modes/errors/fingerprint and bounded returns. Startup/exit hooks are wired. Full application build is being checked in OFF-006; live coverage remains absent."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -1289,7 +1347,7 @@
       "title": "Native four-word vector constructor",
       "phase": "milestone_1",
       "kind": "finite",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root/native_vector",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -1297,27 +1355,45 @@
         "/root/native_vector"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T15:24:59Z",
+      "updated_at": "2026-09-26T15:33:16Z",
       "started_at": "2026-09-26T15:24:59Z",
-      "completed_at": null,
+      "completed_at": "2026-09-26T15:31:43Z",
       "timestamp_note": null,
       "scope": "Implement 0x08877818, 24 bytes, with raw-bit copy semantics.",
       "depends_on": [
         "OFF-001"
       ],
-      "work_summary": "Implementing the certified leaf and original-code differential tests on the completed common contracts; no full game execution.",
+      "work_summary": "Implemented four-word vector as portable data logic plus guarded guest adapter with independent off/verify/native switch and common counters. Root built and ran 100512 original-ELF differential cases with zero failures; tests cover raw bits, CPU state, canaries, aliases/unaligned memory, hook modes/errors/fingerprint and bounded returns. Startup/exit hooks are wired. Full application compilation and linking passed without launch; live coverage remains absent.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/host/native/vector_construct.cpp",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "profiles/mhp3rd/tests/native_vector_construct_tests.cpp",
           "kind": "test",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/vector_construct.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/vector_construct_bridge.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/native-vector-differential.log",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -1326,8 +1402,28 @@
         "Mode MHP3RD_NATIVE_VECTOR_CONSTRUCT defaults off."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Root full local ELF differential suite",
+            "status": "passed",
+            "cases": 100512,
+            "evidence": "out/testing/native-vector-differential.log"
+          },
+          {
+            "name": "Root source and integration review",
+            "status": "passed"
+          },
+          {
+            "name": "Full Yakumo integration compilation and link",
+            "status": "passed",
+            "evidence": "out/testing/native-host-build.log",
+            "note": "Application was not launched."
+          }
+        ],
+        "limitations": [
+          "No full game boot or live call coverage.",
+          "Only Apple Silicon macOS and the registered ELF/GuestMemory behavior tested."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
@@ -1341,6 +1437,15 @@
           "from_status": "not_started",
           "to_status": "in_progress",
           "description": "Implementing the certified leaf and original-code differential tests on the completed common contracts; no full game execution."
+        },
+        {
+          "recorded_at": "2026-09-26T15:31:43Z",
+          "occurred_at": "2026-09-26T15:31:43Z",
+          "actor_id": "/root",
+          "action": "differential_verified",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented four-word vector as portable data logic plus guarded guest adapter with independent off/verify/native switch and common counters. Root built and ran 100512 original-ELF differential cases with zero failures; tests cover raw bits, CPU state, canaries, aliases/unaligned memory, hook modes/errors/fingerprint and bounded returns. Startup/exit hooks are wired. Full application build is being checked in OFF-006; live coverage remains absent."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -1350,7 +1455,7 @@
       "title": "Native nine-word matrix-layout copy",
       "phase": "milestone_1",
       "kind": "finite",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root/native_matrix_copy",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -1358,27 +1463,45 @@
         "/root/native_matrix_copy"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T15:24:59Z",
+      "updated_at": "2026-09-26T15:33:16Z",
       "started_at": "2026-09-26T15:24:59Z",
-      "completed_at": null,
+      "completed_at": "2026-09-26T15:31:43Z",
       "timestamp_note": null,
       "scope": "Implement 0x08879D08, 80 bytes, preserving original ordering and padding.",
       "depends_on": [
         "OFF-001"
       ],
-      "work_summary": "Implementing the certified leaf and original-code differential tests on the completed common contracts; no full game execution.",
+      "work_summary": "Implemented ordered nine-word copy as portable data logic plus guarded guest adapter with independent off/verify/native switch and common counters. Root built and ran 100348 original-ELF differential cases with zero failures; tests cover raw bits, CPU state, canaries, aliases/unaligned memory, hook modes/errors/fingerprint and bounded returns. Startup/exit hooks are wired. Full application compilation and linking passed without launch; live coverage remains absent.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/host/native/matrix_copy.cpp",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "profiles/mhp3rd/tests/native_matrix_copy_tests.cpp",
           "kind": "test",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/matrix_copy.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/matrix_copy_bridge.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/native-copy-differential.log",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -1387,8 +1510,28 @@
         "Row-padding canaries stay unchanged; MHP3RD_NATIVE_MATRIX_COPY defaults off."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Root full local ELF differential suite",
+            "status": "passed",
+            "cases": 100348,
+            "evidence": "out/testing/native-copy-differential.log"
+          },
+          {
+            "name": "Root source and integration review",
+            "status": "passed"
+          },
+          {
+            "name": "Full Yakumo integration compilation and link",
+            "status": "passed",
+            "evidence": "out/testing/native-host-build.log",
+            "note": "Application was not launched."
+          }
+        ],
+        "limitations": [
+          "No full game boot or live call coverage.",
+          "Only Apple Silicon macOS and the registered ELF/GuestMemory behavior tested."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
@@ -1402,6 +1545,15 @@
           "from_status": "not_started",
           "to_status": "in_progress",
           "description": "Implementing the certified leaf and original-code differential tests on the completed common contracts; no full game execution."
+        },
+        {
+          "recorded_at": "2026-09-26T15:31:43Z",
+          "occurred_at": "2026-09-26T15:31:43Z",
+          "actor_id": "/root",
+          "action": "differential_verified",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented ordered nine-word copy as portable data logic plus guarded guest adapter with independent off/verify/native switch and common counters. Root built and ran 100348 original-ELF differential cases with zero failures; tests cover raw bits, CPU state, canaries, aliases/unaligned memory, hook modes/errors/fingerprint and bounded returns. Startup/exit hooks are wired. Full application build is being checked in OFF-006; live coverage remains absent."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -1498,7 +1650,9 @@
           "These are existing native components; test assurance is not newly migrated game logic."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "5d4e2c4"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -1528,13 +1682,16 @@
       "title": "Expanded offline acceptance gate",
       "phase": "milestone_1",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "in_progress",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/offline_gate"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
+      "updated_at": "2026-09-26T15:33:16Z",
+      "started_at": "2026-09-26T15:31:43Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Run all five native-helper original-code checks plus targeted infrastructure regression.",
@@ -1544,7 +1701,7 @@
         "OFF-004",
         "OFF-005"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "All five original-code suites passed individually and the complete application compiled/linked without launch. Delegated reproducible combined gate/report tooling and synthetic runner-failure tests; root owns integration and actual gate execution.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/scripts/check_offline.py",
@@ -1571,7 +1728,26 @@
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T15:31:43Z",
+          "occurred_at": "2026-09-26T15:31:43Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Preparing a reproducible combined offline gate/report and compiling the full application without launching it."
+        },
+        {
+          "recorded_at": "2026-09-26T15:33:16Z",
+          "occurred_at": "2026-09-26T15:33:16Z",
+          "actor_id": "/root",
+          "action": "gate_tool_delegated",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "All five original-code suites passed individually and the complete application compiled/linked without launch. Delegated reproducible combined gate/report tooling and synthetic runner-failure tests; root owns integration and actual gate execution."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {

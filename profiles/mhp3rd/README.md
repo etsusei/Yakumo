@@ -835,7 +835,9 @@ Safeguards: CMake finds the generated unit that holds the rotation helper and fa
 
 ### Native helper experiments
 
-`MHP3RD_NATIVE_SCALE_MATRIX=verify` compares a native 4x4 scale-matrix builder against the original function during gameplay, retaining the original result. `MHP3RD_NATIVE_ANGLE_STEP` offers the same modes for a circular-angle helper. `native` uses the replacement; unset, `off`, or `0` keeps the original generated code. This is an opt-in equivalence experiment, not a performance feature or a replacement for monster AI. See [the experiment guide](../../docs/NATIVE_EXPERIMENT.md) for the exact boundary, isolated-save workflow and differential tests.
+Five independent startup switches control certified native leaves: `MHP3RD_NATIVE_ANGLE_STEP`, `MHP3RD_NATIVE_SCALE_MATRIX`, `MHP3RD_NATIVE_TRANSLATION_MATRIX`, `MHP3RD_NATIVE_VECTOR_CONSTRUCT`, and `MHP3RD_NATIVE_MATRIX_COPY`. `verify` predicts results without speculative guest writes and compares them against bounded original execution, retaining the original result. `native` uses the replacement for supported inputs; unset, `off`, or `0` installs no replacement. Unknown code is refused, unsupported inputs use the original, and mismatches retain the original result. Logs report calls, verified/native/fallback counts, mismatches and errors.
+
+These opt-in experiments are not a performance feature or a replacement for animation, AI or combat systems. The new leaves have offline differential evidence only; no live coverage is claimed. See [native contracts](../../docs/NATIVE_MODULES.md), [the experiment guide](../../docs/NATIVE_EXPERIMENT.md), and [the current development plan](../../docs/DEVELOPMENT_PLAN.md) for boundaries and the user-led acceptance workflow.
 
 ### Diagnostics
 

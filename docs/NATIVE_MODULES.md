@@ -45,13 +45,15 @@ All code fingerprints below were recomputed from the locally registered supporte
 
 Translation's return instruction is at entry + `0x1C`, vector's at + `0x10`, and copy's at + `0x48`. The bounded reference executes that return and its delay slot before comparing PC with the saved return address, even when the return address points inside the leaf.
 
+The scale and translation native adapters write their final matrices directly; their write-watch diagnostic event sequences differ from the original identity writes followed by scalar overwrites. Final guest state is compared, and raw write-watch event counts are not an equivalence oracle. Verification itself does not emit prediction writes.
+
 A matrix copy must preserve row-by-row load/store order. Prefetching all nine words, `memcpy`, and `memmove` do not generally reproduce overlap semantics. Memory comparisons must account for guest RAM aliases and unaligned word access without changing surrounding bytes. The existing guest-memory implementation defines the offline oracle's memory behavior.
 
 ## Evidence requirements
 
 The common contract implementation passed the local ELF suites again: 806,432 angle cases and 100,512 scale cases (10,000 prefix fallbacks), plus off/fingerprint/counter/bounded-reference checks. Root separately verified that portable math sources compile without PSP headers. No new live gameplay coverage is claimed.
 
-The existing angle/scale history is in [NATIVE_EXPERIMENT.md](NATIVE_EXPERIMENT.md). New translation/vector/copy contracts currently have static ELF/generated-code inspection evidence only; differential execution and later user-led coverage remain pending until their task records say otherwise.
+The existing angle/scale history is in [NATIVE_EXPERIMENT.md](NATIVE_EXPERIMENT.md). New translation/vector/copy implementations passed 100,512 / 100,512 / 100,348 local-ELF differential cases respectively. Translation included 10,000 unusual-prefix fallbacks. Vector tests preserve arbitrary prefixes; copy tests preserve ordered alias/overlap behavior. These are offline results; new user-led call coverage remains pending. The combined gate and full application build are recorded separately by OFF-006.
 
 The offline gate must run each test with the local ELF, because no-argument CTest examples do not establish original-code equivalence. Test all CPU state and surrounding memory, raw-bit edge cases, seeded random inputs, aliases/overlap, rejected prefixes, code fingerprint changes, bounded exits and evidence counter semantics. Keep synthetic tests available without game data.
 
