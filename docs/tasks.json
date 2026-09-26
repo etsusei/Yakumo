@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 27,
+  "revision": 29,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T17:54:11Z",
+  "updated_at": "2026-09-26T18:16:36Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -162,6 +162,30 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/probe_core",
+      "type": "agent",
+      "role": "Certified probe aggregation, scope lifecycle and synthetic checks",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/readonly_observations",
+      "type": "agent",
+      "role": "Guarded read-only state and performance observations",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/native_probe_hooks",
+      "type": "agent",
+      "role": "Actual-path probe instrumentation of five native bridges",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -201,9 +225,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "OBS-003",
-    "next_task_id": "OBS-004",
-    "next_action": "Implement certified AOT/native probe callbacks, runtime span guards and read-only state/performance observations. Build only the two instrumented AOT copies and validate their exact entry/return semantics offline before claiming timing coverage.",
+    "current_task_id": "OBS-004",
+    "next_task_id": "PAIR-001",
+    "next_action": "Implement local record packaging and the offline comparison/report pipeline. Distinguish incomplete or incompatible sessions and insufficient probe coverage from confirmed mismatches. Preserve the no-game-launch boundary until the paired user acceptance package is ready.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": []
   },
@@ -2289,35 +2313,38 @@
       "title": "Certified probes and read-only state observations",
       "phase": "milestone_2",
       "kind": "finite",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
         "/root",
-        "/root/certified_probe_audit"
+        "/root/certified_probe_audit",
+        "/root/probe_core",
+        "/root/readonly_observations",
+        "/root/native_probe_hooks"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T17:48:19Z",
+      "updated_at": "2026-09-26T18:16:36Z",
       "started_at": "2026-09-26T16:32:02Z",
-      "completed_at": null,
+      "completed_at": "2026-09-26T18:16:36Z",
       "timestamp_note": null,
       "scope": "Record accurate boundary-specific counts/timings and explicit coverage gaps.",
       "depends_on": [
         "OBS-001",
         "OFF-006"
       ],
-      "work_summary": "A guarded generated-source instrumenter and eight synthetic tests are implemented. Static read-only validation accepted the two current main AOT units. Actual callback implementation, full-span runtime guards, generated-copy compilation and state/performance probes remain pending.",
+      "work_summary": "Implemented guarded AOT/native scopes, distinct actual execution-path counts and timings, bounded recent detail and explicit incomplete coverage. Integrated supported-ELF and current-overlay guarded read-only state/performance sampling and diagnostics finalization. Production AOT object differential tests, existing native regressions, synthetic lifecycle/callback tests, sanitizers and full application build passed without a game launch.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/host/testing/probes.cpp",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "profiles/mhp3rd/tests/probe_tests.cpp",
           "kind": "test",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
@@ -2331,6 +2358,72 @@
           "kind": "test",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/probes.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/state_observation.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/state_observation.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/runtime_diagnostics.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/runtime_diagnostics.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/cmake/ProbeInstrumentation.cmake",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/aot_probe_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/state_observation_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/runtime_diagnostics_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/CERTIFIED_PROBES.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/certified-probes-validation.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -2347,9 +2440,28 @@
             "tests": 8,
             "evidence": "out/testing/game-observation-tests.log",
             "note": "Source-shape checks only; no AOT timing certification."
+          },
+          {
+            "name": "Compiled certified probe and diagnostic integration",
+            "status": "passed",
+            "evidence": "out/testing/certified-probes-validation.json",
+            "synthetic_ctests": 4,
+            "asan_ubsan_ctests": 3,
+            "tsan_ctests": 3,
+            "aot_interpreter_differential_calls": 1280,
+            "native_differential_cases": 1208316,
+            "full_application_build": "passed",
+            "game_launched": false
           }
         ],
-        "limitations": []
+        "limitations": [
+          "No full game launch or live case coverage.",
+          "No paired application packaging or user acceptance yet.",
+          "AOT build has PSPRECOMP_AOT_PRODUCTION_FASTPATHS=OFF and PSPRECOMP_AOT_ASSUME_NO_WRITE_WATCH=OFF; alternative build options were not tested.",
+          "Periodic state samples cannot capture every gameplay transition.",
+          "Scope instrumentation adds overhead; microbenchmark is not whole-game overhead.",
+          "Detail retention is bounded to 32 recent scopes; abrupt-process finalization requires the planned supervisor."
+        ]
       },
       "implementation_commits": [
         "f44dc67"
@@ -2374,6 +2486,24 @@
           "from_status": "in_progress",
           "to_status": "in_progress",
           "description": "A guarded generated-source instrumenter and eight synthetic tests are implemented. Static read-only validation accepted the two current main AOT units. Actual callback implementation, full-span runtime guards, generated-copy compilation and state/performance probes remain pending."
+        },
+        {
+          "recorded_at": "2026-09-26T18:00:19Z",
+          "occurred_at": "2026-09-26T18:00:19Z",
+          "actor_id": "/root",
+          "action": "implementation_resumed",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Resumed certified probe implementation with bounded subagents for core aggregation, native bridge hooks and read-only state/performance. Root is wiring build-local AOT copies, diagnostics lifecycle and a production-object offline harness. No game launch; validation remains pending."
+        },
+        {
+          "recorded_at": "2026-09-26T18:16:36Z",
+          "occurred_at": "2026-09-26T18:16:36Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented guarded AOT/native scopes, distinct actual execution-path counts and timings, bounded recent detail and explicit incomplete coverage. Integrated supported-ELF and current-overlay guarded read-only state/performance sampling and diagnostics finalization. Production AOT object differential tests, existing native regressions, synthetic lifecycle/callback tests, sanitizers and full application build passed without a game launch. Reviewed and fixed overflow pairing, entry-return identity, incomplete reporting and bounded detail retention. Independent integration review by /root/readonly_observations found no actionable findings. The probe microbenchmark and exact source/binary/input identities are retained in the local validation report."
         }
       ],
       "updated_by_agent_id": "/root"
