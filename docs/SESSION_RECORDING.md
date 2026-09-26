@@ -37,7 +37,7 @@ SessionRecorder writes RunBegin before any caller events. Producers enqueue seri
 
 Overflow increments health counters and produces an aggregated RecordingLoss record with `dropped_total` and `dropped_since_last`. That control record does not compete for user queue space. A sequence without gaps can therefore still contain lost observations; always check the loss records and counters.
 
-Health distinguishes accepted/written caller events, dropped/invalid events, all written/flushed records, queued bytes/events, closed state and sticky I/O failure. The generated run/loss records do not count as caller events. A partial write or failed flush stops normal writing and cannot be reported as a successful close.
+Health distinguishes accepted/written caller events, dropped/invalid events, all written/flushed records, queued bytes/events, closed state and sticky I/O failure. The generated run/loss records do not count as caller events. A partial write, failed flush or failed sink finalization is sticky and cannot be reported as a successful close. File close errors are checked explicitly.
 
 The file sink creates a new file exclusively. It never truncates an existing file or replaces a symlink. The later launcher is responsible for choosing a fresh, isolated run directory and passing complete build/input identities. Flush makes data visible to the operating system; it does not promise power-loss durability. A blocking filesystem operation can delay the writer or graceful close.
 
@@ -51,6 +51,18 @@ A complete frame sequence is not proof that the user's case passed, that RunEnd 
 
 Caller events carry their enqueue-time monotonic timestamp. Generated run/loss events carry their creation timestamp. Sequence orders persisted records; timestamps across different producers and generated diagnostics are not a deterministic replay clock. Guest flip, virtual time, control-read ordinal and input-domain fields will be added by the observer layer.
 
-## Implementation status
+## Offline verification
 
-The interfaces and framing codec are implemented. Background persistence and independent synthetic lifecycle tests are in progress. No game integration or user acceptance is claimed by this document; consult OBS-001 in [tasks.json](tasks.json) for evidence and the next action.
+Build and run the core and independent process suites without game data:
+
+```bash
+cmake --build out/resource-validation --target mhp3rd_session_recorder_tests -j2
+ctest --test-dir out/resource-validation \
+  -R '^mhp3rd_session_(recorder|process)_tests$' --output-on-failure
+```
+
+The process suite requires Python 3.9 or newer at configure time. It parses actual child-process files independently using Python's struct, CRC32 and JSON implementations. Normal close writes one RunEnd; immediate exit and parent termination preserve the flushed prefix without fabricating RunEnd. Every child run is bounded.
+
+On 2026-09-27 (Asia/Tokyo), Apple Silicon macOS, both integrated suites passed. They cover golden framing/CRC, every truncation boundary of a synthetic journal, malformed records, typed JSON, limits, exclusive creation, queue overflow, barriers, periodic/boundary flush, lifecycle closure, partial writes, flush/finalization errors and concurrent producers/closure. AddressSanitizer/UndefinedBehaviorSanitizer passed the core/process suites, and ThreadSanitizer passed the core/concurrency suite.
+
+Local evidence is in `out/testing/session-recorder-validation.json` and its referenced logs. A Windows file-creation branch is present but was not compiled or run here. No game was launched, and the journal is not yet attached to live observers. OBS-002 and OBS-003 add those integrations; user experience acceptance remains separate.

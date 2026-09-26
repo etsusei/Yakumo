@@ -16,6 +16,9 @@ public:
     virtual ~JournalSink() = default;
     virtual bool write(std::span<const std::uint8_t> bytes) = 0;
     virtual bool flush() = 0;
+    // Called once by the writer after the final successful flush. The default
+    // keeps injected sinks that have no separate close operation compatible.
+    virtual bool finish() { return true; }
 };
 // Exclusive creation. Existing files, including symlinks, must not be replaced.
 [[nodiscard]] std::unique_ptr<JournalSink> make_file_sink(const std::filesystem::path &path);
@@ -39,7 +42,7 @@ struct RecorderHealth {
     std::uint64_t flushed_records{};
     std::size_t queued_events{};
     std::size_t queued_bytes{};
-    bool closed{};
+    bool closed{}; // true after the writer has joined
     bool io_failed{};
     std::string error;
 };

@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 21,
+  "revision": 22,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T16:01:33Z",
+  "updated_at": "2026-09-26T16:17:32Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -169,9 +169,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "OBS-001",
+    "current_task_id": null,
     "next_task_id": "OBS-002",
-    "next_action": "Implement and independently test framing/recovery and the background session writer, including periodic/checkpoint flush, overflow and I/O failure.",
+    "next_action": "Add opt-in runtime session lifecycle and observational input/timeline/camera/overlay adapters; separately certify probe entry/return semantics without replacing Baseline AOT with interpreter execution.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": []
   },
@@ -182,7 +182,8 @@
     "compatibility_report": "docs/COMPATIBILITY.md",
     "resource_preparation_pr": "https://github.com/etsusei/Yakumo/pull/4",
     "offline_native_pr": "https://github.com/etsusei/Yakumo/pull/5",
-    "offline_gate_guide": "docs/OFFLINE_VALIDATION.md"
+    "offline_gate_guide": "docs/OFFLINE_VALIDATION.md",
+    "session_recording_pr": "https://github.com/etsusei/Yakumo/pull/6"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -1874,7 +1875,7 @@
       "title": "Recorder journal and recovery core",
       "phase": "milestone_2",
       "kind": "finite",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -1883,15 +1884,15 @@
         "/root/session_recorder_tests"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T16:01:33Z",
+      "updated_at": "2026-09-26T16:17:32Z",
       "started_at": "2026-09-26T15:56:17Z",
-      "completed_at": null,
+      "completed_at": "2026-09-26T16:17:32Z",
       "timestamp_note": null,
       "scope": "Implement versioned append-only records, bounded buffering and failure visibility.",
       "depends_on": [
         "OFF-006"
       ],
-      "work_summary": "Implementing the shared framed journal, typed JSON event fields, bounded background writer, explicit overflow/error health and crash-prefix recovery. Public core interfaces are defined; no live game integration yet.",
+      "work_summary": "Implemented typed JSON fields, versioned little-endian CRC32 journal frames, strict prefix recovery and a bounded background writer with periodic/boundary flush, barriers, overflow records, explicit closure and sticky write/flush/finalization failures. Independent C++ golden/lifecycle/concurrency fixtures and Python decoding of real normal/_Exit/killed child files passed. ASan/UBSan core/process tests and TSan concurrency tests passed on Apple Silicon macOS. No live game hooks or gameplay acceptance are claimed.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/host/testing/session_recorder.hpp",
@@ -1902,13 +1903,13 @@
         {
           "path": "profiles/mhp3rd/host/testing/session_recorder.cpp",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "profiles/mhp3rd/tests/session_recorder_tests.cpp",
           "kind": "test",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
@@ -1922,6 +1923,24 @@
           "kind": "source",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_session_process.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/SESSION_RECORDING.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/session-recorder-validation.json",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -1930,10 +1949,38 @@
         "No game boot needed for core tests."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Integrated core and independent process suites",
+            "status": "passed",
+            "evidence": "out/testing/session-recorder-tests.log"
+          },
+          {
+            "name": "AddressSanitizer and UndefinedBehaviorSanitizer core/process suites",
+            "status": "passed",
+            "evidence": "out/testing/session-recorder-asan.log"
+          },
+          {
+            "name": "ThreadSanitizer core/concurrency suite",
+            "status": "passed",
+            "evidence": "out/testing/session-recorder-tsan.log"
+          },
+          {
+            "name": "Final portable Python process adapter",
+            "status": "passed",
+            "evidence": "out/testing/session-process-final.log"
+          }
+        ],
+        "limitations": [
+          "No live input/probe hooks or user cases.",
+          "No power-loss durability guarantee; slow filesystem operations may delay writer progress.",
+          "Windows source branch exists but was not compiled or run.",
+          "Framing validity is separate from payload semantics, recorder health and process completion."
+        ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "f354970"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -1954,6 +2001,16 @@
           "from_status": "in_progress",
           "to_status": "in_progress",
           "description": "Root owns the wire codec/recovery, interfaces and integration; session_writer owns async persistence; session_recorder_tests independently builds golden fixtures and lifecycle tests."
+        },
+        {
+          "recorded_at": "2026-09-26T16:17:32Z",
+          "occurred_at": "2026-09-26T16:17:32Z",
+          "actor_id": "/root",
+          "action": "offline_core_completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented typed JSON fields, versioned little-endian CRC32 journal frames, strict prefix recovery and a bounded background writer with periodic/boundary flush, barriers, overflow records, explicit closure and sticky write/flush/finalization failures. Independent C++ golden/lifecycle/concurrency fixtures and Python decoding of real normal/_Exit/killed child files passed. ASan/UBSan core/process tests and TSan concurrency tests passed on Apple Silicon macOS. No live game hooks or gameplay acceptance are claimed.",
+          "evidence": "out/testing/session-recorder-validation.json"
         }
       ],
       "updated_by_agent_id": "/root"

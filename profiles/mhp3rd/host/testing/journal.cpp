@@ -237,6 +237,7 @@ JournalRecovery read_journal(const std::filesystem::path &path, std::size_t max_
             if (file.gcount() != static_cast<std::streamsize>(length)) throw std::runtime_error("Journal changed or read failed");
         }
         if (file.peek() != std::char_traits<char>::eof()) throw std::runtime_error("Journal grew while reading");
+        if (file.bad()) throw std::runtime_error("Journal read failed at end of file");
         return recover_journal(bytes);
     } catch (const std::exception &error) {
         failure.issue = RecoveryIssue::Corrupt;

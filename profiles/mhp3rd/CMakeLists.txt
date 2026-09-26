@@ -460,6 +460,27 @@ if(PSPRECOMP_BUILD_TESTS)
     add_test(NAME mhp3rd_native_matrix_copy_tests COMMAND mhp3rd_native_matrix_copy_tests)
 endif()
 
+# Shared observational journal; no PSP or renderer dependency.
+add_library(mhp3rd_session_recording STATIC
+    host/testing/journal.cpp
+    host/testing/session_recorder.cpp)
+target_include_directories(mhp3rd_session_recording PUBLIC "${MHP3RD_PROFILE_DIR}/host")
+target_link_libraries(mhp3rd_session_recording PUBLIC Threads::Threads)
+add_executable(mhp3rd_session_recorder_tests tests/session_recorder_tests.cpp)
+target_link_libraries(mhp3rd_session_recorder_tests PRIVATE mhp3rd_session_recording)
+set_target_properties(mhp3rd_session_recorder_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(PSPRECOMP_BUILD_TESTS)
+    add_test(NAME mhp3rd_session_recorder_tests COMMAND mhp3rd_session_recorder_tests)
+    set_tests_properties(mhp3rd_session_recorder_tests PROPERTIES TIMEOUT 30)
+    if(Python3_Interpreter_FOUND)
+        add_test(NAME mhp3rd_session_process_tests
+            COMMAND "${Python3_EXECUTABLE}" "${MHP3RD_PROFILE_DIR}/tests/test_session_process.py"
+                "$<TARGET_FILE:mhp3rd_session_recorder_tests>")
+        set_tests_properties(mhp3rd_session_process_tests PROPERTIES
+            ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 30)
+    endif()
+endif()
+
 # Camera dispatch, ownership and integration checks without game data.
 add_executable(mhp3rd_camera_tests
     tests/analog_camera_tests.cpp
