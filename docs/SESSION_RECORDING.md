@@ -1,6 +1,6 @@
 # Shared session journal
 
-This is OBS-001 in [the development plan](DEVELOPMENT_PLAN.md). It supplies a portable journal and background writer for both Baseline and candidate. Game observers, certified probes, packaging, comparison and the Chinese case panel are subsequent tasks. The core does not start the game or read game assets.
+This is OBS-001 in [the development plan](DEVELOPMENT_PLAN.md). It supplies a portable journal and background writer for both Baseline and candidate. [Game observers](GAME_OBSERVATION.md), [certified probes](CERTIFIED_PROBES.md), and [local packaging/comparison](RUN_COMPARISON.md) build on this core. The Chinese case panel and paired launcher remain subsequent tasks. The core does not start the game or read game assets.
 
 ## Version 1 framing
 
@@ -49,6 +49,8 @@ Recovery stops at the first invalid record and retains the valid prefix. It neve
 
 A complete frame sequence is not proof that the user's case passed, that RunEnd marked completion, or that the last flush succeeded. Package validation must also inspect payload semantics, loss/error health, the supervising process result and case outcomes. If the process exits abruptly, unwritten queue contents may be lost; the supervisor must mark that run incomplete even when its valid prefix is readable.
 
+The application returns exit code 5 when final recorder closure fails. In particular, a sink-finalization error detected after writing RunEnd must not appear to the supervisor as a normal window-close exit. Ordinary window-close code 4 is accepted only with the corresponding complete journal and stop reason.
+
 Caller events carry their enqueue-time monotonic timestamp. Generated run/loss events carry their creation timestamp. Sequence orders persisted records; timestamps across different producers and generated diagnostics are not a deterministic replay clock. Guest flip, virtual time, control-read ordinal and input-domain fields will be added by the observer layer.
 
 ## Offline verification
@@ -65,4 +67,4 @@ The process suite requires Python 3.9 or newer at configure time. It parses actu
 
 On 2026-09-27 (Asia/Tokyo), Apple Silicon macOS, both integrated suites passed. They cover golden framing/CRC, every truncation boundary of a synthetic journal, malformed records, typed JSON, limits, exclusive creation, queue overflow, barriers, periodic/boundary flush, lifecycle closure, partial writes, flush/finalization errors and concurrent producers/closure. AddressSanitizer/UndefinedBehaviorSanitizer passed the core/process suites, and ThreadSanitizer passed the core/concurrency suite.
 
-Local evidence is in `out/testing/session-recorder-validation.json` and its referenced logs. A Windows file-creation branch is present but was not compiled or run here. No game was launched, and the journal is not yet attached to live observers. OBS-002 and OBS-003 add those integrations; user experience acceptance remains separate.
+Local evidence is in `out/testing/session-recorder-validation.json` and its referenced logs. A Windows file-creation branch is present but was not compiled or run here. No game was launched for these checks. OBS-002 and OBS-003 subsequently added observer integrations with offline verification; user experience acceptance remains separate.

@@ -64,6 +64,15 @@ or calculate deltas; they must not sum cumulative rows. Scope timing excludes
 the per-entry fingerprint calculation but includes part of the observation
 bookkeeping and is not an instrumentation-free measurement.
 
+OBS-004 adds a stable per-session `counter_epoch` and optional `boundary` tag.
+The case panel must use `flush_native_probes(false, "case_begin")` and
+`flush_native_probes(false, "case_end")` inside the case boundaries; see
+[RUN_COMPARISON.md](RUN_COMPARISON.md) for closed-scope accounting requirements.
+Actual native comparison failures additionally emit
+`native.verification_mismatch`, with a fresh full-span certification result.
+Reference aborts and generic incomplete scopes are not this event and must not
+be treated as confirmed unequal results.
+
 Scope tracking is bounded to 32 simultaneous host-thread slots and 64 nested
 entries per thread. An overflow is recorded explicitly. AOT stack overflow
 invalidates outstanding timings on that thread and suppresses further AOT

@@ -14,6 +14,7 @@ Recording is opt-in. With `MHP3RD_RECORD_DIR` unset or empty, no recorder is cre
 | `MHP3RD_RECORD_BATCH_ID` | Nonempty safe ASCII identifier, at most 96 characters |
 | `MHP3RD_RECORD_BASELINE_ID` | Reference identity, default `B0` |
 | `MHP3RD_RECORD_BASELINE_COMMIT` | Reference source commit, default `4292eb6` |
+| `MHP3RD_RECORD_CONTEXT_SHA256` | Optional canonical launch-context digest; required for bound paired comparison |
 
 Start/stop belong to the application main thread. A new process needs a fresh run directory; restarting into an existing recording directory is not a valid new run. The application rejects an enabled Baseline recording if any native replacement is requested. The configured role is intent, not proof of binary provenance; paired packaging must verify source/build/binary identities independently.
 
@@ -58,7 +59,7 @@ The controller test compares enabled/disabled delivery byte for byte, includes R
 
 No full game was started. Actual gameplay hook coverage and user acceptance remain pending. ISO/starting-save/package identities still need paired delivery, and restarting requires a fresh run directory. Observer metadata does not turn manually played sessions into deterministic replays.
 
-Local OBS-002 evidence is recorded in `out/testing/game-observation-validation.json` and its referenced logs. OBS-003 adds compiled boundary callbacks, runtime fingerprint gates, state/performance readers and a production-object offline harness; see [CERTIFIED_PROBES.md](CERTIFIED_PROBES.md) and the current ledger for its verification status. No timing certification is claimed from source labels alone.
+Local OBS-002 evidence is recorded in `out/testing/game-observation-validation.json` and its referenced logs. OBS-003 adds compiled boundary callbacks, runtime fingerprint gates, state/performance readers and a production-object offline harness; see [CERTIFIED_PROBES.md](CERTIFIED_PROBES.md) and the current ledger for its verification status. OBS-004 defines the [bound context, package and comparison contracts](RUN_COMPARISON.md). No timing certification is claimed from source labels alone.
 
 ## OBS-003 boundary design
 
