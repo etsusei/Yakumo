@@ -833,6 +833,10 @@ The code is in two layers under `host/camera/`:
 
 Safeguards: CMake finds the generated unit that holds the rotation helper and fails the configure if none does, so a new partition of the corpus cannot call the wrong code. At start-up the driver compares twenty-two instructions and constants of the game (listed in `game_camera.cpp`) with what it expects and stays out, saying which differs, if any does. The wrapper is installed only when the option is on (from the first frame, by default): a player who turns it off before starting keeps the helper's generated unit on its direct calls, and the feature costs nothing. No shared preset table or generated code is patched, and guest RAM is never scanned.
 
+### Native helper experiments
+
+`MHP3RD_NATIVE_SCALE_MATRIX=verify` compares a native 4x4 scale-matrix builder against the original function during gameplay, retaining the original result. `MHP3RD_NATIVE_ANGLE_STEP` offers the same modes for a circular-angle helper. `native` uses the replacement; unset, `off`, or `0` keeps the original generated code. This is an opt-in equivalence experiment, not a performance feature or a replacement for monster AI. See [the experiment guide](../../docs/NATIVE_EXPERIMENT.md) for the exact boundary, isolated-save workflow and differential tests.
+
 ### Diagnostics
 
 | Variable | Effect |

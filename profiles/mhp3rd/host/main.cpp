@@ -1,4 +1,6 @@
 #include "mhp3rd_profile.hpp"
+#include "native/angle_step_bridge.hpp"
+#include "native/scale_matrix.hpp"
 
 #include "app_paths.hpp"
 
@@ -371,6 +373,8 @@ int main(int argc, char **argv) {
         (void)elf.load_and_relocate(runtime.memory(), mhp3rd::kLoadBase);
         psprecomp::register_generated_functions(runtime);
         mhp3rd::install_profile(runtime, elf, paths);
+        mhp3rd::native::configure_angle_step(runtime);
+        mhp3rd::native::configure_scale_matrix(runtime);
         if (sha256 == mhp3rd::install::kExecutableSha256) (void)mhp3rd::camera::prepare_game_aspect(runtime);
 #if defined(MHP3RD_CAMERA_HELPER_UNIT)
         // CMake names the generated unit that holds the camera's rotation
@@ -402,6 +406,8 @@ int main(int argc, char **argv) {
         if (mhp3rd::install::restart_requested_on_exit()) return mhp3rd::install::restart(argv);
         std::cout << mhp3rd::kernel().describe_threads() << "\n";
         runtime.report_hle_histogram();
+        mhp3rd::native::report_angle_step();
+        mhp3rd::native::report_scale_matrix();
         return runtime.stop_reason().empty() ? 0 : 4;
     } catch (const std::exception &e) {
         mhp3rd::adhoc_shutdown();
