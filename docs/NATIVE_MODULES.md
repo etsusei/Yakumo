@@ -56,3 +56,9 @@ The existing angle/scale history is in [NATIVE_EXPERIMENT.md](NATIVE_EXPERIMENT.
 The offline gate must run each test with the local ELF, because no-argument CTest examples do not establish original-code equivalence. Test all CPU state and surrounding memory, raw-bit edge cases, seeded random inputs, aliases/overlap, rejected prefixes, code fingerprint changes, bounded exits and evidence counter semantics. Keep synthetic tests available without game data.
 
 Animation, AI, collision, quests, networking, rendering and full resource semantics remain outside these leaves. They require later bounded contracts, observations and paired user cases. No replacement becomes a default based solely on this inventory.
+
+## Native infrastructure regression coverage
+
+OFF-005 adds 18 synthetic ISO-reader assertions and 33 synthetic PSMF-demuxer assertions. Tests exposed narrow bounds defects: malformed ISO records/extents could be read beyond their declared boundaries, and incomplete PES packets or absent timestamp fields could be consumed as valid payload. The fixes passed the integrated CMake targets on Apple Silicon macOS, plus an independent AddressSanitizer/UndefinedBehaviorSanitizer build. A read-only check matched all 14 supported-image file spans with the validated extraction manifest.
+
+These existing native components are infrastructure assurance, not newly migrated game logic. Synthetic demuxing does not validate video decoding, audio output or movie fidelity; no full game was started.

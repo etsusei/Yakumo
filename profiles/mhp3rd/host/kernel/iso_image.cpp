@@ -13,17 +13,24 @@ std::uint32_t read_le32(const std::vector<std::uint8_t> &data, std::size_t offse
            (static_cast<std::uint32_t>(data[offset + 2]) << 16u) | (static_cast<std::uint32_t>(data[offset + 3]) << 24u);
 }
 
+bool extent_fits(std::uint64_t image_size, std::uint32_t lba, std::uint32_t size) {
+    const std::uint64_t start = static_cast<std::uint64_t>(lba) * IsoImage::kSectorSize;
+    return start <= image_size && size <= image_size - start;
+}
+
 } // namespace
 
 IsoImage::IsoImage(const std::filesystem::path &path) : file_(path, std::ios::binary) {
     if (!file_) throw psprecomp::Error("Cannot open disc image: " + path.string());
     size_bytes_ = std::filesystem::file_size(path);
     std::vector<std::uint8_t> primary(kSectorSize);
-    if (read(16u * kSectorSize, primary) != primary.size() || primary[1] != 'C' || primary[2] != 'D' ||
-        primary[3] != '0' || primary[4] != '0' || primary[5] != '1')
+    if (read(16u * kSectorSize, primary) != primary.size() || primary[0] != 1u || primary[1] != 'C' ||
+        primary[2] != 'D' || primary[3] != '0' || primary[4] != '0' || primary[5] != '1' || primary[6] != 1u)
         throw psprecomp::Error("Not an ISO9660 image: " + path.string());
     const std::uint32_t root_lba = read_le32(primary, 156u + 2u);
     const std::uint32_t root_size = read_le32(primary, 156u + 10u);
+    if (root_size == 0u || !extent_fits(size_bytes_, root_lba, root_size))
+        throw psprecomp::Error("Invalid ISO9660 root directory extent: " + path.string());
     entries_[""] = Entry{root_lba, root_size, true};
     scan_directory(root_lba, root_size, "", 0);
 }
@@ -40,7 +47,7 @@ std::string IsoImage::normalize(std::string path) {
 }
 
 void IsoImage::scan_directory(std::uint32_t lba, std::uint32_t size, const std::string &prefix, int depth) {
-    if (depth > 16) return;
+    if (depth > 16 || !extent_fits(size_bytes_, lba, size)) return;
     std::vector<std::uint8_t> data(size);
     if (read(static_cast<std::uint64_t>(lba) * kSectorSize, data) != data.size()) return;
     std::size_t offset = 0u;
@@ -50,14 +57,29 @@ void IsoImage::scan_directory(std::uint32_t lba, std::uint32_t size, const std::
             offset = (offset / kSectorSize + 1u) * kSectorSize;
             continue;
         }
-        if (offset + length > data.size() || length < 34u) break;
+        // A directory record must fit within one logical sector. A malformed
+        // record cannot consume the next sector's first entry.
+        if (length > kSectorSize - offset % kSectorSize) {
+            offset = (offset / kSectorSize + 1u) * kSectorSize;
+            continue;
+        }
+        if (offset + length > data.size()) break;
+        if (length < 34u) {
+            offset += length;
+            continue;
+        }
         const std::uint8_t name_length = data[offset + 32u];
+        if (name_length == 0u || name_length > length - 33u) {
+            offset += length;
+            continue;
+        }
         const std::uint32_t entry_lba = read_le32(data, offset + 2u);
         const std::uint32_t entry_size = read_le32(data, offset + 10u);
         const bool directory = (data[offset + 25u] & 2u) != 0u;
         std::string name(reinterpret_cast<const char *>(data.data() + offset + 33u), name_length);
         offset += length;
         if (name_length == 1u && (name[0] == '\0' || name[0] == '\1')) continue;
+        if (!extent_fits(size_bytes_, entry_lba, entry_size)) continue;
         if (const auto version = name.find(';'); version != std::string::npos) name.resize(version);
         const std::string full = normalize(prefix.empty() ? name : prefix + "/" + name);
         entries_[full] = Entry{entry_lba, entry_size, directory};

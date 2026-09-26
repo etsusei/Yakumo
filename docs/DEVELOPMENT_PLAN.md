@@ -76,7 +76,7 @@ Resource preparation requirements:
 - [ ] **OFF-002** — Add the translation-matrix leaf at `0x08878B4C` (36 bytes including the return delay slot).
 - [ ] **OFF-003** — Add the four-word vector constructor at `0x08877818` (24 bytes including the delay slot).
 - [ ] **OFF-004** — Add the nine-word matrix-layout copy at `0x08879D08` (80 bytes including the delay slot).
-- [ ] **OFF-005** — Add independent synthetic ISO-reader and PSMF-demuxer regression coverage.
+- [x] **OFF-005** — Add independent synthetic ISO-reader and PSMF-demuxer regression coverage.
 - [ ] **OFF-006** — Run the complete offline gate and produce a versioned coverage report before manual handoff.
 
 The three new leaves were identified from the existing local analysis and generated corpus. Recheck their full spans against the registered ELF before implementing:
@@ -219,9 +219,9 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 is completed; OFF-005 integration is being recorded.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
+Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 and OFF-005 are completed; OFF-002/003/004 are in progress.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
 
-Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with the three new Milestone 1 leaves and offline gate after recording OFF-005 results. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
+Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Complete the three new Milestone 1 leaves, then run the combined OFF-006 gate. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
 
 ### Task ledger fields and update rules
 

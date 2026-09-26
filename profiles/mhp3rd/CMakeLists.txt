@@ -363,6 +363,23 @@ if(PSPRECOMP_BUILD_TESTS)
     endif()
 endif()
 
+add_executable(mhp3rd_iso_image_tests
+    tests/iso_image_tests.cpp
+    host/kernel/iso_image.cpp)
+target_include_directories(mhp3rd_iso_image_tests PRIVATE
+    "${MHP3RD_PROFILE_DIR}/host" "${CMAKE_SOURCE_DIR}/include")
+set_target_properties(mhp3rd_iso_image_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+add_executable(mhp3rd_psmf_demuxer_tests
+    tests/psmf_demuxer_tests.cpp
+    host/movie/psmf_demuxer.cpp)
+target_include_directories(mhp3rd_psmf_demuxer_tests PRIVATE "${MHP3RD_PROFILE_DIR}/host")
+set_target_properties(mhp3rd_psmf_demuxer_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(PSPRECOMP_BUILD_TESTS)
+    add_test(NAME mhp3rd_iso_image_tests COMMAND mhp3rd_iso_image_tests)
+    add_test(NAME mhp3rd_psmf_demuxer_tests COMMAND mhp3rd_psmf_demuxer_tests)
+endif()
+
 # Save-data checks that need no game data: crypto test vectors and round trips.
 add_executable(mhp3rd_savedata_tests
     tests/savedata_tests.cpp
