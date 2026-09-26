@@ -1,5 +1,6 @@
 #include "native/vector_construct.hpp"
 #include "native/bridge_contracts.hpp"
+#include "testing/probes.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -22,14 +23,24 @@ void finish_vector_state(psprecomp::AllegrexContext &ctx) noexcept {
 }
 
 void bridge(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &ctx) {
+    testing::NativeProbeScope probe(runtime, ctx, kVectorConstructAddress);
     ++stats.calls;
     try {
         if (stats.mismatches) {
             ++stats.fallbacks;
-            if (!reference(runtime, ctx)) ++stats.errors;
+            const bool reference_ok = reference(runtime, ctx);
+            if (!reference_ok) ++stats.errors;
+            probe.finish(testing::ProbeVariant::Fallback, reference_ok);
         } else if (mode == VectorConstructMode::Native) {
-            if (apply_vector_construct(runtime.memory(), ctx)) ++stats.native;
-            else { ++stats.fallbacks; if (!reference(runtime, ctx)) ++stats.errors; }
+            if (apply_vector_construct(runtime.memory(), ctx)) {
+                ++stats.native;
+                probe.finish(testing::ProbeVariant::Native);
+            } else {
+                ++stats.fallbacks;
+                const bool reference_ok = reference(runtime, ctx);
+                if (!reference_ok) ++stats.errors;
+                probe.finish(testing::ProbeVariant::Fallback, reference_ok);
+            }
         } else {
             auto &memory = runtime.memory();
             const auto address = ctx.gpr[4];
@@ -40,19 +51,27 @@ void bridge(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &ctx) {
                 !shadow.capture_word(memory, address + 8u) ||
                 !shadow.capture_word(memory, address + 12u)) {
                 ++stats.fallbacks;
-                if (!reference(runtime, ctx)) ++stats.errors;
+                const bool reference_ok = reference(runtime, ctx);
+                if (!reference_ok) ++stats.errors;
+                probe.finish(testing::ProbeVariant::Fallback, reference_ok);
             } else {
                 const auto words = vector_construct(ctx.fpr_bits(12), ctx.fpr_bits(13), ctx.fpr_bits(14));
                 auto prediction = ctx;
                 for (std::uint32_t i = 0; i < words.size(); ++i)
                     shadow.store32(address + i * 4u, words[i]);
                 finish_vector_state(prediction);
-                if (!reference(runtime, ctx)) { ++stats.errors; return; }
-                ++stats.verified;
-                if (!same_context(prediction, ctx) || !shadow.matches(memory)) {
-                    ++stats.mismatches;
-                    std::cerr << "[native-vector] mismatch; original result retained, reference used until exit\n";
+                if (!reference(runtime, ctx)) {
+                    ++stats.errors;
+                    probe.finish(testing::ProbeVariant::Verify, false);
+                    return;
                 }
+                ++stats.verified;
+                const bool matches = same_context(prediction, ctx) && shadow.matches(memory);
+                if (!matches) {
+                    ++stats.mismatches;
+                    probe.finish(testing::ProbeVariant::Verify, false);
+                    std::cerr << "[native-vector] mismatch; original result retained, reference used until exit\n";
+                } else probe.finish(testing::ProbeVariant::Verify);
             }
         }
     } catch (...) { ++stats.errors; throw; }

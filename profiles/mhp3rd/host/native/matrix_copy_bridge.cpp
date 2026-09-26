@@ -1,5 +1,6 @@
 #include "native/matrix_copy.hpp"
 #include "native/bridge_contracts.hpp"
+#include "testing/probes.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -20,21 +21,30 @@ bool reference(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &context)
 }
 
 void bridge(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &context) {
+    testing::NativeProbeScope probe(runtime, context, kMatrixCopyAddress);
     ++stats.calls;
     try {
         auto &memory = runtime.memory();
         if (stats.mismatches != 0u) {
             ++stats.fallbacks;
-            if (!reference(runtime, context)) ++stats.errors;
+            const bool reference_ok = reference(runtime, context);
+            if (!reference_ok) ++stats.errors;
+            probe.finish(testing::ProbeVariant::Fallback, reference_ok);
         } else if (mode == MatrixCopyMode::Native) {
-            if (apply_matrix_copy(memory, context)) ++stats.native;
-            else {
+            if (apply_matrix_copy(memory, context)) {
+                ++stats.native;
+                probe.finish(testing::ProbeVariant::Native);
+            } else {
                 ++stats.fallbacks;
-                if (!reference(runtime, context)) ++stats.errors;
+                const bool reference_ok = reference(runtime, context);
+                if (!reference_ok) ++stats.errors;
+                probe.finish(testing::ProbeVariant::Fallback, reference_ok);
             }
         } else if (!matrix_copy_words_mapped(memory, context.gpr[4], context.gpr[5])) {
             ++stats.fallbacks;
-            if (!reference(runtime, context)) ++stats.errors;
+            const bool reference_ok = reference(runtime, context);
+            if (!reference_ok) ++stats.errors;
+            probe.finish(testing::ProbeVariant::Fallback, reference_ok);
         } else {
             // Capture all 18 addresses before simulating stores so the shadow
             // models partial overlap and physical cached/uncached aliases.
@@ -44,7 +54,9 @@ void bridge(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &context) {
                     if (!shadow.capture_word(memory, context.gpr[5] + offset + column) ||
                         !shadow.capture_word(memory, context.gpr[4] + offset + column)) {
                         ++stats.fallbacks;
-                        if (!reference(runtime, context)) ++stats.errors;
+                        const bool reference_ok = reference(runtime, context);
+                        if (!reference_ok) ++stats.errors;
+                        probe.finish(testing::ProbeVariant::Fallback, reference_ok);
                         return;
                     }
                 }
@@ -57,12 +69,18 @@ void bridge(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &context) {
             prediction.set_vfpu_scalar_bits(32u, last[1]);
             prediction.set_vfpu_scalar_bits(64u, last[2]);
             prediction.pc = prediction.gpr[31];
-            if (!reference(runtime, context)) { ++stats.errors; return; }
-            ++stats.verified;
-            if (!same_context(prediction, context) || !shadow.matches(memory)) {
-                ++stats.mismatches;
-                std::cerr << "[native-matrix-copy] mismatch; original result retained, reference used until exit\n";
+            if (!reference(runtime, context)) {
+                ++stats.errors;
+                probe.finish(testing::ProbeVariant::Verify, false);
+                return;
             }
+            ++stats.verified;
+            const bool matches = same_context(prediction, context) && shadow.matches(memory);
+            if (!matches) {
+                ++stats.mismatches;
+                probe.finish(testing::ProbeVariant::Verify, false);
+                std::cerr << "[native-matrix-copy] mismatch; original result retained, reference used until exit\n";
+            } else probe.finish(testing::ProbeVariant::Verify);
         }
     } catch (...) { ++stats.errors; throw; }
     if (stats.calls == 1u || stats.calls % 16384u == 0u) report_matrix_copy();

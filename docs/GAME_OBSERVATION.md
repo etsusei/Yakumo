@@ -43,7 +43,7 @@ Overlay snapshots preserve base address, declared image/code sizes, observed nam
 
 An observed guest instruction-cache invalidation starts a new code-validation epoch. Snapshots are refreshed then, including identical images, so an address is not silently reused under its old identity. Generations are conservative validation boundaries, **not a measured count of loads**. A same-image cache invalidation may advance generation even without a reload. Missing/malformed/unmatched identities cannot authorize attributed state reads; overlapping active ranges are ambiguous and return no identity.
 
-The observer hashes code on validation/install boundaries, not every rendered frame. Its 8 MiB per-image code limit bounds observation work; the registered image's largest overlay code is 1,163,800 bytes. This is an observer limit, not a universal file-format claim. Observation does not alter corpus installation, guest memory or execution.
+The overlay observer hashes code on validation/install boundaries. The separate OBS-003 state sampler also verifies the current quest overlay at most once per host second; neither hashes it on every rendered frame. Its 8 MiB per-image code limit bounds observation work; the registered image's largest overlay code is 1,163,800 bytes. This is an observer limit, not a universal file-format claim. Observation does not alter corpus installation, guest memory or execution.
 
 ## Verified offline integration
 
@@ -58,11 +58,9 @@ The controller test compares enabled/disabled delivery byte for byte, includes R
 
 No full game was started. Actual gameplay hook coverage and user acceptance remain pending. ISO/starting-save/package identities still need paired delivery, and restarting requires a fresh run directory. Observer metadata does not turn manually played sessions into deterministic replays.
 
-Local evidence is recorded in `out/testing/game-observation-validation.json` and its referenced logs. OBS-002 implementation is complete; OBS-003 certification remains in progress.
+Local OBS-002 evidence is recorded in `out/testing/game-observation-validation.json` and its referenced logs. OBS-003 adds compiled boundary callbacks, runtime fingerprint gates, state/performance readers and a production-object offline harness; see [CERTIFIED_PROBES.md](CERTIFIED_PROBES.md) and the current ledger for its verification status. No timing certification is claimed from source labels alone.
 
-The generated-source instrumenter for OBS-003 has eight passing synthetic tests and accepted the current ignored units in a read-only inspection. Its callbacks, runtime fingerprint gates, state/performance readers and compiled AOT validation remain pending. No timing certification is claimed from source labels alone.
-
-## OBS-003 implementation handoff
+## OBS-003 boundary design
 
 The audited direct AOT path bypasses some runtime chain observers and can continue inside one generated unit after a leaf returns. Outer-dispatch duration is therefore not a leaf duration. The current source-shape instrumenter inserts entry calls after the certified entry label and exit calls after the return delay-slot effect, immediately before `local_pc = jump_target`. It passes the entry and target explicitly because `ctx.pc` can be stale during local dispatch.
 
@@ -74,12 +72,6 @@ The audited direct AOT path bypasses some runtime chain observers and can contin
 | Translation | 0029 | `0x08878B4C` | `0x08878B68` |
 | Copy | 0029 | `0x08879D08` | `0x08879D50` |
 
-CMake must discover units from the original corpus before substitution, including its existing camera-helper lookup. Substitute build-local copies of only affected units, retain their generated compile options and original generated include path, and add the probe header path only for those copies. Changing target-wide include flags would unnecessarily rebuild every large AOT unit. No generated code is committed.
+CMake discovers units from the original corpus before substitution, including its existing camera-helper lookup. It substitutes build-local copies of only affected units, retains their generated compile options and original generated include path, and adds the probe header path only for those copies. Changing target-wide include flags would unnecessarily rebuild every large AOT unit. No generated code is committed.
 
-Remaining work before certification:
-
-1. Implement the noexcept callbacks declared by the instrumenter in `testing/probes.hpp/.cpp`, with full loaded-ELF/span fingerprint gates, logical entry/return counts, duration summaries and explicit incomplete scopes. Preserve guest state and original AOT chaining.
-2. Observe candidate native bridges separately and label AOT, native, verification and interpreter fallback paths. Verification timings are not native performance evidence.
-3. Compile and test instrumented copies against bounded original-code expectations, including both angle returns, delay-slot ordering, same-unit chaining and abnormal exits. Source-label tests alone are insufficient.
-4. Use `debug/game_state.hpp` pure const-Ram readers, not the debug tool's mutable runtime/cheat path. Base fields require the supported ELF and valid character state; quest fields require matching active overlay code identity and validation generation, beyond the existing header/name-only `on_quest` check.
-5. Record each new valid `perf::last_second()` summary once using its second ID. Keep observer overhead and recording modes explicit. Full live coverage remains a later user case.
+The implementation preserves these boundaries in `testing/probes.cpp`, the five native bridges, and `testing/runtime_diagnostics.cpp`. The independent state reader shares address constants with `debug/game_state.hpp` but does not link its mutable cheat path. Exact offline evidence, outstanding live coverage, and selection/lifecycle semantics are documented in [CERTIFIED_PROBES.md](CERTIFIED_PROBES.md).

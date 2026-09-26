@@ -1,6 +1,7 @@
 #include "native/angle_step_bridge.hpp"
 #include "native/angle_step.hpp"
 #include "native/bridge_contracts.hpp"
+#include "testing/probes.hpp"
 
 #include <bit>
 #include <cstdlib>
@@ -53,29 +54,41 @@ void apply_to_memory(Memory &memory, psprecomp::AllegrexContext &ctx) {
 }
 
 void bridge(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &ctx) {
+    testing::NativeProbeScope probe(runtime, ctx, kAngleStepAddress);
     ++stats.calls;
     try {
         if (stats.mismatches != 0) {
             ++stats.fallbacks;
-            if (!reference(runtime, ctx)) ++stats.errors;
+            const bool reference_ok = reference(runtime, ctx);
+            if (!reference_ok) ++stats.errors;
+            probe.finish(testing::ProbeVariant::Fallback, reference_ok);
         } else if (mode == AngleStepMode::Native) {
             apply_angle_step(runtime.memory(), ctx);
             ++stats.native;
+            probe.finish(testing::ProbeVariant::Native);
         } else {
             auto &memory = runtime.memory();
             MemoryShadow<8> shadow;
             if (!shadow.capture_word(memory, ctx.gpr[4]) || !shadow.capture_word(memory, ctx.gpr[5])) {
                 ++stats.fallbacks;
-                if (!reference(runtime, ctx)) ++stats.errors;
+                const bool reference_ok = reference(runtime, ctx);
+                if (!reference_ok) ++stats.errors;
+                probe.finish(testing::ProbeVariant::Fallback, reference_ok);
             } else {
                 auto prediction = ctx;
                 apply_to_memory(shadow, prediction);
-                if (!reference(runtime, ctx)) { ++stats.errors; return; }
-                ++stats.verified;
-                if (!same_context(ctx, prediction) || !shadow.matches(memory)) {
-                    ++stats.mismatches;
-                    std::cerr << "[native-angle] mismatch; retaining the original result and using the reference until exit\n";
+                if (!reference(runtime, ctx)) {
+                    ++stats.errors;
+                    probe.finish(testing::ProbeVariant::Verify, false);
+                    return;
                 }
+                ++stats.verified;
+                const bool matches = same_context(ctx, prediction) && shadow.matches(memory);
+                if (!matches) {
+                    ++stats.mismatches;
+                    probe.finish(testing::ProbeVariant::Verify, false);
+                    std::cerr << "[native-angle] mismatch; retaining the original result and using the reference until exit\n";
+                } else probe.finish(testing::ProbeVariant::Verify);
             }
         }
     } catch (...) { ++stats.errors; throw; }

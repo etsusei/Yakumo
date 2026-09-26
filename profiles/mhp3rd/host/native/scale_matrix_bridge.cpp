@@ -1,5 +1,6 @@
 #include "native/scale_matrix.hpp"
 #include "native/bridge_contracts.hpp"
+#include "testing/probes.hpp"
 
 #include <bit>
 #include <cstdlib>
@@ -30,34 +31,52 @@ bool reference(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &ctx) {
 }
 
 void bridge(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &ctx) {
+    testing::NativeProbeScope probe(runtime, ctx, kScaleMatrixAddress);
     ++stats.calls;
     try {
         if (stats.mismatches) {
             ++stats.fallbacks;
-            if (!reference(runtime, ctx)) ++stats.errors;
+            const bool reference_ok = reference(runtime, ctx);
+            if (!reference_ok) ++stats.errors;
+            probe.finish(testing::ProbeVariant::Fallback, reference_ok);
         } else if (mode == ScaleMatrixMode::Native) {
-            if (apply_scale_matrix(runtime.memory(), ctx)) ++stats.native;
-            else { ++stats.fallbacks; if (!reference(runtime, ctx)) ++stats.errors; }
+            if (apply_scale_matrix(runtime.memory(), ctx)) {
+                ++stats.native;
+                probe.finish(testing::ProbeVariant::Native);
+            } else {
+                ++stats.fallbacks;
+                const bool reference_ok = reference(runtime, ctx);
+                if (!reference_ok) ++stats.errors;
+                probe.finish(testing::ProbeVariant::Fallback, reference_ok);
+            }
         } else {
             auto &memory = runtime.memory();
             const auto address = ctx.gpr[4];
             if (!standard_prefixes(ctx) || !memory.contains(address, 64u)) {
                 ++stats.fallbacks;
-                if (!reference(runtime, ctx)) ++stats.errors;
+                const bool reference_ok = reference(runtime, ctx);
+                if (!reference_ok) ++stats.errors;
+                probe.finish(testing::ProbeVariant::Fallback, reference_ok);
             } else {
                 const auto matrix = scale_matrix(ctx.fpr_bits(12), ctx.fpr_bits(13), ctx.fpr_bits(14));
                 auto prediction = ctx;
                 finish_scale_state(prediction);
-                if (!reference(runtime, ctx)) { ++stats.errors; return; }
+                if (!reference(runtime, ctx)) {
+                    ++stats.errors;
+                    probe.finish(testing::ProbeVariant::Verify, false);
+                    return;
+                }
                 ++stats.verified;
                 bool same_memory = true;
                 for (std::uint32_t i = 0; i < matrix.size(); ++i) {
                     if (memory.load32(address + i * 4u) != matrix[i]) { same_memory = false; break; }
                 }
-                if (!same_context(prediction, ctx) || !same_memory) {
+                const bool matches = same_context(prediction, ctx) && same_memory;
+                if (!matches) {
                     ++stats.mismatches;
+                    probe.finish(testing::ProbeVariant::Verify, false);
                     std::cerr << "[native-scale] mismatch; original result retained, reference used until exit\n";
-                }
+                } else probe.finish(testing::ProbeVariant::Verify);
             }
         }
     } catch (...) { ++stats.errors; throw; }

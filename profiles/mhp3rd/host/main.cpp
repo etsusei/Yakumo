@@ -5,6 +5,8 @@
 #include "native/vector_construct.hpp"
 #include "native/matrix_copy.hpp"
 #include "testing/runtime_recording.hpp"
+#include "testing/runtime_diagnostics.hpp"
+#include "perf/frame_stats.hpp"
 #include "settings/settings.hpp"
 #include "yakumo_version.hpp"
 
@@ -334,6 +336,7 @@ int main(int argc, char **argv) {
     ensure_main_stack(argv);
 #endif
     std::unique_ptr<mhp3rd::testing::RuntimeRecording> recording;
+    std::shared_ptr<mhp3rd::testing::RuntimeDiagnostics> diagnostics;
     try {
         if (argc > 1 && std::string(argv[1]) == "--adhoc-server") return run_adhoc_server(argc, argv);
         Options options;
@@ -348,11 +351,19 @@ int main(int argc, char **argv) {
             return 2;
         }
         if (options.install_image) return install_from_command_line(options);
+        std::uint32_t probe_mask{};
         if (const auto recording_options = mhp3rd::testing::recording_options_from_environment()) {
+            const char *selection = std::getenv("MHP3RD_RECORD_PROBES");
+            probe_mask = mhp3rd::testing::parse_probe_selection(selection ? selection : "");
             mhp3rd::testing::Fields metadata{
                 {"build_version", std::string(mhp3rd::kYakumoVersion)},
                 {"recording_mode", std::string("observational-summary")},
-                {"probe_coverage", std::string("pending_certification")},
+                {"requested_probe_mask", std::uint64_t(probe_mask)},
+#if defined(MHP3RD_CERTIFIED_AOT_PROBES)
+                {"aot_probe_boundaries_compiled", true},
+#else
+                {"aot_probe_boundaries_compiled", false},
+#endif
 #if defined(MHP3RD_HAS_RENDERER)
                 {"renderer_compiled", true},
 #else
@@ -419,10 +430,15 @@ int main(int argc, char **argv) {
         (void)elf.load_and_relocate(runtime.memory(), mhp3rd::kLoadBase);
         psprecomp::register_generated_functions(runtime);
         mhp3rd::install_profile(runtime, elf, paths);
-        if (recording) mhp3rd::kernel().add_vblank_hook([] {
-            if (auto observer = mhp3rd::testing::active_observer())
-                observer->time(mhp3rd::kernel().now_us(), mhp3rd::kernel().vblank_count());
-        });
+        if (recording) {
+            diagnostics = std::make_shared<mhp3rd::testing::RuntimeDiagnostics>(recording->observer(),
+                runtime.memory(), sha256 == mhp3rd::install::kExecutableSha256, probe_mask);
+            mhp3rd::kernel().add_vblank_hook([weak = std::weak_ptr(diagnostics)] {
+                if (auto observer = mhp3rd::testing::active_observer())
+                    observer->time(mhp3rd::kernel().now_us(), mhp3rd::kernel().vblank_count());
+                if (auto session = weak.lock()) session->tick(mhp3rd::perf::last_second());
+            });
+        }
         mhp3rd::native::configure_angle_step(runtime);
         mhp3rd::native::configure_scale_matrix(runtime);
         mhp3rd::native::configure_translation_matrix(runtime);
@@ -445,6 +461,7 @@ int main(int argc, char **argv) {
                   << "Functions:  " << runtime.function_count() << "\n";
         if (runtime.function_count() == 0u) {
             std::cout << "No generated functions are linked. Run profiles/mhp3rd/scripts/generate.sh and rebuild.\n";
+            if (diagnostics) diagnostics->close();
             if (recording) (void)recording->close("no_generated_functions", false);
             return 3;
         }
@@ -455,6 +472,7 @@ int main(int argc, char **argv) {
         // Quit from the menu, a closed window or the game ending: the network
         // threads stop here, while everything they use still exists.
         mhp3rd::adhoc_shutdown();
+        if (diagnostics) diagnostics->close();
         if (recording) {
             const auto &reason = runtime.stop_reason();
             const bool completed = reason.empty() || reason == "window closed" || reason == "quit from the menu";
@@ -474,6 +492,7 @@ int main(int argc, char **argv) {
         mhp3rd::native::report_matrix_copy();
         return runtime.stop_reason().empty() ? 0 : 4;
     } catch (const std::exception &e) {
+        if (diagnostics) diagnostics->close();
         if (recording) {
             recording->observer()->emit(mhp3rd::testing::EventKind::Error, "runtime.exception",
                                         {{"message", std::string(e.what())}}, true);

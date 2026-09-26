@@ -44,6 +44,9 @@ else()
     set(MHP3RD_GENERATED host/generated_stub.cpp)
 endif()
 
+# Resolve the camera helper from the original corpus before substituting copies.
+include("${MHP3RD_PROFILE_DIR}/cmake/ProbeInstrumentation.cmake")
+
 # Renderer: SDL3 for the window and Vulkan for drawing. Both are optional so the
 # profile still builds headless on a machine without them.
 option(MHP3RD_RENDERER "Build the Vulkan renderer" ON)
@@ -489,7 +492,42 @@ target_link_libraries(mhp3rd_game_observation PUBLIC mhp3rd_session_recording)
 add_library(mhp3rd_overlay_observation STATIC host/testing/overlay_observation.cpp)
 target_include_directories(mhp3rd_overlay_observation PUBLIC "${MHP3RD_PROFILE_DIR}/host")
 target_link_libraries(mhp3rd_overlay_observation PUBLIC psprecomp_core)
-target_link_libraries(Yakumo PRIVATE mhp3rd_overlay_observation)
+add_library(mhp3rd_native_probes STATIC host/testing/probes.cpp)
+target_link_libraries(mhp3rd_native_probes PUBLIC psprecomp_core mhp3rd_game_observation)
+add_library(mhp3rd_state_observation STATIC host/testing/state_observation.cpp)
+target_link_libraries(mhp3rd_state_observation PUBLIC mhp3rd_overlay_observation mhp3rd_game_observation)
+add_library(mhp3rd_runtime_diagnostics STATIC host/testing/runtime_diagnostics.cpp)
+target_link_libraries(mhp3rd_runtime_diagnostics PUBLIC mhp3rd_native_probes mhp3rd_state_observation)
+target_link_libraries(Yakumo PRIVATE mhp3rd_runtime_diagnostics)
+if(MHP3RD_PROBE_INSTRUMENTED_SOURCES)
+    target_compile_definitions(Yakumo PRIVATE MHP3RD_CERTIFIED_AOT_PROBES=1)
+endif()
+foreach(leaf angle scale translation_matrix vector_construct matrix_copy)
+    target_link_libraries(mhp3rd_native_${leaf}_tests PRIVATE mhp3rd_native_probes)
+endforeach()
+foreach(suite probe state_observation runtime_diagnostics)
+    add_executable(mhp3rd_${suite}_tests tests/${suite}_tests.cpp)
+    target_link_libraries(mhp3rd_${suite}_tests PRIVATE mhp3rd_runtime_diagnostics)
+    set_target_properties(mhp3rd_${suite}_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    if(PSPRECOMP_BUILD_TESTS)
+        add_test(NAME mhp3rd_${suite}_tests COMMAND mhp3rd_${suite}_tests)
+        set_tests_properties(mhp3rd_${suite}_tests PROPERTIES TIMEOUT 30)
+    endif()
+endforeach()
+if(MHP3RD_PROBE_INSTRUMENTED_SOURCES)
+    # Reuses the production objects. The optional local ELF test executes only
+    # bounded leaf calls; it never starts the game, kernel, renderer, or audio.
+    add_executable(mhp3rd_aot_probe_tests EXCLUDE_FROM_ALL tests/aot_probe_tests.cpp
+        host/native/angle_step.cpp host/native/angle_step_bridge.cpp
+        host/native/scale_matrix.cpp host/native/scale_matrix_bridge.cpp
+        host/native/translation_matrix.cpp host/native/translation_matrix_bridge.cpp
+        host/native/vector_construct.cpp host/native/vector_construct_bridge.cpp
+        host/native/matrix_copy.cpp host/native/matrix_copy_bridge.cpp
+        $<TARGET_OBJECTS:mhp3rd_generated>)
+    target_include_directories(mhp3rd_aot_probe_tests PRIVATE "${MHP3RD_PROFILE_DIR}/generated")
+    target_link_libraries(mhp3rd_aot_probe_tests PRIVATE mhp3rd_native_probes)
+    set_target_properties(mhp3rd_aot_probe_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+endif()
 add_library(mhp3rd_control_delivery STATIC host/hle/control_delivery.cpp)
 target_link_libraries(mhp3rd_control_delivery PUBLIC psprecomp_core mhp3rd_game_observation)
 add_executable(mhp3rd_control_delivery_tests tests/control_delivery_tests.cpp)
