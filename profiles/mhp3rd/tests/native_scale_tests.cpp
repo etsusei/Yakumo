@@ -34,6 +34,13 @@ void differential(const char *path) {
     Runtime oracle(elf.required_ram_size()), replacement(elf.required_ram_size());
     (void)elf.load_and_relocate(oracle.memory());
     (void)elf.load_and_relocate(replacement.memory());
+    Runtime unrecognized(elf.required_ram_size());
+    check(!install_scale_matrix(unrecognized, ScaleMatrixMode::Native) &&
+          scale_matrix_stats().calls == 0 && scale_matrix_stats().errors == 1 &&
+          !unrecognized.has_function(kScaleMatrixAddress),
+          "failed installation records an error with zero calls and installs no hook");
+    check(!install_scale_matrix(replacement, ScaleMatrixMode::Off) &&
+          !replacement.has_function(kScaleMatrixAddress), "off mode installs no hook");
     check(install_scale_matrix(replacement, ScaleMatrixMode::Native), "supported function fingerprint is accepted");
     if (failures) return;
     constexpr std::uint32_t scratch = 0x08010000u, return_pc = 0x08020000u;
@@ -80,16 +87,58 @@ void differential(const char *path) {
                                                0x7f800000u, 0x7fc01234u, 0x7fa05678u};
     for (auto x : edges) for (auto y : edges) for (auto z : edges) run(x, y, z, false);
     for (unsigned i = 0; i < 100000 && failures == 0; ++i) run(random(), random(), random(), i % 10 == 0);
+    check(install_scale_matrix(replacement, ScaleMatrixMode::Native),
+          "native hook resets counters after differential fallback cases");
+    AllegrexContext native_ctx;
+    native_ctx.gpr[4] = scratch + 16u; native_ctx.gpr[31] = return_pc;
+    native_ctx.vfpu_ctrl[0] = native_ctx.vfpu_ctrl[1] = 0xe4u;
+    native_ctx.set_fpr_bits(12, 0x80000000u);
+    native_ctx.set_fpr_bits(13, 0x7fc01234u);
+    native_ctx.set_fpr_bits(14, 0x3f800000u);
+    check(replacement.memory().contains(native_ctx.gpr[4], 64u) &&
+          native_ctx.vfpu_ctrl[0] == 0xe4u && native_ctx.vfpu_ctrl[1] == 0xe4u &&
+          native_ctx.vfpu_ctrl[2] == 0u, "native sample satisfies the scale contract");
+    check(replacement.invoke_isolated_aot(kScaleMatrixAddress, native_ctx), "native dispatch reaches the hook");
+    check(scale_matrix_stats().calls == 1 && scale_matrix_stats().native == 1 &&
+          scale_matrix_stats().verified == 0 && scale_matrix_stats().fallbacks == 0 &&
+          scale_matrix_stats().mismatches == 0 && scale_matrix_stats().errors == 0,
+          "native call commits one replacement and reports all six counters");
     check(install_scale_matrix(replacement, ScaleMatrixMode::Verify), "runtime verifier installs");
     AllegrexContext ctx;
     ctx.pc = kScaleMatrixAddress; ctx.gpr[4] = scratch + 16; ctx.gpr[31] = kScaleMatrixAddress;
     ctx.vfpu_ctrl[0] = ctx.vfpu_ctrl[1] = 0xe4u;
     ctx.fpr[12] = 2.f; ctx.fpr[13] = 3.f; ctx.fpr[14] = 4.f;
     check(replacement.invoke_isolated_aot(kScaleMatrixAddress, ctx), "dispatch reaches live verifier");
-    check(scale_matrix_stats().verified == 1 && scale_matrix_stats().mismatches == 0,
-          "live verifier accepts matching outputs and an internal return PC");
+    check(scale_matrix_stats().calls == 1 && scale_matrix_stats().verified == 1 &&
+          scale_matrix_stats().native == 0 && scale_matrix_stats().fallbacks == 0 &&
+          scale_matrix_stats().mismatches == 0 && scale_matrix_stats().errors == 0,
+          "verifier accepts matching outputs and internal return PC with six counters");
+    ctx = {};
+    ctx.gpr[4] = scratch + 16u; ctx.gpr[31] = return_pc;
+    ctx.vfpu_ctrl[0] = 0x1f000u; ctx.vfpu_ctrl[1] = 0xe4u;
+    ctx.fpr[12] = 2.f; ctx.fpr[13] = 3.f; ctx.fpr[14] = 4.f;
+    check(replacement.invoke_isolated_aot(kScaleMatrixAddress, ctx), "unusual prefix reaches original fallback");
+    check(scale_matrix_stats().calls == 2 && scale_matrix_stats().verified == 1 &&
+          scale_matrix_stats().fallbacks == 1 && scale_matrix_stats().mismatches == 0 &&
+          scale_matrix_stats().errors == 0, "unsupported prefix increments only the fallback counter");
     replacement.memory().store32(kScaleMatrixAddress, replacement.memory().load32(kScaleMatrixAddress) ^ 1u);
     check(!install_scale_matrix(replacement, ScaleMatrixMode::Native), "modified function is refused");
+    check(scale_matrix_stats().errors == 1 && scale_matrix_stats().calls == 2,
+          "fingerprint failure increments errors without replacing the installed hook");
+    replacement.memory().store32(kScaleMatrixAddress, replacement.memory().load32(kScaleMatrixAddress) ^ 1u);
+
+    check(install_scale_matrix(replacement, ScaleMatrixMode::Verify), "verifier reinstalls for bounded failure check");
+    const auto return_word = replacement.memory().load32(kScaleMatrixAddress + 28u);
+    replacement.memory().store32(kScaleMatrixAddress + 28u, 0u);
+    ctx = {};
+    ctx.gpr[4] = scratch + 16u; ctx.gpr[31] = return_pc;
+    ctx.vfpu_ctrl[0] = ctx.vfpu_ctrl[1] = 0xe4u;
+    ctx.fpr[12] = 2.f; ctx.fpr[13] = 3.f; ctx.fpr[14] = 4.f;
+    check(replacement.invoke_isolated_aot(kScaleMatrixAddress, ctx), "broken return reaches bounded reference");
+    check(replacement.stopped() && scale_matrix_stats().calls == 1 &&
+          scale_matrix_stats().verified == 0 && scale_matrix_stats().native == 0 &&
+          scale_matrix_stats().errors == 1, "bounded reference failure stops and counts one error");
+    replacement.memory().store32(kScaleMatrixAddress + 28u, return_word);
     std::cout << "Scale differential cases: " << cases << ", prefix fallbacks: " << fallbacks << '\n';
 }
 }

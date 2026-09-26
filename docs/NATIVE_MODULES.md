@@ -49,6 +49,8 @@ A matrix copy must preserve row-by-row load/store order. Prefetching all nine wo
 
 ## Evidence requirements
 
+The common contract implementation passed the local ELF suites again: 806,432 angle cases and 100,512 scale cases (10,000 prefix fallbacks), plus off/fingerprint/counter/bounded-reference checks. Root separately verified that portable math sources compile without PSP headers. No new live gameplay coverage is claimed.
+
 The existing angle/scale history is in [NATIVE_EXPERIMENT.md](NATIVE_EXPERIMENT.md). New translation/vector/copy contracts currently have static ELF/generated-code inspection evidence only; differential execution and later user-led coverage remain pending until their task records say otherwise.
 
 The offline gate must run each test with the local ELF, because no-argument CTest examples do not establish original-code equivalence. Test all CPU state and surrounding memory, raw-bit edge cases, seeded random inputs, aliases/overlap, rejected prefixes, code fingerprint changes, bounded exits and evidence counter semantics. Keep synthetic tests available without game data.
