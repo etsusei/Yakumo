@@ -58,6 +58,8 @@ struct RowOptions {
 // A setting with a few values, changed with left/right or by activating it.
 // Returns -1, 0 or +1.
 int choice_row(const char *label, const std::string &value, const RowOptions &options = {});
+// Shared by setup and the System page. Applies immediately and persists.
+void language_row();
 // An on/off setting. Returns true when toggled.
 bool toggle_row(const char *label, bool value, const RowOptions &options = {});
 // A number between minimum and maximum, changed in steps with left/right or

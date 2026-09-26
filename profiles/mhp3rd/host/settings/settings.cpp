@@ -103,6 +103,8 @@ struct Names {
 
 const Names<PresentMode> kPresentModes{
     {{PresentMode::Fifo, "vsync"}, {PresentMode::Mailbox, "mailbox"}, {PresentMode::Immediate, "immediate"}}};
+const Names<UiLanguage> kUiLanguages{
+    {{UiLanguage::English, "en"}, {UiLanguage::SimplifiedChinese, "zh-CN"}}};
 const Names<Aspect> kAspects{{{Aspect::Original, "original"}, {Aspect::Stretch, "stretch"}, {Aspect::Fill, "fill"}}};
 const Names<PerfDisplay> kPerfDisplays{{{PerfDisplay::Off, "off"},
                                         {PerfDisplay::Overlay, "overlay"},
@@ -322,6 +324,10 @@ const std::vector<Field> &fields() {
              return true;
          },
          [](const Settings &s) { return s.adhoc_mac; }, [](Settings &s, const char *t) { s.adhoc_mac = t; }},
+        {"ui.language", "MHP3RD_UI_LANGUAGE",
+         [](Settings &s, const std::string &t) { return kUiLanguages.parse(t, s.ui_language); },
+         [](const Settings &s) { return kUiLanguages.format(s.ui_language); },
+         [](Settings &s, const char *t) { kUiLanguages.parse(t, s.ui_language); }},
         {"ui.menu_pause", "MHP3RD_MENU_PAUSE",
          [](Settings &s, const std::string &t) { return parse_bool(t, s.menu_pause); },
          [](const Settings &s) { return std::string(s.menu_pause ? "1" : "0"); },

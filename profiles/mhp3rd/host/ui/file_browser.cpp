@@ -2,6 +2,7 @@
 
 #include "ui/layer.hpp"
 #include "ui/widgets.hpp"
+#include "ui/localization.hpp"
 
 #include "gpu/vulkan_renderer.hpp"
 #include "install/user_data.hpp"
@@ -67,7 +68,7 @@ std::string human_size(std::uint64_t bytes) {
     if (bytes >= 1'000'000'000u) std::snprintf(text, sizeof(text), "%.1f GB", static_cast<double>(bytes) / 1e9);
     else if (bytes >= 1'000'000u) std::snprintf(text, sizeof(text), "%.0f MB", static_cast<double>(bytes) / 1e6);
     else if (bytes >= 1'000u) std::snprintf(text, sizeof(text), "%.0f KB", static_cast<double>(bytes) / 1e3);
-    else std::snprintf(text, sizeof(text), "%llu bytes", static_cast<unsigned long long>(bytes));
+    else std::snprintf(text, sizeof(text), "%llu B", static_cast<unsigned long long>(bytes));
     return text;
 }
 
@@ -102,9 +103,9 @@ FileBrowser::~FileBrowser() = default;
 void FileBrowser::find_places() {
     places_.clear();
     const fs::path home_dir = home();
-    places_.push_back({"Home", home_dir});
+    places_.push_back({tr("Home"), home_dir});
     for (const char *name : {"Downloads", "Desktop", "Documents"})
-        if (is_folder(home_dir / name)) places_.push_back({name, home_dir / name});
+        if (is_folder(home_dir / name)) places_.push_back({tr(name), home_dir / name});
     std::error_code ec;
 #if defined(__APPLE__)
     // Every mounted volume; the system disk appears as a link to / and is left out.
@@ -155,7 +156,7 @@ void FileBrowser::open(const fs::path &folder, fs::path focus) {
     std::string error;
     fs::directory_iterator it(target, fs::directory_options::skip_permission_denied, ec);
     if (ec) {
-        error = "This folder cannot be opened: " + ec.message() + ".";
+        error = tr("This folder cannot be opened: ") + ec.message() + ".";
     } else {
         // Incremented by hand: the range-for form throws on an unreadable entry.
         for (; it != fs::directory_iterator(); it.increment(ec)) {
@@ -212,7 +213,7 @@ FileBrowser::Result FileBrowser::frame(bool back) {
             return Result::Chosen;
         }
         if (!dialog_->error.empty()) {
-            error_ = "The system file dialog could not be opened (" + dialog_->error + ").";
+            error_ = tr("The system file dialog could not be opened (") + dialog_->error + ").";
             dialog_->error.clear();
         }
     }
@@ -236,7 +237,7 @@ FileBrowser::Result FileBrowser::frame(bool back) {
         if (chip("##place", place.name, folder_ == place.path)) go_to = place.path;
         ImGui::PopID();
     }
-    if (chip("##all", show_all_ ? "Showing all files" : "Showing " + options_.filter_name + " only")) {
+    if (chip("##all", show_all_ ? tr("Showing all files") : tr("Showing ") + std::string(tr(options_.filter_name.c_str())) + tr(" only"))) {
         show_all_ = !show_all_;
         open(folder_);
     }
@@ -248,8 +249,14 @@ FileBrowser::Result FileBrowser::frame(bool back) {
 #else
     const bool system_dialog = std::getenv("GAMESCOPE_WAYLAND_DISPLAY") == nullptr;
 #endif
-    if (system_dialog && chip("##system", "System dialog\u2026")) {
-        static const SDL_DialogFileFilter kFilters[] = {{"Disc images (*.iso)", "iso"}, {"All files", "*"}};
+    if (system_dialog && chip("##system", tr("System dialog\u2026"))) {
+        // SDL may keep reading these until its asynchronous dialog closes.
+        // Keep both languages immutable, even if another dialog is opened.
+        static const SDL_DialogFileFilter english[] = {{"Disc images (*.iso)", "iso"}, {"All files", "*"}};
+        static const SDL_DialogFileFilter chinese[] = {
+            {translate("Disc images (*.iso)", settings::UiLanguage::SimplifiedChinese), "iso"},
+            {translate("All files", settings::UiLanguage::SimplifiedChinese), "*"}};
+        const auto &filters = settings::current().ui_language == settings::UiLanguage::English ? english : chinese;
         const bool folders = !options_.choose_folder.empty();
         auto *state = new std::shared_ptr<SystemDialog>(dialog_);
         const auto callback = [](void *userdata, const char *const *files, int) {
@@ -263,7 +270,7 @@ FileBrowser::Result FileBrowser::frame(bool back) {
         };
         const std::string start = install::path_to_utf8(folder_);
         if (folders) SDL_ShowOpenFolderDialog(callback, state, Layer::get().renderer().window(), start.c_str(), false);
-        else SDL_ShowOpenFileDialog(callback, state, Layer::get().renderer().window(), kFilters, 2, start.c_str(), false);
+        else SDL_ShowOpenFileDialog(callback, state, Layer::get().renderer().window(), filters, 2, start.c_str(), false);
     }
     ImGui::NewLine();
 
@@ -293,7 +300,7 @@ FileBrowser::Result FileBrowser::frame(bool back) {
             focus_next_row();
             focus_first_ = false;
         }
-        if (list_row("##parent", "Parent folder", "", ListIcon::ParentFolder)) up = true;
+        if (list_row("##parent", tr("Parent folder"), "", ListIcon::ParentFolder)) up = true;
     }
     for (std::size_t i = 0; i < entries_.size(); ++i) {
         const Entry &entry = entries_[i];
@@ -318,10 +325,11 @@ FileBrowser::Result FileBrowser::frame(bool back) {
     } else if (entries_.empty() || (hidden_files_ > 0 && !show_all_)) {
         ImGui::Dummy({0.0f, font * 0.3f});
         ImGui::Indent(std::round(16.0f * Layer::get().scale()));
-        std::string note = entries_.empty() ? options_.empty_note : "";
+        std::string note = entries_.empty() ? tr(options_.empty_note.c_str()) : "";
         if (hidden_files_ > 0 && !show_all_)
-            note += (note.empty() ? "" : " ") + std::to_string(hidden_files_) + " other file" +
-                    (hidden_files_ == 1 ? " is" : "s are") + " hidden; only " + options_.listed_name + " are listed.";
+            note += (note.empty() ? "" : " ") +
+                    tr_format("{0} other files are hidden; only {1} are listed.",
+                              {std::to_string(hidden_files_), tr(options_.listed_name.c_str())});
         paragraph(note, colors::kTextDim);
         ImGui::Unindent(std::round(16.0f * Layer::get().scale()));
     }

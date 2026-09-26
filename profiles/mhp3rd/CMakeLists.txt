@@ -86,8 +86,10 @@ if(MHP3RD_RENDERER)
             host/gpu/vulkan_renderer.cpp
             host/ui/file_browser.cpp
             host/ui/font_menu.cpp
+            host/ui/fonts.cpp
             host/ui/input_script.cpp
             host/ui/layer.cpp
+            host/ui/localization.cpp
             host/ui/menu.cpp
             host/ui/mods_screen.cpp
             host/ui/save_screen.cpp
@@ -385,6 +387,27 @@ target_link_libraries(mhp3rd_settings_tests PRIVATE psprecomp_core)
 set_target_properties(mhp3rd_settings_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 if(PSPRECOMP_BUILD_TESTS)
     add_test(NAME mhp3rd_settings_tests COMMAND mhp3rd_settings_tests)
+endif()
+
+# Interface localization and settings persistence do not need game data or a GPU.
+if(MSVC)
+    # The catalog and system font paths must remain UTF-8 on every Windows locale.
+    set_source_files_properties(host/ui/localization.cpp host/ui/fonts.cpp tests/ui_localization_tests.cpp
+        PROPERTIES COMPILE_OPTIONS "/utf-8")
+endif()
+add_executable(mhp3rd_ui_localization_tests
+    tests/ui_localization_tests.cpp
+    host/ui/localization.cpp
+    host/settings/settings.cpp
+    host/install/user_data.cpp
+    host/input/bindings.cpp)
+target_include_directories(mhp3rd_ui_localization_tests PRIVATE "${MHP3RD_PROFILE_DIR}/host")
+target_link_libraries(mhp3rd_ui_localization_tests PRIVATE psprecomp_core)
+set_target_properties(mhp3rd_ui_localization_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(PSPRECOMP_BUILD_TESTS)
+    foreach(mode default saved override invalid)
+        add_test(NAME mhp3rd_ui_localization_${mode} COMMAND mhp3rd_ui_localization_tests ${mode})
+    endforeach()
 endif()
 
 # Fast loading's decision: when a load runs ahead of real time.

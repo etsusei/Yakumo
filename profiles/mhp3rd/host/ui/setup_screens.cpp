@@ -8,6 +8,7 @@
 #include "ui/file_browser.hpp"
 #include "ui/layer.hpp"
 #include "ui/widgets.hpp"
+#include "ui/localization.hpp"
 
 #include "hle/hle_common.hpp"
 #include "install/game_identity.hpp"
@@ -101,40 +102,41 @@ bool SetupScreens::introduce(const fs::path &data_dir) {
                 answer = 2;
                 return false;
             }
-            begin_panel("##welcome", "Welcome to Yakumo", kSubtitle, false);
+            begin_panel("##welcome", tr("Welcome to Yakumo"), tr(kSubtitle), false);
             begin_content();
+            language_row();
             ImGui::Dummy({0.0f, font() * 0.3f});
-            paragraph(std::string("Yakumo plays ") + install::kGameTitle +
-                      " from your own copy of the game. It needs the disc image of the game's PSP disc, " +
-                      install::kDiscIdDisplay + ", as an .iso file: the PlayStation 3 release carries it.");
+            paragraph(std::string(tr("Yakumo plays ")) + install::kGameTitle +
+                      tr(" from your own copy of the game. It needs the disc image of the game's PSP disc, ") +
+                      install::kDiscIdDisplay + tr(", as an .iso file: the PlayStation 3 release carries it."));
             ImGui::Dummy({0.0f, font() * 0.4f});
 #if defined(MHP3RD_ANDROID_APP)
-            paragraph("Choose the image next, in Android's file picker. Yakumo copies it into its own storage (an "
+            paragraph(tr("Choose the image next, in Android's file picker. Yakumo copies it into its own storage (an "
                       "app cannot keep reading a file elsewhere), checks that it is the right release and prepares "
                       "the game from it. The copy needs about 1.3 GB of free space, besides the 0.8 GB the app takes; "
-                      "once it is made, the original can be deleted. Nothing is downloaded.",
+                      "once it is made, the original can be deleted. Nothing is downloaded."),
                       colors::kTextDim);
 #else
-            paragraph("Choose the image next. Yakumo checks that it is the right release, prepares the game from it "
+            paragraph(tr("Choose the image next. Yakumo checks that it is the right release, prepares the game from it "
                       "and, unless you choose otherwise, copies it into its data folder so the game keeps working if "
-                      "the original is moved or deleted. Nothing is downloaded.",
+                      "the original is moved or deleted. Nothing is downloaded."),
                       colors::kTextDim);
 #endif
             ImGui::Dummy({0.0f, font() * 0.4f});
-            section("Data folder");
+            section(tr("Data folder"));
             ImGui::Indent(std::round(16.0f * layer.scale()));
             paragraph(install::path_to_utf8(data_dir), colors::kTextDim);
             ImGui::Unindent(std::round(16.0f * layer.scale()));
             ImGui::Dummy({0.0f, font() * 0.6f});
-            answer = button_pair("Choose disc image", "Quit", first);
+            answer = button_pair(tr("Choose disc image"), tr("Quit"), first);
             first = false;
 #if !defined(MHP3RD_ANDROID_APP)
             ImGui::Dummy({0.0f, font() * 0.4f});
-            paragraph("You can also drop the .iso file onto this window.", colors::kTextDim);
+            paragraph(tr("You can also drop the .iso file onto this window."), colors::kTextDim);
 #endif
-            layer.set_description("Monster Hunter Portable 3rd HD Ver. (NPJB-40001) is the only release supported.");
+            layer.set_description(tr("Monster Hunter Portable 3rd HD Ver. (NPJB-40001) is the only release supported."));
             begin_footer();
-            hints({{Control::Confirm, "Select"}, {Control::Back, "Quit"}});
+            hints({{Control::Confirm, tr("Select")}, {Control::Back, tr("Quit")}});
             end_panel();
             return answer == 0;
         },
@@ -153,7 +155,7 @@ std::optional<fs::path> SetupScreens::choose_image() {
         // progress, before it is checked. It cannot be used where it is.
         try {
             fs::path copied;
-            run_task("Copying the disc image", [&] {
+            run_task(tr("Copying the disc image"), [&] {
                 copied = install::copy_image_document(*uri, data_dir_,
                                                       [this](const std::string &stage, std::uint64_t done,
                                                              std::uint64_t total) { progress(stage, done, total); });
@@ -185,16 +187,16 @@ std::optional<fs::path> SetupScreens::choose_image() {
             const bool back = layer.take_back();
             const ImGuiKey cancel = layer.confirm_south() ? ImGuiKey_GamepadFaceRight : ImGuiKey_GamepadFaceDown;
             const bool pad_back = ImGui::IsKeyPressed(cancel, false);
-            begin_panel("##browser", "Choose the disc image", kSubtitle, false);
+            begin_panel("##browser", tr("Choose the disc image"), tr(kSubtitle), false);
             begin_content();
             const FileBrowser::Result result = browser.frame(back || pad_back);
-            layer.set_description(std::string("Look for the .iso image of ") + install::kDiscIdDisplay +
-                                  ". Removable drives and SD cards are listed next to Home.");
+            layer.set_description(std::string(tr("Look for the .iso image of ")) + install::kDiscIdDisplay +
+                                  tr(". Removable drives and SD cards are listed next to Home."));
             begin_footer();
             if (layer.input_device() == InputDevice::Gamepad)
-                hints({{Control::Confirm, "Open"}, {Control::Back, "Up a folder"}, {Control::Toggle, "All files"}});
+                hints({{Control::Confirm, tr("Open")}, {Control::Back, tr("Up a folder")}, {Control::Toggle, tr("All files")}});
             else
-                hints({{Control::Confirm, "Open"}, {Control::Back, "Up a folder"}});
+                hints({{Control::Confirm, tr("Open")}, {Control::Back, tr("Up a folder")}});
             end_panel();
             if (result == FileBrowser::Result::Chosen) chosen = browser.chosen();
             return result == FileBrowser::Result::Browsing;
@@ -230,42 +232,42 @@ std::optional<install::ImageStorage> SetupScreens::choose_storage(const fs::path
             if (layer.take_back()) return false;
             const ImGuiKey cancel = layer.confirm_south() ? ImGuiKey_GamepadFaceRight : ImGuiKey_GamepadFaceDown;
             if (ImGui::IsKeyPressed(cancel, false)) return false;
-            begin_panel("##storage", "Disc image found", kSubtitle, false);
+            begin_panel("##storage", tr("Disc image found"), tr(kSubtitle), false);
             begin_content();
             paragraph(std::string(install::kGameTitle) + " (" + install::kDiscIdDisplay + "), " +
-                          human_size(info.size_bytes) + ". It passed its checks.",
+                          human_size(info.size_bytes) + tr(". It passed its checks."),
                       colors::kGood);
             ImGui::Dummy({0.0f, font() * 0.2f});
             paragraph(install::path_to_utf8(image), colors::kTextDim);
             ImGui::Dummy({0.0f, font() * 0.6f});
-            heading("Keep a copy, or use the image where it is?");
+            heading(tr("Keep a copy, or use the image where it is?"));
 
-            std::string copy_note = "Recommended. The game keeps working if the original is moved or deleted. Needs " +
+            std::string copy_note = tr("Recommended. The game keeps working if the original is moved or deleted. Needs ") +
                                     human_size(needed);
-            if (space) copy_note += "; " + human_size(*space) + " free";
+            if (space) copy_note += "; " + human_size(*space) + tr(" free");
             copy_note += ".";
-            if (!room) copy_note = "Not enough free space: the copy needs " + human_size(needed) + " and " +
-                                   human_size(*space) + " is free in the data folder.";
+            if (!room) copy_note = tr("Not enough free space: the copy needs ") + human_size(needed) + tr(" and ") +
+                                   human_size(*space) + tr(" is free in the data folder.");
             RowOptions copy_options{!room, {}, {}};
             if (first && room) focus_next_row();
-            if (button_row("Copy it into Yakumo's data folder", copy_options)) choice = install::ImageStorage::Copy;
+            if (button_row(tr("Copy it into Yakumo's data folder"), copy_options)) choice = install::ImageStorage::Copy;
             ImGui::Indent(std::round(16.0f * layer.scale()));
             paragraph(copy_note, room ? colors::kTextDim : colors::kDanger);
             ImGui::Unindent(std::round(16.0f * layer.scale()));
             ImGui::Dummy({0.0f, font() * 0.4f});
             const std::string place_note =
-                "Saves " + human_size(info.size_bytes) + ". The image must then stay where it is; if it moves, "
-                "Yakumo asks you to set up again.";
+                tr("Saves ") + human_size(info.size_bytes) + tr(". The image must then stay where it is; if it moves, "
+                "Yakumo asks you to set up again.");
             if (first && !room) focus_next_row();
-            if (button_row("Use it where it is")) choice = install::ImageStorage::InPlace;
+            if (button_row(tr("Use it where it is"))) choice = install::ImageStorage::InPlace;
             ImGui::Indent(std::round(16.0f * layer.scale()));
             paragraph(place_note, colors::kTextDim);
             ImGui::Unindent(std::round(16.0f * layer.scale()));
             first = false;
-            layer.set_description("Either way, the game's executable is prepared from the image into Yakumo's data "
-                                  "folder.");
+            layer.set_description(tr("Either way, the game's executable is prepared from the image into Yakumo's data "
+                                  "folder."));
             begin_footer();
-            hints({{Control::Confirm, "Continue"}, {Control::Back, "Choose another file"}});
+            hints({{Control::Confirm, tr("Continue")}, {Control::Back, tr("Choose another file")}});
             end_panel();
             return !choice;
         },
@@ -310,16 +312,16 @@ void SetupScreens::run_task(const std::string &title, const std::function<void()
                 total = total_;
                 stage_started = stage_started_;
             }
-            begin_panel("##progress", title, kSubtitle, false);
+            begin_panel("##progress", tr(title.c_str()), tr(kSubtitle), false);
             begin_content();
             ImGui::Dummy({0.0f, font() * 1.5f});
-            heading(stage.empty() ? title + "…" : stage);
+            heading(stage.empty() ? std::string(tr(title.c_str())) + "…" : tr(stage.c_str()));
             ImGui::Dummy({0.0f, font() * 0.3f});
             if (total > 1u) {
                 const float fraction = static_cast<float>(static_cast<double>(done) / static_cast<double>(total));
                 char text[96];
                 if (total >= 1'000'000u)
-                    std::snprintf(text, sizeof(text), "%d%%   %s of %s", static_cast<int>(fraction * 100.0f),
+                    std::snprintf(text, sizeof(text), tr("%d%%   %s of %s"), static_cast<int>(fraction * 100.0f),
                                   megabytes(done).c_str(), megabytes(total).c_str());
                 else std::snprintf(text, sizeof(text), "%d%%", static_cast<int>(fraction * 100.0f));
                 progress_bar(fraction, text);
@@ -327,7 +329,7 @@ void SetupScreens::run_task(const std::string &title, const std::function<void()
                 if (fraction > 0.02f && seconds > 2.0) {
                     const double left = seconds * (1.0 - fraction) / fraction;
                     char eta[64];
-                    std::snprintf(eta, sizeof(eta), "About %d s left", static_cast<int>(std::ceil(left)));
+                    std::snprintf(eta, sizeof(eta), tr("About %d s left"), static_cast<int>(std::ceil(left)));
                     paragraph(eta, colors::kTextDim);
                 }
             } else {
@@ -339,10 +341,10 @@ void SetupScreens::run_task(const std::string &title, const std::function<void()
             const float width = std::min(font() * 13.0f, ImGui::GetContentRegionAvail().x);
             if (first) focus_next_row();
             first = false;
-            if (big_button(cancel_ ? "Cancelling…" : "Cancel", width, false, cancel_)) cancel_ = true;
-            layer.set_description("Cancelling removes everything this step has written so far.");
+            if (big_button(cancel_ ? tr("Cancelling…") : tr("Cancel"), width, false, cancel_)) cancel_ = true;
+            layer.set_description(tr("Cancelling removes everything this step has written so far."));
             begin_footer();
-            hints({{Control::Back, "Cancel"}});
+            hints({{Control::Back, tr("Cancel")}});
             end_panel();
             return true;
         },
@@ -380,17 +382,17 @@ bool SetupScreens::offer_retry(const std::string &message) {
                 answer = 2;
                 return false;
             }
-            begin_panel("##error", space ? "Not enough free space" : "This file can't be used", kSubtitle, false);
+            begin_panel("##error", space ? tr("Not enough free space") : tr("This file can't be used"), tr(kSubtitle), false);
             begin_content();
             ImGui::Dummy({0.0f, font() * 0.5f});
             paragraph(message);
             ImGui::Dummy({0.0f, font() * 0.8f});
-            answer = button_pair("Choose another file", "Quit", first);
+            answer = button_pair(tr("Choose another file"), tr("Quit"), first);
             first = false;
-            layer.set_description(std::string("Yakumo supports only ") + install::kGameTitle + ", " +
-                                  install::kDiscIdDisplay + ", as an unmodified, uncompressed .iso image.");
+            layer.set_description(std::string(tr("Yakumo supports only ")) + install::kGameTitle + ", " +
+                                  install::kDiscIdDisplay + tr(", as an unmodified, uncompressed .iso image."));
             begin_footer();
-            hints({{Control::Confirm, "Select"}, {Control::Back, "Quit"}});
+            hints({{Control::Confirm, tr("Select")}, {Control::Back, tr("Quit")}});
             end_panel();
             return answer == 0;
         },
@@ -403,32 +405,32 @@ void SetupScreens::finished(const fs::path &data_dir) {
     bool first = true;
     layer.run(
         [&] {
-            begin_panel("##done", "All set", kSubtitle, false);
+            begin_panel("##done", tr("All set"), tr(kSubtitle), false);
             begin_content();
             ImGui::Dummy({0.0f, font() * 0.5f});
-            paragraph("The game is ready. Later starts go straight to it.", colors::kGood);
+            paragraph(tr("The game is ready. Later starts go straight to it."), colors::kGood);
             ImGui::Dummy({0.0f, font() * 0.3f});
 #if defined(MHP3RD_ANDROID_APP)
-            paragraph("In the game, Back, the menu button at the top of the touch controls, or L3+R3 on a gamepad "
+            paragraph(tr("In the game, Back, the menu button at the top of the touch controls, or L3+R3 on a gamepad "
                       "(both sticks pressed) opens Yakumo's menu, with the settings and the way back to this setup. "
-                      "Touch the screen to show the touch controls.",
+                      "Touch the screen to show the touch controls."),
                       colors::kTextDim);
 #else
-            paragraph("In the game, Esc or L3+R3 (both sticks pressed) opens Yakumo's menu, with the settings and the "
-                      "way back to this setup.",
+            paragraph(tr("In the game, Esc or L3+R3 (both sticks pressed) opens Yakumo's menu, with the settings and the "
+                      "way back to this setup."),
                       colors::kTextDim);
 #endif
             ImGui::Dummy({0.0f, font() * 0.3f});
-            section("Data folder");
+            section(tr("Data folder"));
             ImGui::Indent(std::round(16.0f * layer.scale()));
             paragraph(install::path_to_utf8(data_dir), colors::kTextDim);
             ImGui::Unindent(std::round(16.0f * layer.scale()));
             ImGui::Dummy({0.0f, font() * 0.8f});
             if (first) focus_next_row();
             first = false;
-            const bool play = big_button("Play", std::min(font() * 13.0f, ImGui::GetContentRegionAvail().x), true);
+            const bool play = big_button(tr("Play"), std::min(font() * 13.0f, ImGui::GetContentRegionAvail().x), true);
             begin_footer();
-            hints({{Control::Confirm, "Play"}});
+            hints({{Control::Confirm, tr("Play")}});
             end_panel();
             return !play;
         },
@@ -448,20 +450,20 @@ ProblemAnswer run_problem(const std::string &title, const std::string &message, 
                 answer = ask_setup ? 2 : 1;
                 return false;
             }
-            begin_panel("##problem", title, "", false);
+            begin_panel("##problem", tr(title.c_str()), "", false);
             begin_content();
             ImGui::Dummy({0.0f, font() * 0.5f});
             paragraph(message);
             ImGui::Dummy({0.0f, font() * 0.8f});
             if (ask_setup) {
-                answer = button_pair("Set up again", "Quit", first);
+                answer = button_pair(tr("Set up again"), tr("Quit"), first);
             } else {
                 if (first) focus_next_row();
-                if (big_button("Quit", std::min(font() * 13.0f, ImGui::GetContentRegionAvail().x), true)) answer = 1;
+                if (big_button(tr("Quit"), std::min(font() * 13.0f, ImGui::GetContentRegionAvail().x), true)) answer = 1;
             }
             first = false;
             begin_footer();
-            hints({{Control::Confirm, "Select"}, {Control::Back, "Quit"}});
+            hints({{Control::Confirm, tr("Select")}, {Control::Back, tr("Quit")}});
             end_panel();
             return answer == 0;
         },

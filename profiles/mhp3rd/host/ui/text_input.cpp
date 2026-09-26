@@ -2,6 +2,7 @@
 
 #include "ui/layer.hpp"
 #include "ui/widgets.hpp"
+#include "ui/localization.hpp"
 
 #include "gpu/vulkan_renderer.hpp"
 
@@ -309,13 +310,13 @@ void move_selection(int dx, int dy) {
 const char *action_label(KeyKind kind) {
     const Keyboard &k = keyboard();
     switch (kind) {
-    case KeyKind::Shift: return k.shift == ShiftState::Locked ? "CAPS" : "Shift";
+    case KeyKind::Shift: return k.shift == ShiftState::Locked ? tr("CAPS") : tr("Shift");
     case KeyKind::Symbols: return k.symbols ? "abc" : "#+=";
-    case KeyKind::Space: return "Space";
-    case KeyKind::Delete: return "Delete";
+    case KeyKind::Space: return tr("Space");
+    case KeyKind::Delete: return tr("Delete");
     case KeyKind::SteamKeyboard: return "Steam";
-    case KeyKind::Cancel: return "Cancel";
-    case KeyKind::Ok: return "OK";
+    case KeyKind::Cancel: return tr("Cancel");
+    case KeyKind::Ok: return tr("OK");
     case KeyKind::Char: break;
     }
     return "";
@@ -557,15 +558,15 @@ void text_input_frame() {
                   IM_COL32(143, 93, 36, 90), px(1.0f));
     ImGui::Dummy({0.0f, px(8.0f)});
     if (layer.input_device() == InputDevice::Gamepad) {
-        hints({{Control::Confirm, "Type"},
-               {Control::Delete, "Delete"},
-               {Control::Shift, "Shift"},
-               {Control::Space, "Space"}});
+        hints({{Control::Confirm, tr("Type")},
+               {Control::Delete, tr("Delete")},
+               {Control::Shift, tr("Shift")},
+               {Control::Space, tr("Space")}});
         ImGui::Dummy({0.0f, px(4.0f)});
-        hints({{Control::Cursor, "Cursor"}, {Control::Symbols, "Symbols"}, {Control::Start, "OK"}});
+        hints({{Control::Cursor, tr("Cursor")}, {Control::Symbols, tr("Symbols")}, {Control::Start, tr("OK")}});
     } else {
-        hints({{Control::Start, "OK"}, {Control::Back, "Cancel"}, {Control::Delete, "Delete"},
-               {Control::Cursor, "Cursor"}});
+        hints({{Control::Start, tr("OK")}, {Control::Back, tr("Cancel")}, {Control::Delete, tr("Delete")},
+               {Control::Cursor, tr("Cursor")}});
     }
     ImGui::End();
 }

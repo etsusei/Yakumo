@@ -1,6 +1,7 @@
 #include "ui/widgets.hpp"
 
 #include "ui/layer.hpp"
+#include "ui/localization.hpp"
 
 #include "gpu/vulkan_renderer.hpp"
 
@@ -402,6 +403,20 @@ int choice_row(const char *label, const std::string &value, const RowOptions &op
     return delta;
 }
 
+void language_row() {
+    auto &s = settings::current();
+    const char *override = settings::overridden_by("ui.language");
+    const char *name = s.ui_language == settings::UiLanguage::English
+                           ? "English" : translate("Simplified Chinese", settings::UiLanguage::SimplifiedChinese);
+    if (choice_row("Language / \u8bed\u8a00", name,
+                   {override != nullptr, override != nullptr ? override : "",
+                    tr("Choose the interface language. Game text is controlled by your game data.")}) != 0) {
+        s.ui_language = s.ui_language == settings::UiLanguage::English
+                            ? settings::UiLanguage::SimplifiedChinese : settings::UiLanguage::English;
+        settings::save();
+    }
+}
+
 bool toggle_row(const char *label, bool value, const RowOptions &options) {
     const Row r = row(label, options);
     const int delta = r.focused ? horizontal_press() : 0;
@@ -419,7 +434,7 @@ bool toggle_row(const char *label, bool value, const RowOptions &options) {
     const float knob = height * 0.5f - px(3.0f);
     const ImVec2 knob_center{on ? max.x - height * 0.5f : min.x + height * 0.5f, mid_y};
     draw->AddCircleFilled(knob_center, knob, options.disabled ? colors::kTextDisabled : colors::kText);
-    draw_value(r, on ? "On" : "Off", options, px(16.0f) + width + px(12.0f),
+    draw_value(r, on ? tr("On") : tr("Off"), options, px(16.0f) + width + px(12.0f),
                on ? colors::kAccentBright : colors::kTextDim);
     return toggled;
 }
