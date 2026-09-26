@@ -1,4 +1,30 @@
 set(MHP3RD_PROFILE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+option(MHP3RD_BASELINE_B0 "Seal the observed B0 reference against native replacements" OFF)
+set(MHP3RD_GAMEPLAY_SOURCE_COMMIT "" CACHE STRING "Gameplay source revision for paired build provenance")
+set(MHP3RD_BASELINE_PROVENANCE_SHA256 "" CACHE STRING "Verified observed-B0 source-content digest")
+if(MHP3RD_GAMEPLAY_SOURCE_COMMIT STREQUAL "")
+    execute_process(COMMAND git rev-parse HEAD WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+        OUTPUT_VARIABLE MHP3RD_EFFECTIVE_GAMEPLAY_COMMIT OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    if(MHP3RD_EFFECTIVE_GAMEPLAY_COMMIT STREQUAL "")
+        # Source archives can still build normally. Paired packaging rejects
+        # unknown provenance until an explicit full source commit is supplied.
+        set(MHP3RD_EFFECTIVE_GAMEPLAY_COMMIT "unknown")
+    endif()
+else()
+    set(MHP3RD_EFFECTIVE_GAMEPLAY_COMMIT "${MHP3RD_GAMEPLAY_SOURCE_COMMIT}")
+endif()
+string(LENGTH "${MHP3RD_EFFECTIVE_GAMEPLAY_COMMIT}" gameplay_commit_length)
+if(NOT MHP3RD_EFFECTIVE_GAMEPLAY_COMMIT STREQUAL "unknown" AND
+   (NOT gameplay_commit_length EQUAL 40 OR NOT MHP3RD_EFFECTIVE_GAMEPLAY_COMMIT MATCHES "^[0-9a-f]+$"))
+    message(FATAL_ERROR "mhp3rd: a full lowercase gameplay source commit is required")
+endif()
+if(MHP3RD_BASELINE_B0)
+    string(LENGTH "${MHP3RD_BASELINE_PROVENANCE_SHA256}" provenance_length)
+    if(NOT MHP3RD_EFFECTIVE_GAMEPLAY_COMMIT STREQUAL "4292eb66ee66eab37c327575382d071addcf6249" OR
+       NOT provenance_length EQUAL 64 OR NOT MHP3RD_BASELINE_PROVENANCE_SHA256 MATCHES "^[0-9a-f]+$")
+        message(FATAL_ERROR "mhp3rd: observed B0 requires the pinned source and verified provenance digest")
+    endif()
+endif()
 
 # The AOT corpus is derived from the user's executable and is not committed.
 # Until scripts/generate.sh has produced it, link an empty registry instead.
@@ -206,6 +232,12 @@ set(MHP3RD_HOST_SOURCES
     host/mods/mhp3rd_mods.cpp
     third_party/tiny_aes/aes.c
 )
+if(MHP3RD_BASELINE_B0)
+    list(REMOVE_ITEM MHP3RD_HOST_SOURCES
+        host/native/translation_matrix.cpp host/native/translation_matrix_bridge.cpp
+        host/native/vector_construct.cpp host/native/vector_construct_bridge.cpp
+        host/native/matrix_copy.cpp host/native/matrix_copy_bridge.cpp)
+endif()
 # tiny-AES-c is C; the project only enables C++, which compiles it unchanged.
 set_source_files_properties(third_party/tiny_aes/aes.c PROPERTIES LANGUAGE CXX)
 
@@ -321,6 +353,18 @@ set_target_properties(Yakumo PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     JOB_POOL_COMPILE psprecomp_generated)
 
+# Native entry point for local user-operated test sessions; no game or SDL link.
+# The same launcher is copied into both bundles by the candidate's packager.
+if(APPLE AND NOT MHP3RD_BASELINE_B0)
+    add_executable(mhp3rd_test_launcher tools/test_launcher.cpp
+        "${PROJECT_SOURCE_DIR}/src/sha256.cpp")
+    target_include_directories(mhp3rd_test_launcher PRIVATE "${PROJECT_SOURCE_DIR}/include")
+    target_link_libraries(mhp3rd_test_launcher PRIVATE
+        "-framework CoreFoundation" "-framework CoreServices")
+    set_target_properties(mhp3rd_test_launcher PROPERTIES
+        OUTPUT_NAME YakumoTestLauncher RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+endif()
+
 # Developer tools (host/debug): the menu's Debug page, with cheats for testing,
 # and the command file that drives it from a script. Never in a release build:
 # MHP3RD_RELEASE compiles all of it out whatever this option says. A developer
@@ -348,6 +392,18 @@ if(MHP3RD_DEBUG_MENU AND NOT MHP3RD_RELEASE)
     endif()
 else()
     message(STATUS "mhp3rd: developer tools not compiled in")
+endif()
+
+# Shared observation/build settings deliberately exclude the gameplay revision
+# and baseline seal, which are independently exposed by preflight.
+string(SHA256 MHP3RD_BUILD_CONFIG_SHA256
+    "paired-build-v1;${CMAKE_CXX_COMPILER_ID};${CMAKE_CXX_COMPILER_VERSION};${CMAKE_SYSTEM_NAME};${CMAKE_SYSTEM_PROCESSOR};${CMAKE_BUILD_TYPE};${CMAKE_CXX_FLAGS};${CMAKE_CXX_FLAGS_RELEASE};${CMAKE_CXX_FLAGS_DEBUG};${CMAKE_OSX_ARCHITECTURES};${CMAKE_OSX_DEPLOYMENT_TARGET};${MHP3RD_RENDERER};${MHP3RD_FFMPEG};${MHP3RD_LIBAV_libavcodec_VERSION};${MHP3RD_LIBAV_libavutil_VERSION};${MHP3RD_RELEASE};${MHP3RD_DEBUG_MENU};${MHP3RD_CERTIFIED_PROBES};${PSPRECOMP_GENERATED_OPT_LEVEL};${PSPRECOMP_AOT_PRODUCTION_FASTPATHS};${PSPRECOMP_AOT_ASSUME_NO_WRITE_WATCH};${PSPRECOMP_LTO}")
+set_property(SOURCE host/main.cpp APPEND PROPERTY COMPILE_DEFINITIONS
+    MHP3RD_GAMEPLAY_SOURCE_COMMIT="${MHP3RD_EFFECTIVE_GAMEPLAY_COMMIT}"
+    MHP3RD_BUILD_CONFIG_SHA256="${MHP3RD_BUILD_CONFIG_SHA256}"
+    MHP3RD_BASELINE_PROVENANCE_SHA256="${MHP3RD_BASELINE_PROVENANCE_SHA256}")
+if(MHP3RD_BASELINE_B0)
+    set_property(SOURCE host/main.cpp APPEND PROPERTY COMPILE_DEFINITIONS MHP3RD_BASELINE_B0=1)
 endif()
 
 # Offline byte comparison against the runtime's DATA.BIN implementation.
@@ -410,6 +466,7 @@ endif()
 
 # Native leaf experiments: ordinary examples need no game data. Passing the
 # user's ELF enables exhaustive differential checks against its instructions.
+if(NOT MHP3RD_BASELINE_B0)
 add_executable(mhp3rd_native_angle_tests
     tests/native_angle_tests.cpp
     host/native/angle_step.cpp
@@ -463,6 +520,7 @@ target_link_libraries(mhp3rd_native_matrix_copy_tests PRIVATE psprecomp_core)
 set_target_properties(mhp3rd_native_matrix_copy_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 if(PSPRECOMP_BUILD_TESTS)
     add_test(NAME mhp3rd_native_matrix_copy_tests COMMAND mhp3rd_native_matrix_copy_tests)
+endif()
 endif()
 
 # Shared observational journal; no PSP or renderer dependency.
@@ -554,7 +612,9 @@ if(MHP3RD_PROBE_INSTRUMENTED_SOURCES)
     target_compile_definitions(Yakumo PRIVATE MHP3RD_CERTIFIED_AOT_PROBES=1)
 endif()
 foreach(leaf angle scale translation_matrix vector_construct matrix_copy)
-    target_link_libraries(mhp3rd_native_${leaf}_tests PRIVATE mhp3rd_native_probes)
+    if(TARGET mhp3rd_native_${leaf}_tests)
+        target_link_libraries(mhp3rd_native_${leaf}_tests PRIVATE mhp3rd_native_probes)
+    endif()
 endforeach()
 foreach(suite probe state_observation runtime_diagnostics)
     add_executable(mhp3rd_${suite}_tests tests/${suite}_tests.cpp)
@@ -568,13 +628,17 @@ endforeach()
 if(MHP3RD_PROBE_INSTRUMENTED_SOURCES)
     # Reuses the production objects. The optional local ELF test executes only
     # bounded leaf calls; it never starts the game, kernel, renderer, or audio.
-    add_executable(mhp3rd_aot_probe_tests EXCLUDE_FROM_ALL tests/aot_probe_tests.cpp
-        host/native/angle_step.cpp host/native/angle_step_bridge.cpp
-        host/native/scale_matrix.cpp host/native/scale_matrix_bridge.cpp
-        host/native/translation_matrix.cpp host/native/translation_matrix_bridge.cpp
-        host/native/vector_construct.cpp host/native/vector_construct_bridge.cpp
-        host/native/matrix_copy.cpp host/native/matrix_copy_bridge.cpp
-        $<TARGET_OBJECTS:mhp3rd_generated>)
+    add_executable(mhp3rd_aot_probe_tests EXCLUDE_FROM_ALL tests/aot_probe_tests.cpp $<TARGET_OBJECTS:mhp3rd_generated>)
+    if(MHP3RD_BASELINE_B0)
+        target_compile_definitions(mhp3rd_aot_probe_tests PRIVATE MHP3RD_BASELINE_B0=1)
+    else()
+        target_sources(mhp3rd_aot_probe_tests PRIVATE
+            host/native/angle_step.cpp host/native/angle_step_bridge.cpp
+            host/native/scale_matrix.cpp host/native/scale_matrix_bridge.cpp
+            host/native/translation_matrix.cpp host/native/translation_matrix_bridge.cpp
+            host/native/vector_construct.cpp host/native/vector_construct_bridge.cpp
+            host/native/matrix_copy.cpp host/native/matrix_copy_bridge.cpp)
+    endif()
     target_include_directories(mhp3rd_aot_probe_tests PRIVATE "${MHP3RD_PROFILE_DIR}/generated")
     target_link_libraries(mhp3rd_aot_probe_tests PRIVATE mhp3rd_native_probes)
     set_target_properties(mhp3rd_aot_probe_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

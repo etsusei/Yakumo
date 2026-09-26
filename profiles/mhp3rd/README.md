@@ -847,6 +847,12 @@ The shared recording core can observe delivered controls, game-frame/virtual-tim
 
 ## Diagnostics
 
+For local paired testing, `Yakumo --test-preflight` with an explicit isolated
+`MHP3RD_DATA_DIR` reports build, recorder and effective-settings identities without
+starting the game. The sealed B0 reference rejects enabled native replacements.
+See [paired Mac test applications](../../docs/PAIRED_TEST_APPLICATIONS.md) for
+build provenance, isolated saves and supervised local record collection.
+
 | Variable | Effect |
 | --- | --- |
 | `MHP3RD_STRICT_HLE=1` | Do not bind logging stubs; stop at the first unimplemented import |

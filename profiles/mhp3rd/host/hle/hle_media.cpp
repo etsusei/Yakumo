@@ -422,8 +422,22 @@ void register_display_ctrl(HleRegistrar &hle) {
             }
         }
 #endif
-        deliver_control_buffer(rt.memory(), address, count, kernel().now_us(), kernel().vblank_count(),
-                               {buttons, analog_x, analog_y, right_x, right_y});
+        auto &memory = rt.memory();
+        for (std::uint32_t i = 0; i < count; ++i) {
+            const std::uint32_t entry = address + i * 16u;
+            memory.store32(entry, static_cast<std::uint32_t>(kernel().now_us()));
+            memory.store32(entry + 4u, buttons);
+            memory.store8(entry + 8u, analog_x);
+            memory.store8(entry + 9u, analog_y);
+            // Bytes 10 and 11 are the HD release's second stick, not padding.
+            // Leaving them zero reads as a full diagonal deflection and turns
+            // the camera every frame; 0x80 is the centre the guest tests for.
+            memory.store8(entry + 10u, right_x);
+            memory.store8(entry + 11u, right_y);
+            for (std::uint32_t j = 12u; j < 16u; ++j) memory.store8(entry + j, 0u);
+        }
+        observe_control_delivery(count, kernel().now_us(), kernel().vblank_count(),
+                                 {buttons, analog_x, analog_y, right_x, right_y});
         WaitState wait{};
         wait.type = WaitType::VBlank;
         kernel().block(ctx, wait, count);
