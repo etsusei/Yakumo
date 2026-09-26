@@ -2,6 +2,8 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
+Handoff refreshed: **2026-09-26T20:46:47Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
 ## 1. Goal, decisions, and current evidence
@@ -219,9 +221,32 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 is completed. OBS-002 through OBS-004 and PAIR-001 are completed; PAIR-002 is next.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
+Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 through OBS-004 and PAIR-001 are completed. PAIR-002 is in progress; PAIR-003 follows it.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
 
 Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with PAIR-002, the independently packaged Baseline/candidate applications and supervising launcher. PAIR-001 panel/controller integration passed offline tests; its contracts and limitations are in docs/TEST_SESSION_PANEL.md. Use the marker, counter-boundary, context and comparison contracts in docs/RUN_COMPARISON.md. OBS-004 packaging and comparison passed offline tests, including actual C++ writer integration; its local validation report and visual-preview limitation are recorded in the ledger. OBS-003 production-object probes, guarded state/performance readers and lifecycle checks passed offline; exact evidence and limitations are in docs/CERTIFIED_PROBES.md and the ledger. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
+
+#### PAIR-002 implementation handoff
+
+The working branch is `codex/paired-apps`. Uncommitted files are partial implementation, not a completed paired-app delivery. Preserve them and review the current diff before continuing.
+
+| Actual contributor | Existing partial output | Remaining boundary |
+| --- | --- | --- |
+| `/root/baseline_build_audit` | `profiles/mhp3rd/tools/prepare_observed_baseline.py`, its synthetic tests, and `docs/BASELINE_OBSERVATION_BUILD.md` | Stage and build the sealed B0 source with matching current observation code; do not reuse a historical binary with a different source identity. |
+| `/root/test_supervisor` | `profiles/mhp3rd/tools/launch_test_run.py` and `tests/test_test_supervisor.py` | Integrate with the native launcher and both actual apps. Synthetic lifecycle tests do not establish gameplay coverage. |
+| `/root/mac_test_bundles` | `profiles/mhp3rd/tools/package_test_pair.py`, shell wrapper, and synthetic tests | Actual pair assembly still needs two verified build manifests and the native launcher. Dependency/signing rehearsal is not paired delivery. |
+| `/root` | Baseline guards, preflight metadata, conditional build sources, original controller write-loop restoration, and documentation reconciliation | Candidate and draft B0 compile; final paired source synchronization and integrated verification remain pending. |
+
+The native launcher now builds and its nine synthetic tests pass. Both candidate and draft B0 builds passed; all five enabled native modes were rejected by the actual B0 preflight. The draft source predates the settled launcher translations and must be synchronized before final packaging. See `out/testing/paired-delivery-progress.json` for scoped checks.
+
+Remaining PAIR-002 steps, in order:
+
+1. Integrate the implemented `profiles/mhp3rd/tools/test_launcher.cpp` with the actual pair. It supervises without a shell, reports collection status honestly, and offers a results-folder action. The local packaging design pins an installed Python interpreter; do not describe it as a portable standalone distribution.
+2. Stage B0 using the registered source archive and explicit observation allowlist. Retain original gameplay/runtime files and disable all native replacements. The registered starting-save payload is under its snapshot's `files/` directory.
+3. Build both versions with matching observation and build profiles. Verify `--test-preflight` metadata without starting Runtime, SDL, or guest execution. Confirm the baseline refuses enabled native replacements and binds its source provenance.
+4. Assemble and verify the two actual applications, their dependencies, input hashes, independent writable saves, and preparation-only supervisor flow. Use synthetic processes for abnormal-exit collection checks; do not launch the full game during this stage.
+5. Record exact evidence and limitations, then complete PAIR-002. PAIR-003 prepares the final case pack and delivery-readiness gate; CASE-001 remains the user's gameplay acceptance.
+
+Reported component checks are attributed to their agents in the ledger. They do not replace pending integrated checks, and neither a successful process exit nor a complete log means that game behavior passed acceptance.
 
 ### Task ledger fields and update rules
 

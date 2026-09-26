@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 36,
+  "revision": 40,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T20:08:46Z",
+  "updated_at": "2026-09-26T20:46:47Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -226,6 +226,38 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/baseline_build_audit",
+      "type": "agent",
+      "role": "B0-origin source audit and guarded observation backport preparation",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/test_supervisor",
+      "type": "agent",
+      "role": "Isolated run preparation, process supervision and automatic local collection",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/mac_test_bundles",
+      "type": "agent",
+      "role": "Local paired Mac bundle assembly and dependency closure",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/native_test_launcher",
+      "type": "agent",
+      "role": "Native Mac supervisor launcher and headless synthetic integration tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -267,7 +299,7 @@
   "execution_state": {
     "current_task_id": "PAIR-002",
     "next_task_id": "PAIR-003",
-    "next_action": "Package independent Baseline B0/candidate Mac applications with identical observation/panel revisions, immutable common resources and isolated writable saves/run directories. Implement supervisor context/preparation, exit collection and local packaging, preserving normal close code 4 versus recording failure code 5. Supply bound catalogs and shared prerequisite basis per docs/TEST_SESSION_PANEL.md; keep gameplay user-led. PAIR-003 supplies the final case pack and synthetic delivery readiness checks.",
+    "next_action": "Finish PAIR-002: commit the verified tooling, stage current sealed B0 observation sources, rebuild matching role identities, run verify_pair_preflight.py, assemble real pair and exercise native headless preparation-only flow. Then continue PAIR-003 final cases. No full game launch.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": []
   },
@@ -711,7 +743,7 @@
         "/root"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T17:54:11Z",
+      "updated_at": "2026-09-26T20:32:37Z",
       "started_at": "2026-09-26T14:22:54Z",
       "completed_at": "2026-09-26T14:33:08Z",
       "timestamp_note": null,
@@ -809,6 +841,15 @@
           "from_status": "completed",
           "to_status": "completed",
           "description": "Reconciled the existing 28-task plan and ledger for the requested durable handoff. Added a context-recovery procedure and explicit tracking-field map. Preserved prior task statuses, original attribution, implementation evidence, and the OBS-003 continuation pointer; no gameplay or implementation work was performed in this documentation refresh. Validation passed for all 28 task IDs, checklist/status agreement, acyclic dependencies, timestamp formats, actor references, existing deliverable paths, continuation pointers, and diff whitespace."
+        },
+        {
+          "recorded_at": "2026-09-26T20:32:37Z",
+          "occurred_at": "2026-09-26T20:32:37Z",
+          "actor_id": "/root",
+          "action": "handoff_refreshed",
+          "from_status": "completed",
+          "to_status": "completed",
+          "description": "Refreshed the complete plan and 28-task ledger for context recovery. Corrected PAIR-002 from next to in_progress in the plan, recorded existing partial deliverables with actual agent attribution, and listed missing launcher/build/pair integration steps. Preserved historical evidence, task statuses and user-led gameplay boundaries. Documentation refresh only; no game or new implementation executed. Validation passed for all 28 unique task IDs, checklist/status agreement, dependency graph, timestamps, actor references, existing deliverables, relative paths, continuation pointers and documentation diff whitespace."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -2957,13 +2998,19 @@
       "title": "Paired Mac test applications and supervisor",
       "phase": "milestone_2",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "in_progress",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/baseline_build_audit",
+        "/root/test_supervisor",
+        "/root/mac_test_bundles",
+        "/root/native_test_launcher"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
+      "updated_at": "2026-09-26T20:46:47Z",
+      "started_at": "2026-09-26T20:19:06Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Package B0 and candidate with identical recorder revisions, isolated saves and post-exit collection.",
@@ -2972,18 +3019,18 @@
         "PAIR-001",
         "RES-001"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Implemented and built the native Mac launcher, sealed-B0 integration, no-guest preflight, isolated supervisor and local pair assembler. Both candidate and draft B0 compiled; 31 component tests, both 1,280-call AOT checks and control delivery passed. B0 preflight rejects all five enabled native replacements. Final source synchronization, real paired preflight validation and actual application assembly remain outstanding; no full game launched.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/tools/test_launcher.cpp",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "profiles/mhp3rd/scripts/package_test_pair.sh",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
@@ -2997,6 +3044,72 @@
           "kind": "application",
           "state": "planned",
           "local_only": true
+        },
+        {
+          "path": "docs/BASELINE_OBSERVATION_BUILD.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/prepare_observed_baseline.py",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_observed_baseline.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/launch_test_run.py",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "tests/test_test_supervisor.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/package_test_pair.py",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_package_test_pair.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_test_launcher.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/verify_pair_preflight.py",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/PAIRED_TEST_APPLICATIONS.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/paired-delivery-progress.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -3005,13 +3118,93 @@
         "Window-close code 4 interpreted using stop reason; no automatic upload."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "B0 source preparation synthetic tests",
+            "status": "passed",
+            "reported_by_agent_id": "/root/baseline_build_audit",
+            "evidence": "profiles/mhp3rd/tests/test_observed_baseline.py",
+            "test_count": 6,
+            "verification_scope": "Agent-reported component result; not rerun during documentation refresh."
+          },
+          {
+            "name": "Supervisor synthetic lifecycle tests",
+            "status": "passed",
+            "reported_by_agent_id": "/root/test_supervisor",
+            "evidence": "tests/test_test_supervisor.py",
+            "test_count": 11,
+            "verification_scope": "Agent-reported component result; no real game launched."
+          },
+          {
+            "name": "Mac pair assembler synthetic tests",
+            "status": "passed",
+            "reported_by_agent_id": "/root/mac_test_bundles",
+            "evidence": "profiles/mhp3rd/tests/test_package_test_pair.py",
+            "test_count": 4,
+            "verification_scope": "Agent-reported component result; actual paired applications are not assembled."
+          },
+          {
+            "name": "Local Mach-O dependency and signing rehearsal",
+            "status": "passed",
+            "reported_by_agent_id": "/root/mac_test_bundles",
+            "verification_scope": "Agent reports rehearsal with current binary, one overlay and 16 recursive libraries; deep strict signature verification passed. No game execution and no completed B0/candidate pair."
+          },
+          {
+            "name": "Primary component/build verification",
+            "status": "passed",
+            "evidence": "out/testing/paired-delivery-progress.json",
+            "component_tests": 31,
+            "scope": "Both binaries compiled; B0 source snapshot predates final launcher translations and must be resynchronized before pair packaging."
+          }
+        ],
+        "limitations": [
+          "Final source staging must include the settled observer/translation revision before final paired preflight and assembly.",
+          "Actual paired application outputs remain planned; integrated preparation-only validation is pending.",
+          "External Python is pinned for this development Mac; portable distribution is not established.",
+          "No full game run, native dialog rendering or user gameplay acceptance performed."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T20:19:06Z",
+          "occurred_at": "2026-09-26T20:19:06Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Auditing and preparing B0 plus observation sources, implementing isolated run preparation/supervision and assembling two local Mac application bundles. Full game startup remains forbidden in this offline stage."
+        },
+        {
+          "recorded_at": "2026-09-26T20:32:37Z",
+          "occurred_at": "2026-09-26T20:32:37Z",
+          "actor_id": "/root",
+          "action": "handoff_refreshed",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Partial implementation exists: B0 observation-source preparation, isolated process supervision, Mac bundle assembly tooling, and uncompiled baseline/preflight integration. Component checks were reported by their implementing agents. Native launcher, verified observed B0/candidate builds, actual pair assembly and integrated preparation-only validation remain outstanding. No real game was launched for this stage; task remains in_progress."
+        },
+        {
+          "recorded_at": "2026-09-26T20:37:30Z",
+          "occurred_at": "2026-09-26T20:37:30Z",
+          "actor_id": "/root",
+          "action": "progress",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Resumed implementation after documentation handoff. Candidate compiled with release UI and new no-guest preflight; isolated preflight created no files. Six source preparation, eleven supervisor and four packaging synthetic tests passed on primary rerun. Control-delivery CTest and 1,280 production AOT differential checks passed. Native Mac launcher delegated to /root/native_test_launcher; baseline source audit resumed. Full paired delivery remains incomplete."
+        },
+        {
+          "recorded_at": "2026-09-26T20:46:47Z",
+          "occurred_at": "2026-09-26T20:46:47Z",
+          "actor_id": "/root",
+          "action": "progress",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Implemented and built the native Mac launcher, sealed-B0 integration, no-guest preflight, isolated supervisor and local pair assembler. Both candidate and draft B0 compiled; 31 component tests, both 1,280-call AOT checks and control delivery passed. B0 preflight rejects all five enabled native replacements. Final source synchronization, real paired preflight validation and actual application assembly remain outstanding; no full game launched."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {

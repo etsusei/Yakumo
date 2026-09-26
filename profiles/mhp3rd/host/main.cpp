@@ -1,9 +1,12 @@
 #include "mhp3rd_profile.hpp"
 #include "native/angle_step_bridge.hpp"
 #include "native/scale_matrix.hpp"
+#include "native/contracts.hpp"
+#if !defined(MHP3RD_BASELINE_B0)
 #include "native/translation_matrix.hpp"
 #include "native/vector_construct.hpp"
 #include "native/matrix_copy.hpp"
+#endif
 #include "testing/runtime_recording.hpp"
 #include "testing/runtime_diagnostics.hpp"
 #include "testing/case_runtime.hpp"
@@ -58,6 +61,48 @@ void MHP3RD_CAMERA_HELPER_UNIT(Runtime &, AllegrexContext &);
 #endif
 
 namespace {
+
+void require_sealed_baseline_modes() {
+#if defined(MHP3RD_BASELINE_B0)
+    for (const auto *name : {"MHP3RD_NATIVE_ANGLE_STEP", "MHP3RD_NATIVE_SCALE_MATRIX",
+             "MHP3RD_NATIVE_TRANSLATION_MATRIX", "MHP3RD_NATIVE_VECTOR_CONSTRUCT", "MHP3RD_NATIVE_MATRIX_COPY"})
+        if (mhp3rd::native::parse_native_mode(std::getenv(name)) != mhp3rd::native::NativeMode::Off)
+            throw std::runtime_error("The B0 reference is sealed with all native replacements off");
+#endif
+}
+
+int test_preflight() {
+    // No asset lookup, runtime construction, SDL setup or guest execution.
+    const auto *directory = std::getenv("MHP3RD_DATA_DIR");
+    if (!directory || !*directory)
+        throw std::invalid_argument("Test preflight requires an isolated MHP3RD_DATA_DIR");
+    require_sealed_baseline_modes();
+    mhp3rd::testing::Fields fields{
+        {"schema", std::string("yakumo-test-preflight-v1")},
+        {"recorder_revision", std::string(mhp3rd::testing::recording_revision())},
+        {"configuration_sha256", mhp3rd::settings::case_configuration_sha256()},
+        {"build_config_sha256", std::string(MHP3RD_BUILD_CONFIG_SHA256)},
+        {"gameplay_source_commit", std::string(MHP3RD_GAMEPLAY_SOURCE_COMMIT)},
+        {"baseline_provenance_sha256", std::string(MHP3RD_BASELINE_PROVENANCE_SHA256)},
+#if defined(MHP3RD_BASELINE_B0)
+        {"baseline_sealed", true},
+#else
+        {"baseline_sealed", false},
+#endif
+#if defined(MHP3RD_HAS_RENDERER)
+        {"renderer_compiled", true},
+#else
+        {"renderer_compiled", false},
+#endif
+#if defined(MHP3RD_CERTIFIED_AOT_PROBES)
+        {"aot_probes_compiled", true},
+#else
+        {"aot_probes_compiled", false},
+#endif
+    };
+    std::cout << mhp3rd::testing::fields_json(fields) << '\n';
+    return 0;
+}
 
 // configs/nids.csv, compiled in (see tools/embed_nids.cmake), so the program
 // needs nothing from the checkout it was built in.
@@ -340,6 +385,8 @@ int main(int argc, char **argv) {
     std::shared_ptr<mhp3rd::testing::RuntimeDiagnostics> diagnostics;
     std::shared_ptr<mhp3rd::testing::CaseController> cases;
     try {
+        if (argc == 2 && std::string_view(argv[1]) == "--test-preflight") return test_preflight();
+        require_sealed_baseline_modes();
         if (argc > 1 && std::string(argv[1]) == "--adhoc-server") return run_adhoc_server(argc, argv);
         Options options;
         try {
@@ -360,6 +407,7 @@ int main(int argc, char **argv) {
             probe_mask = mhp3rd::testing::parse_probe_selection(selection ? selection : "");
             mhp3rd::testing::Fields metadata{
                 {"build_version", std::string(mhp3rd::kYakumoVersion)},
+                {"build_config_sha256", std::string(MHP3RD_BUILD_CONFIG_SHA256)},
                 {"recording_mode", std::string("observational-summary")},
                 {"requested_probe_mask", std::uint64_t(probe_mask)},
 #if defined(MHP3RD_CERTIFIED_AOT_PROBES)
@@ -373,6 +421,8 @@ int main(int argc, char **argv) {
                 {"renderer_compiled", false},
 #endif
             };
+            if (std::string_view(MHP3RD_GAMEPLAY_SOURCE_COMMIT) != "unknown")
+                metadata.push_back({"source_commit", std::string(MHP3RD_GAMEPLAY_SOURCE_COMMIT)});
             for (const char *name : {"MHP3RD_NO_RENDER", "MHP3RD_NO_AUDIO", "MHP3RD_INPUT_SCRIPT",
                     "MHP3RD_INPUT_LIVE", "PSPRECOMP_NO_CHAIN", "PSPRECOMP_COUNT_PC"})
                 metadata.push_back({std::string(name) + "_present", std::getenv(name) != nullptr});
@@ -442,11 +492,13 @@ int main(int argc, char **argv) {
                 if (auto session = weak.lock()) session->tick(mhp3rd::perf::last_second());
             });
         }
+#if !defined(MHP3RD_BASELINE_B0)
         mhp3rd::native::configure_angle_step(runtime);
         mhp3rd::native::configure_scale_matrix(runtime);
         mhp3rd::native::configure_translation_matrix(runtime);
         mhp3rd::native::configure_vector_construct(runtime);
         mhp3rd::native::configure_matrix_copy(runtime);
+#endif
         if (recording && !recording_options->case_catalog.empty()) {
             if (sha256 != mhp3rd::install::kExecutableSha256)
                 throw std::runtime_error("Case recording requires the supported executable");
@@ -502,9 +554,11 @@ int main(int argc, char **argv) {
         runtime.report_hle_histogram();
         mhp3rd::native::report_angle_step();
         mhp3rd::native::report_scale_matrix();
+#if !defined(MHP3RD_BASELINE_B0)
         mhp3rd::native::report_translation_matrix();
         mhp3rd::native::report_vector_construct();
         mhp3rd::native::report_matrix_copy();
+#endif
         return runtime.stop_reason().empty() ? 0 : 4;
     } catch (const std::exception &e) {
         mhp3rd::testing::close_case_session(cases, "host_exception");

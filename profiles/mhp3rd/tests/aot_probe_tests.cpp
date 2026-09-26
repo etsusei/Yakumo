@@ -1,9 +1,11 @@
 #include "native/bridge_contracts.hpp"
+#if !defined(MHP3RD_BASELINE_B0)
 #include "native/angle_step_bridge.hpp"
 #include "native/scale_matrix.hpp"
 #include "native/translation_matrix.hpp"
 #include "native/vector_construct.hpp"
 #include "native/matrix_copy.hpp"
+#endif
 #include "testing/probes.hpp"
 #include "testing/game_observers.hpp"
 #include "psprecomp/elf32.hpp"
@@ -236,6 +238,7 @@ void overhead(Runtime &aot) {
                   << " host_total_ns=" << ns << " scope=isolated_vector_not_game_performance\n";
     }
 }
+#if !defined(MHP3RD_BASELINE_B0)
 void native_paths(Runtime &oracle, Runtime &candidate) {
     using namespace mhp3rd::native;
     using Install = bool (*)(Runtime &, NativeMode);
@@ -287,6 +290,7 @@ void native_paths(Runtime &oracle, Runtime &candidate) {
     check(number(row, "fallback_calls") == 1 && number(row, "native_calls") == 0,
           "actual fallback is distinct from requested native mode");
 }
+#endif
 } // namespace
 int main(int argc, char **argv) {
     if (argc != 2) { std::cerr << "Usage: mhp3rd_aot_probe_tests <local-supported-ELF>\n"; return 2; }
@@ -301,7 +305,9 @@ int main(int argc, char **argv) {
         local_dispatch(aot);
         guard_and_interruption(aot);
         overhead(aot);
+#if !defined(MHP3RD_BASELINE_B0)
         native_paths(oracle, aot);
+#endif
     } catch (const std::exception &error) {
         ++failures;
         std::cerr << "FAIL: " << error.what() << '\n';

@@ -45,6 +45,15 @@ brew install cmake ninja python ccache pkg-config sdl3 molten-vk vulkan-loader v
 
 MoltenVK provides Vulkan on top of Metal. FFmpeg is not needed: the build makes its own; see [FFmpeg](#ffmpeg).
 
+For the local paired-test workflow, build `mhp3rd_test_launcher` in the candidate
+checkout; this produces `bin/YakumoTestLauncher` using only system frameworks and
+the SHA-256 utility. The observed B0 build omits that target and uses the same
+launcher at packaging time. Both game builds use release UI, certified probes and
+matching dependency settings. [Paired test applications](PAIRED_TEST_APPLICATIONS.md)
+documents the source seals, build manifests and preparation-only verification.
+Source archives without Git can build normally, but paired packaging requires an
+explicit full `MHP3RD_GAMEPLAY_SOURCE_COMMIT` when it cannot be read from Git.
+
 ## Linux
 
 Tested on Debian 13 and on the Steam Deck. Any distribution with SDL3 packages works the same way. On Debian 13 (trixie) or newer, and on distributions of similar age:
