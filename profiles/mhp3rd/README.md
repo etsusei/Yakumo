@@ -843,6 +843,8 @@ These opt-in experiments are not a performance feature or a replacement for anim
 
 The shared recording core can observe delivered controls, game-frame/virtual-time coordinates, camera operations, UI domains and overlay validation epochs. It is disabled unless a fresh `MHP3RD_RECORD_DIR` and the required role/run/batch identifiers are supplied. With recording enabled, `MHP3RD_RECORD_PROBES` selects `all` or a subset of `angle,scale,translation,vector,copy`; unset or `off` selects no function probes. Read-only state and performance summaries accompany the input journal. [GAME_OBSERVATION.md](../../docs/GAME_OBSERVATION.md) defines the environment contract, and [CERTIFIED_PROBES.md](../../docs/CERTIFIED_PROBES.md) describes exact scope, overhead and coverage limits. The paired launcher and case panel are still pending; this is not yet a complete user acceptance package.
 
+[RUN_COMPARISON.md](../../docs/RUN_COMPARISON.md) defines local packaging and JSON/HTML comparison. `MHP3RD_RECORD_CONTEXT_SHA256` binds a run to launcher-supplied input/configuration identities; unbound logs remain inspectable but cannot pass paired comparison. Case counters require tagged begin/end snapshots. Recorded manual input/state differences remain distinct from certified same-input reference mismatches.
+
 ## Diagnostics
 
 | Variable | Effect |

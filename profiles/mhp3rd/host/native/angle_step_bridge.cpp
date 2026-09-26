@@ -86,6 +86,7 @@ void bridge(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &ctx) {
                 const bool matches = same_context(ctx, prediction) && shadow.matches(memory);
                 if (!matches) {
                     ++stats.mismatches;
+                    testing::native_probe_verification_mismatch(runtime, ctx, kAngleStepAddress);
                     probe.finish(testing::ProbeVariant::Verify, false);
                     std::cerr << "[native-angle] mismatch; retaining the original result and using the reference until exit\n";
                 } else probe.finish(testing::ProbeVariant::Verify);

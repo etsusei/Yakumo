@@ -363,7 +363,7 @@ set_target_properties(mhp3rd_resource_crosscheck PROPERTIES RUNTIME_OUTPUT_DIREC
 if(PSPRECOMP_BUILD_TESTS)
     find_package(Python3 3.9 QUIET COMPONENTS Interpreter)
     if(Python3_Interpreter_FOUND)
-        foreach(suite baseline_registration resource_preparation offline_gate probe_instrumentation)
+        foreach(suite baseline_registration resource_preparation offline_gate probe_instrumentation run_package run_cases run_comparison)
             add_test(NAME mhp3rd_${suite}_tests
                 COMMAND "${Python3_EXECUTABLE}" -m unittest discover
                     -s "${MHP3RD_PROFILE_DIR}/tests" -p "test_${suite}.py" -v)
@@ -489,6 +489,14 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MHP3RD_RECORDIN
 target_compile_definitions(mhp3rd_game_observation PRIVATE
     MHP3RD_RECORDING_REVISION="source-sha256:${MHP3RD_RECORDING_REVISION}")
 target_link_libraries(mhp3rd_game_observation PUBLIC mhp3rd_session_recording)
+add_executable(mhp3rd_run_package_fixture tests/run_package_fixture.cpp)
+target_link_libraries(mhp3rd_run_package_fixture PRIVATE mhp3rd_game_observation)
+set_target_properties(mhp3rd_run_package_fixture PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(PSPRECOMP_BUILD_TESTS AND Python3_Interpreter_FOUND)
+    add_test(NAME mhp3rd_run_pipeline_tests COMMAND "${Python3_EXECUTABLE}"
+        "${MHP3RD_PROFILE_DIR}/tests/test_run_pipeline.py" "$<TARGET_FILE:mhp3rd_run_package_fixture>")
+    set_tests_properties(mhp3rd_run_pipeline_tests PROPERTIES ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
+endif()
 add_library(mhp3rd_overlay_observation STATIC host/testing/overlay_observation.cpp)
 target_include_directories(mhp3rd_overlay_observation PUBLIC "${MHP3RD_PROFILE_DIR}/host")
 target_link_libraries(mhp3rd_overlay_observation PUBLIC psprecomp_core)

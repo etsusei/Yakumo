@@ -16,6 +16,9 @@ struct RecordingOptions {
     std::string batch_id;
     std::string baseline_id{"B0"};
     std::string baseline_commit{"4292eb6"};
+    // Canonical launch-context digest supplied by the paired launcher. Empty
+    // keeps legacy diagnostic runs inspectable but unbound for comparison.
+    std::string context_sha256;
 };
 [[nodiscard]] std::string_view recording_revision() noexcept;
 

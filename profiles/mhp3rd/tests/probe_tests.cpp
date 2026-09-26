@@ -4,10 +4,12 @@
 #include "psprecomp/allegrex_context.hpp"
 #include "psprecomp/runtime.hpp"
 
+#include <charconv>
 #include <cstdint>
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -227,6 +229,18 @@ const JournalRecord *find_record(const JournalRecovery &journal, std::string_vie
     return nullptr;
 }
 
+std::optional<std::uint64_t> uint_field(const JournalRecord *record, std::string_view key) {
+    if (!record) return std::nullopt;
+    const std::string needle = "\"" + std::string(key) + "\":";
+    const auto position = record->payload.find(needle);
+    if (position == std::string::npos) return std::nullopt;
+    const char *begin = record->payload.data() + position + needle.size();
+    std::uint64_t value{};
+    const auto result = std::from_chars(begin, record->payload.data() + record->payload.size(), value);
+    if (result.ec != std::errc{} || result.ptr == begin) return std::nullopt;
+    return value;
+}
+
 void callback_bookkeeping() {
     psprecomp::Runtime runtime;
     psprecomp::AllegrexContext context{};
@@ -286,6 +300,84 @@ void callback_bookkeeping() {
           summary->payload.find("\"coverage\":\"not_covered\"") != std::string::npos,
           "restart does not inherit old session's calls or suppression");
 }
+
+void verification_mismatch_diagnostic() {
+    psprecomp::Runtime runtime;
+    psprecomp::AllegrexContext context{};
+    context.pc = 0x08020000u;
+    JournalFixture fixture;
+    fixture.observer->time(123u, 456u);
+    native_probe_verification_mismatch(runtime, context, kAngle);
+    configure_native_probes(fixture.observer, kProbeAngle);
+    native_probe_verification_mismatch(runtime, context, kVector);
+    {
+        NativeProbeScope failed_reference(runtime, context, kAngle);
+        failed_reference.finish(ProbeVariant::Verify, false);
+    }
+    native_probe_verification_mismatch(runtime, context, kAngle);
+    flush_native_probes(true);
+    native_probe_verification_mismatch(runtime, context, kAngle);
+
+    const auto journal = fixture.close();
+    check(journal.complete(), "verification mismatch journal recovers");
+    std::size_t mismatch_events = 0;
+    const JournalRecord *mismatch = nullptr;
+    for (const auto &record : journal.records) {
+        if (record.payload.find("\"event\":\"native.verification_mismatch\"") ==
+            std::string::npos) continue;
+        ++mismatch_events;
+        mismatch = &record;
+    }
+    check(mismatch_events == 1, "only an active selected session emits mismatch evidence");
+    check(mismatch && mismatch->kind == EventKind::Error &&
+          mismatch->payload.find("\"entry\":" + std::to_string(kAngle)) != std::string::npos &&
+          mismatch->payload.find("\"evidence\":\"same_input_reference\"") != std::string::npos &&
+          mismatch->payload.find("\"certified\":false") != std::string::npos &&
+          mismatch->payload.find("\"guest_pc\":" + std::to_string(context.pc)) != std::string::npos &&
+          mismatch->payload.find("\"virtual_us\":123") != std::string::npos &&
+          mismatch->payload.find("\"vblank\":456") != std::string::npos,
+          "unknown code records an uncertified diagnostic with observer time");
+}
+
+void tagged_counter_snapshots() {
+    psprecomp::Runtime runtime;
+    psprecomp::AllegrexContext context{};
+    JournalFixture first;
+    configure_native_probes(first.observer, kProbeAngle);
+    flush_native_probes(false, "case_begin");
+    {
+        NativeProbeScope native(runtime, context, kAngle);
+        native.finish(ProbeVariant::Native);
+    }
+    flush_native_probes(false, "case_end");
+    flush_native_probes(true);
+    const auto first_journal = first.close();
+    check(first_journal.complete(), "tagged counter journal recovers");
+    const auto *begin = find_record(first_journal, "\"event\":\"probe.summary\"",
+                                    "\"boundary\":\"case_begin\"");
+    const auto *end = find_record(first_journal, "\"event\":\"probe.summary\"",
+                                  "\"boundary\":\"case_end\"");
+    const auto *final = find_record(first_journal, "\"event\":\"probe.summary\"",
+                                    "\"boundary\":\"\"");
+    const auto begin_epoch = uint_field(begin, "counter_epoch");
+    const auto end_epoch = uint_field(end, "counter_epoch");
+    check(begin_epoch && end_epoch && *begin_epoch == *end_epoch &&
+          uint_field(final, "counter_epoch") == begin_epoch,
+          "one session keeps a stable epoch across tagged and default summaries");
+    check(uint_field(begin, "entry_hits") == 0u &&
+          uint_field(end, "entry_hits") == 1u,
+          "tagged summaries preserve cumulative counters for case deltas");
+
+    JournalFixture second;
+    configure_native_probes(second.observer, kProbeAngle);
+    flush_native_probes(true, "case_begin");
+    const auto second_journal = second.close();
+    const auto *new_session = find_record(second_journal, "\"event\":\"probe.summary\"",
+                                          "\"boundary\":\"case_begin\"");
+    const auto new_epoch = uint_field(new_session, "counter_epoch");
+    check(second_journal.complete() && begin_epoch && new_epoch && *new_epoch > *begin_epoch,
+          "new sessions use a distinct increasing counter epoch");
+}
 } // namespace
 
 int main() {
@@ -295,6 +387,8 @@ int main() {
     thread_identity();
     recent_detail_ring();
     callback_bookkeeping();
+    verification_mismatch_diagnostic();
+    tagged_counter_snapshots();
     if (failures) std::cerr << failures << " probe test(s) failed\n";
     return failures ? 1 : 0;
 }
