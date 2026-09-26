@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 19,
+  "revision": 21,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T15:50:11Z",
+  "updated_at": "2026-09-26T16:01:33Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -114,6 +114,22 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/session_writer",
+      "type": "agent",
+      "role": "Bounded background session writer and exclusive file sink",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/session_recorder_tests",
+      "type": "agent",
+      "role": "Independent journal framing and async recorder lifecycle tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -153,9 +169,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": null,
-    "next_task_id": "OBS-001",
-    "next_action": "Implement and offline-test the shared versioned session recorder with bounded queues, persistence, recovery and explicit loss/error evidence before connecting game observers.",
+    "current_task_id": "OBS-001",
+    "next_task_id": "OBS-002",
+    "next_action": "Implement and independently test framing/recovery and the background session writer, including periodic/checkpoint flush, overflow and I/O failure.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": []
   },
@@ -1858,25 +1874,29 @@
       "title": "Recorder journal and recovery core",
       "phase": "milestone_2",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "in_progress",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/session_writer",
+        "/root/session_recorder_tests"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
+      "updated_at": "2026-09-26T16:01:33Z",
+      "started_at": "2026-09-26T15:56:17Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Implement versioned append-only records, bounded buffering and failure visibility.",
       "depends_on": [
         "OFF-006"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Implementing the shared framed journal, typed JSON event fields, bounded background writer, explicit overflow/error health and crash-prefix recovery. Public core interfaces are defined; no live game integration yet.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/host/testing/session_recorder.hpp",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
@@ -1889,6 +1909,18 @@
           "path": "profiles/mhp3rd/tests/session_recorder_tests.cpp",
           "kind": "test",
           "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/journal.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/journal.cpp",
+          "kind": "source",
+          "state": "existing",
           "local_only": false
         }
       ],
@@ -1904,7 +1936,26 @@
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T15:56:17Z",
+          "occurred_at": "2026-09-26T15:56:17Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Implementing the shared framed journal, typed JSON event fields, bounded background writer, explicit overflow/error health and crash-prefix recovery. Public core interfaces are defined; no live game integration yet."
+        },
+        {
+          "recorded_at": "2026-09-26T16:01:33Z",
+          "occurred_at": "2026-09-26T16:01:33Z",
+          "actor_id": "/root",
+          "action": "delegated",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Root owns the wire codec/recovery, interfaces and integration; session_writer owns async persistence; session_recorder_tests independently builds golden fixtures and lifecycle tests."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
