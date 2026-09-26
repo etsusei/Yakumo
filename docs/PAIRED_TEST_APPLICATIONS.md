@@ -55,3 +55,9 @@ The supervisor captures bounded stdout/stderr, waits for the user to finish, and
 For offline integration, use the native launcher's `--headless --prepare-only` options. This verifies installation and collection plumbing without opening the game or any dialog. Lifecycle failure tests use synthetic child processes. Full game startup, physical controls, final dialog appearance and live case coverage belong to the later user-led acceptance batch.
 
 After an ordinary run, the launcher offers a results-folder action. The supervisor's separate `--result-directory` query validates the result file's run identity before returning a path. The application does not upload records. A saved record is ready for comparison; it is not a claim that animation, AI, collision or feel matches B0.
+
+## Recorded offline delivery check
+
+On 2026-09-27, implementation commit `4759d99` was built and checked on Apple Silicon macOS 27.0. Both actual signed applications were assembled; their native entry points completed `--headless --prepare-only` against the registered inputs. Their initial save contents matched, their writable files/directories were independent, and original inputs were unchanged. The supervisor retains `result.json` beside each run's evidence after the launcher's temporary handoff is removed.
+
+The gate passed 32 component tests, 21 real-binary preflight checks and both 1,280-call production AOT leaf checks. Local evidence is in `out/testing/paired-preflight-validation.json`, `out/testing/paired-preparation-validation.json`, and `out/testing/dist/pair-manifest.json`. No game was launched and no dialog was displayed. PAIR-003 still owns the final concrete case catalog and user handoff; the current packaged catalog is provisional.

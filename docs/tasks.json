@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 40,
+  "revision": 41,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T20:46:47Z",
+  "updated_at": "2026-09-26T20:53:17Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -297,9 +297,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "PAIR-002",
-    "next_task_id": "PAIR-003",
-    "next_action": "Finish PAIR-002: commit the verified tooling, stage current sealed B0 observation sources, rebuild matching role identities, run verify_pair_preflight.py, assemble real pair and exercise native headless preparation-only flow. Then continue PAIR-003 final cases. No full game launch.",
+    "current_task_id": "PAIR-003",
+    "next_task_id": "CASE-001",
+    "next_action": "Finalize the first concrete Chinese case pack and user guide. Replace provisional route wording with finite instructions, prerequisites, checkpoints, coverage and stop conditions; validate localization/catalog/runtime contracts offline. Repackage or regenerate audited sources if observer/UI source changes. Then mark delivery readiness and hand off both apps for user-led paired gameplay; do not start the full game automatically.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": []
   },
@@ -318,7 +318,9 @@
     "run_comparison_guide": "docs/RUN_COMPARISON.md",
     "run_comparison_pr": "https://github.com/etsusei/Yakumo/pull/9",
     "test_panel_pr": "https://github.com/etsusei/Yakumo/pull/10",
-    "test_panel_guide": "docs/TEST_SESSION_PANEL.md"
+    "test_panel_guide": "docs/TEST_SESSION_PANEL.md",
+    "paired_apps_pr": "https://github.com/etsusei/Yakumo/pull/11",
+    "paired_apps_guide": "docs/PAIRED_TEST_APPLICATIONS.md"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -2998,7 +3000,7 @@
       "title": "Paired Mac test applications and supervisor",
       "phase": "milestone_2",
       "kind": "finite",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -3009,9 +3011,9 @@
         "/root/native_test_launcher"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T20:46:47Z",
+      "updated_at": "2026-09-26T20:53:17Z",
       "started_at": "2026-09-26T20:19:06Z",
-      "completed_at": null,
+      "completed_at": "2026-09-26T20:53:17Z",
       "timestamp_note": null,
       "scope": "Package B0 and candidate with identical recorder revisions, isolated saves and post-exit collection.",
       "depends_on": [
@@ -3019,7 +3021,7 @@
         "PAIR-001",
         "RES-001"
       ],
-      "work_summary": "Implemented and built the native Mac launcher, sealed-B0 integration, no-guest preflight, isolated supervisor and local pair assembler. Both candidate and draft B0 compiled; 31 component tests, both 1,280-call AOT checks and control delivery passed. B0 preflight rejects all five enabled native replacements. Final source synchronization, real paired preflight validation and actual application assembly remain outstanding; no full game launched.",
+      "work_summary": "Completed paired Mac tooling and actual local applications at source commit 4759d99. Both final role builds passed, 32 component tests passed, 21 real-binary preflight checks passed, and both production AOT harnesses passed 1,280 differential calls. Actual application entry points completed headless preparation-only supervision with equal but independent starting saves, unchanged original inputs, persistent result files and no game startup. Both signed bundles have matching recorder/build/config/overlay identities and distinct game binaries. Published draft PR #11. The packaged local catalog is provisional; PAIR-003 finalizes concrete user cases and delivery readiness before CASE-001.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/tools/test_launcher.cpp",
@@ -3036,13 +3038,13 @@
         {
           "path": "out/testing/dist/Yakumo Baseline.app",
           "kind": "application",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
           "path": "out/testing/dist/Yakumo Candidate.app",
           "kind": "application",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
@@ -3110,6 +3112,60 @@
           "kind": "report",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "out/testing/paired-preflight-validation.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/baseline.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/candidate.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/paired-preparation-validation.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/pair-manifest.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/paired-assembly.log",
+          "kind": "log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/paired-baseline-aot.log",
+          "kind": "log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/paired-candidate-aot.log",
+          "kind": "log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-sources/B0-prepare-1/observed_baseline_manifest.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -3155,16 +3211,45 @@
             "evidence": "out/testing/paired-delivery-progress.json",
             "component_tests": 31,
             "scope": "Both binaries compiled; B0 source snapshot predates final launcher translations and must be resynchronized before pair packaging."
+          },
+          {
+            "name": "Final real-binary paired preflight",
+            "status": "passed",
+            "evidence": "out/testing/paired-preflight-validation.json",
+            "check_count": 21,
+            "game_launched": false
+          },
+          {
+            "name": "Native launcher synthetic lifecycle checks",
+            "status": "passed",
+            "evidence": "profiles/mhp3rd/tests/test_test_launcher.py",
+            "test_count": 10,
+            "platform": "macOS 27.0 Apple Silicon",
+            "game_launched": false
+          },
+          {
+            "name": "Actual signed paired application assembly",
+            "status": "passed",
+            "evidence": "out/testing/dist/pair-manifest.json",
+            "details": "Matched recursive library closure, 355 overlays, strict deep ad-hoc signatures and distinct game binaries."
+          },
+          {
+            "name": "Actual application headless preparation-only flow",
+            "status": "passed",
+            "evidence": "out/testing/paired-preparation-validation.json",
+            "details": "Both native launchers invoked packaged supervisors and real preflight; isolated save copies matched and original inputs were unchanged. No recording directory or game process started."
           }
         ],
         "limitations": [
-          "Final source staging must include the settled observer/translation revision before final paired preflight and assembly.",
-          "Actual paired application outputs remain planned; integrated preparation-only validation is pending.",
-          "External Python is pinned for this development Mac; portable distribution is not established.",
-          "No full game run, native dialog rendering or user gameplay acceptance performed."
+          "The bundled local catalog is provisional; concrete final user cases and handoff readiness are PAIR-003.",
+          "No full game run, live input/probe coverage, native dialog rendering or user gameplay acceptance was performed.",
+          "The pair pins an external Python interpreter and registered resource paths for this development Mac; relocation, notarization and portable distribution are unverified.",
+          "Baseline source provenance and offline checks do not establish gameplay equivalence or performance neutrality."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "4759d99"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -3203,6 +3288,15 @@
           "from_status": "in_progress",
           "to_status": "in_progress",
           "description": "Implemented and built the native Mac launcher, sealed-B0 integration, no-guest preflight, isolated supervisor and local pair assembler. Both candidate and draft B0 compiled; 31 component tests, both 1,280-call AOT checks and control delivery passed. B0 preflight rejects all five enabled native replacements. Final source synchronization, real paired preflight validation and actual application assembly remain outstanding; no full game launched."
+        },
+        {
+          "recorded_at": "2026-09-26T20:53:17Z",
+          "occurred_at": "2026-09-26T20:53:17Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Completed paired Mac tooling and actual local applications at source commit 4759d99. Both final role builds passed, 32 component tests passed, 21 real-binary preflight checks passed, and both production AOT harnesses passed 1,280 differential calls. Actual application entry points completed headless preparation-only supervision with equal but independent starting saves, unchanged original inputs, persistent result files and no game startup. Both signed bundles have matching recorder/build/config/overlay identities and distinct game binaries. Published draft PR #11. The packaged local catalog is provisional; PAIR-003 finalizes concrete user cases and delivery readiness before CASE-001."
         }
       ],
       "updated_by_agent_id": "/root"

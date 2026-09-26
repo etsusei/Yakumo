@@ -2,7 +2,7 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-26T20:46:47Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-26T20:53:17Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -36,7 +36,7 @@ A native leaf behind a guest ABI adapter is a useful intermediate result, not ev
 - Angle helper: **806,432 offline differential cases passed**, but **zero calls** were observed on the tested village route. In-game coverage remains absent.
 - Scale-matrix helper: **100,512 offline cases passed**, including 10,000 prefix fallbacks. Live verification compared **48,365 calls with zero mismatches**; a separate native run used **48,405 calls with zero fallback**.
 - The tested route was read-save, character selection, village entry, and a short walk. Audio output, combat/quests, multiplayer, other platforms, and long-session stability were not verified.
-- Full raw resource extraction and source-anchored reuse verification passed. All 6,043 decoded entries matched the independent C++ path byte for byte; the shared journal core passed offline recovery and persistence checks. Input/timeline/overlay observer hooks are implemented and tested offline; live coverage remains pending. Certified leaf probes and guarded state/performance readers have offline verification. Local packaging and comparison reports have passed offline checks. The Chinese case panel has offline verification; paired application delivery remains planned. Existing input scripts inject input; they are not a complete recorder.
+- Full raw resource extraction and source-anchored reuse verification passed. All 6,043 decoded entries matched the independent C++ path byte for byte; the shared journal core passed offline recovery and persistence checks. Input/timeline/overlay observer hooks are implemented and tested offline; live coverage remains pending. Certified leaf probes and guarded state/performance readers have offline verification. Local packaging and comparison reports have passed offline checks. The Chinese case panel has offline verification; both signed paired applications passed preparation-only delivery checks. Final user cases and live acceptance remain pending. Existing input scripts inject input; they are not a complete recorder.
 
 See [NATIVE_EXPERIMENT.md](NATIVE_EXPERIMENT.md) for the exact experiment boundaries. Historical successful boot tests do not override the new offline-first workflow.
 
@@ -108,7 +108,7 @@ ISO and PSMF components are already native. Their new tests count as infrastruct
 - [x] **OBS-003** — Connect certified probes, read-only state observations, performance summaries, and errors.
 - [x] **OBS-004** — Implement record packaging and the offline comparison/report command.
 - [x] **PAIR-001** — Add the Chinese in-game case panel without exposing state-changing cheat controls.
-- [ ] **PAIR-002** — Package separate Baseline/candidate Mac applications with the same recorder revision and isolated run data.
+- [x] **PAIR-002** — Package separate Baseline/candidate Mac applications with the same recorder revision and isolated run data.
 - [ ] **PAIR-003** — Validate preparation/export behavior using synthetic child processes and publish the first case pack.
 
 Build and test the tooling using constructed events, fake clocks, temporary files, synthetic overlays, and subprocesses that exit or crash. Real-game hook coverage and UI usability remain pending until user acceptance; an offline test of the recorder must not be presented as validation of its live integration.
@@ -221,32 +221,19 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 through OBS-004 and PAIR-001 are completed. PAIR-002 is in progress; PAIR-003 follows it.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
+Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 through OBS-004 and PAIR-001 are completed. PAIR-002 is completed; PAIR-003 is next.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
 
-Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with PAIR-002, the independently packaged Baseline/candidate applications and supervising launcher. PAIR-001 panel/controller integration passed offline tests; its contracts and limitations are in docs/TEST_SESSION_PANEL.md. Use the marker, counter-boundary, context and comparison contracts in docs/RUN_COMPARISON.md. OBS-004 packaging and comparison passed offline tests, including actual C++ writer integration; its local validation report and visual-preview limitation are recorded in the ledger. OBS-003 production-object probes, guarded state/performance readers and lifecycle checks passed offline; exact evidence and limitations are in docs/CERTIFIED_PROBES.md and the ledger. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
+Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with PAIR-003, the final concrete case pack and delivery-readiness gate. PAIR-002 now supplies independent signed applications and a verified preparation-only launcher flow. PAIR-001 panel/controller integration passed offline tests; its contracts and limitations are in docs/TEST_SESSION_PANEL.md. Use the marker, counter-boundary, context and comparison contracts in docs/RUN_COMPARISON.md. OBS-004 packaging and comparison passed offline tests, including actual C++ writer integration; its local validation report and visual-preview limitation are recorded in the ledger. OBS-003 production-object probes, guarded state/performance readers and lifecycle checks passed offline; exact evidence and limitations are in docs/CERTIFIED_PROBES.md and the ledger. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
 
-#### PAIR-002 implementation handoff
+#### Paired delivery checkpoint and next action
 
-The working branch is `codex/paired-apps`. Uncommitted files are partial implementation, not a completed paired-app delivery. Preserve them and review the current diff before continuing.
+PAIR-002 is completed at implementation commit `4759d99`, published in draft PR [#11](https://github.com/etsusei/Yakumo/pull/11). The local applications are `out/testing/dist/Yakumo Baseline.app` and `out/testing/dist/Yakumo Candidate.app`. The 412-file B0 source manifest preserves registered B0 game files and records 84 explicit observation overrides. Both roles share the same recording revision, build configuration, effective settings and 355 overlay libraries, with distinct game binaries.
 
-| Actual contributor | Existing partial output | Remaining boundary |
-| --- | --- | --- |
-| `/root/baseline_build_audit` | `profiles/mhp3rd/tools/prepare_observed_baseline.py`, its synthetic tests, and `docs/BASELINE_OBSERVATION_BUILD.md` | Stage and build the sealed B0 source with matching current observation code; do not reuse a historical binary with a different source identity. |
-| `/root/test_supervisor` | `profiles/mhp3rd/tools/launch_test_run.py` and `tests/test_test_supervisor.py` | Integrate with the native launcher and both actual apps. Synthetic lifecycle tests do not establish gameplay coverage. |
-| `/root/mac_test_bundles` | `profiles/mhp3rd/tools/package_test_pair.py`, shell wrapper, and synthetic tests | Actual pair assembly still needs two verified build manifests and the native launcher. Dependency/signing rehearsal is not paired delivery. |
-| `/root` | Baseline guards, preflight metadata, conditional build sources, original controller write-loop restoration, and documentation reconciliation | Candidate and draft B0 compile; final paired source synchronization and integrated verification remain pending. |
+Validation includes 32 synthetic component tests, 21 real-binary preflight checks, both 1,280-call production AOT comparisons, and each actual application's native entry point running headless preparation-only supervision. The two prepared save copies have equal contents and distinct files/directories; original inputs stayed unchanged. No full game, native result dialog or live case was exercised. Evidence paths and actual contributor attribution are recorded in PAIR-002 and [the paired-app guide](PAIRED_TEST_APPLICATIONS.md).
 
-The native launcher now builds and its nine synthetic tests pass. Both candidate and draft B0 builds passed; all five enabled native modes were rejected by the actual B0 preflight. The draft source predates the settled launcher translations and must be synchronized before final packaging. See `out/testing/paired-delivery-progress.json` for scoped checks.
+**Resume PAIR-003:** the existing applications contain a provisional local catalog for packaging verification. Finalize concrete Chinese instructions, starting conditions, finite routes, checkpoints, human observations, coverage and stop conditions before handing them to the user. Preserve the 15–30-minute combined batch target. Any observer/UI source change requires matching role revisions and renewed source/build/package verification. The current source snapshot is `out/testing/observed-sources/B0-prepare-1`; its manifest and observed-build records are local-only. Use the existing compiler cache and build directories rather than discarding completed build work.
 
-Remaining PAIR-002 steps, in order:
-
-1. Integrate the implemented `profiles/mhp3rd/tools/test_launcher.cpp` with the actual pair. It supervises without a shell, reports collection status honestly, and offers a results-folder action. The local packaging design pins an installed Python interpreter; do not describe it as a portable standalone distribution.
-2. Stage B0 using the registered source archive and explicit observation allowlist. Retain original gameplay/runtime files and disable all native replacements. The registered starting-save payload is under its snapshot's `files/` directory.
-3. Build both versions with matching observation and build profiles. Verify `--test-preflight` metadata without starting Runtime, SDL, or guest execution. Confirm the baseline refuses enabled native replacements and binds its source provenance.
-4. Assemble and verify the two actual applications, their dependencies, input hashes, independent writable saves, and preparation-only supervisor flow. Use synthetic processes for abnormal-exit collection checks; do not launch the full game during this stage.
-5. Record exact evidence and limitations, then complete PAIR-002. PAIR-003 prepares the final case pack and delivery-readiness gate; CASE-001 remains the user's gameplay acceptance.
-
-Reported component checks are attributed to their agents in the ledger. They do not replace pending integrated checks, and neither a successful process exit nor a complete log means that game behavior passed acceptance.
+The pair pins an installed Python interpreter and local resource paths; it is not a portable standalone distribution. A successful preparation or complete record is not gameplay acceptance. CASE-001 remains user-led, and broader animation, AI, collision and combat claims remain pending relevant cases.
 
 ### Task ledger fields and update rules
 

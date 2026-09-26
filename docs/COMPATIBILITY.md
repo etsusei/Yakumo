@@ -57,6 +57,16 @@ On 2026-09-26, code commit `f60e77f` was checked on macOS 27 / Apple M5 with Mol
 
 This result covers that route and helper only. The angle-step helper was not called on the route. Audio output was disabled, and combat, quests, multiplayer, other platforms and long sessions were not checked. See [the experiment guide](NATIVE_EXPERIMENT.md#recorded-local-result) for isolated differential tests and limits.
 
+## Paired testing tools
+
+The paired-test tooling at commit `4759d99` passed offline delivery checks on
+Apple Silicon macOS 27.0 on 2026-09-27: both signed applications completed native
+launcher preparation-only runs with independent equal starting saves. No full
+game was launched. This does not change any gameplay compatibility cell above;
+live coverage, dialog appearance and user acceptance remain pending. See
+[paired test applications](PAIRED_TEST_APPLICATIONS.md#recorded-offline-delivery-check)
+for the evidence scope.
+
 ## Updating this page
 
 Run through [the smoke test](TESTING.md) on the platform, then change the cells you checked in the same pull request as the fix, or in a pull request of their own. Add a row to *Tested hardware* with the commit you tested. A result without a commit cannot be compared with anything later, so it does not go in the table.
