@@ -80,6 +80,7 @@ if(MHP3RD_RENDERER)
         # Dear ImGui (third_party/imgui, unmodified) draws the port's own
         # interface over the game.
         set(MHP3RD_RENDERER_SOURCES
+            host/testing/sdl_observers.cpp
             host/gpu/frame_interpolation.cpp
             host/gpu/frame_pacing.cpp
             host/gpu/replacement_textures.cpp
@@ -466,6 +467,41 @@ add_library(mhp3rd_session_recording STATIC
     host/testing/session_recorder.cpp)
 target_include_directories(mhp3rd_session_recording PUBLIC "${MHP3RD_PROFILE_DIR}/host")
 target_link_libraries(mhp3rd_session_recording PUBLIC Threads::Threads)
+add_library(mhp3rd_game_observation STATIC
+    host/testing/game_observers.cpp
+    host/testing/runtime_recording.cpp)
+file(GLOB MHP3RD_RECORDING_REVISION_INPUTS CONFIGURE_DEPENDS
+    "${MHP3RD_PROFILE_DIR}/host/testing/*.cpp" "${MHP3RD_PROFILE_DIR}/host/testing/*.hpp")
+list(APPEND MHP3RD_RECORDING_REVISION_INPUTS "${MHP3RD_PROFILE_DIR}/tools/instrument_probes.py")
+set(MHP3RD_RECORDING_DIGESTS "")
+foreach(source IN LISTS MHP3RD_RECORDING_REVISION_INPUTS)
+    file(SHA256 "${source}" digest)
+    string(APPEND MHP3RD_RECORDING_DIGESTS "${digest};")
+endforeach()
+string(SHA256 MHP3RD_RECORDING_REVISION "${MHP3RD_RECORDING_DIGESTS}")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MHP3RD_RECORDING_REVISION_INPUTS})
+target_compile_definitions(mhp3rd_game_observation PRIVATE
+    MHP3RD_RECORDING_REVISION="source-sha256:${MHP3RD_RECORDING_REVISION}")
+target_link_libraries(mhp3rd_game_observation PUBLIC mhp3rd_session_recording)
+target_link_libraries(Yakumo PRIVATE mhp3rd_game_observation)
+foreach(suite game_observer runtime_recording)
+    add_executable(mhp3rd_${suite}_tests tests/${suite}_tests.cpp)
+    target_link_libraries(mhp3rd_${suite}_tests PRIVATE mhp3rd_game_observation)
+    set_target_properties(mhp3rd_${suite}_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    if(PSPRECOMP_BUILD_TESTS)
+        add_test(NAME mhp3rd_${suite}_tests COMMAND mhp3rd_${suite}_tests)
+        set_tests_properties(mhp3rd_${suite}_tests PROPERTIES TIMEOUT 30)
+    endif()
+endforeach()
+if(MHP3RD_RENDERER)
+    add_executable(mhp3rd_sdl_observer_tests tests/sdl_observer_tests.cpp host/testing/sdl_observers.cpp)
+    target_link_libraries(mhp3rd_sdl_observer_tests PRIVATE mhp3rd_game_observation SDL3::SDL3)
+    set_target_properties(mhp3rd_sdl_observer_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    if(PSPRECOMP_BUILD_TESTS)
+        add_test(NAME mhp3rd_sdl_observer_tests COMMAND mhp3rd_sdl_observer_tests)
+        set_tests_properties(mhp3rd_sdl_observer_tests PROPERTIES TIMEOUT 30)
+    endif()
+endif()
 add_executable(mhp3rd_session_recorder_tests tests/session_recorder_tests.cpp)
 target_link_libraries(mhp3rd_session_recorder_tests PRIVATE mhp3rd_session_recording)
 set_target_properties(mhp3rd_session_recorder_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -488,7 +524,7 @@ add_executable(mhp3rd_camera_tests
     host/camera/game_camera.cpp
     host/input/bindings.cpp)
 target_include_directories(mhp3rd_camera_tests PRIVATE "${MHP3RD_PROFILE_DIR}/host")
-target_link_libraries(mhp3rd_camera_tests PRIVATE psprecomp_core)
+target_link_libraries(mhp3rd_camera_tests PRIVATE psprecomp_core mhp3rd_game_observation)
 set_target_properties(mhp3rd_camera_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 if(PSPRECOMP_BUILD_TESTS)
     add_test(NAME mhp3rd_camera_tests COMMAND mhp3rd_camera_tests)
@@ -512,7 +548,7 @@ add_executable(mhp3rd_settings_tests
     host/install/user_data.cpp
     host/input/bindings.cpp)
 target_include_directories(mhp3rd_settings_tests PRIVATE "${MHP3RD_PROFILE_DIR}/host")
-target_link_libraries(mhp3rd_settings_tests PRIVATE psprecomp_core)
+target_link_libraries(mhp3rd_settings_tests PRIVATE psprecomp_core mhp3rd_game_observation)
 set_target_properties(mhp3rd_settings_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 if(PSPRECOMP_BUILD_TESTS)
     add_test(NAME mhp3rd_settings_tests COMMAND mhp3rd_settings_tests)
@@ -531,7 +567,7 @@ add_executable(mhp3rd_ui_localization_tests
     host/install/user_data.cpp
     host/input/bindings.cpp)
 target_include_directories(mhp3rd_ui_localization_tests PRIVATE "${MHP3RD_PROFILE_DIR}/host")
-target_link_libraries(mhp3rd_ui_localization_tests PRIVATE psprecomp_core)
+target_link_libraries(mhp3rd_ui_localization_tests PRIVATE psprecomp_core mhp3rd_game_observation)
 set_target_properties(mhp3rd_ui_localization_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 if(PSPRECOMP_BUILD_TESTS)
     foreach(mode default saved override invalid)

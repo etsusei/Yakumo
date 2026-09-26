@@ -1,4 +1,6 @@
 #include "settings/settings.hpp"
+#include "testing/game_observers.hpp"
+#include "psprecomp/sha256.hpp"
 
 #include "install/user_data.hpp"
 
@@ -460,6 +462,7 @@ const Settings &defaults() {
 void save() {
     State &s = state();
     if (!s.loaded) load(s);
+    record_snapshot();
     install::SettingsEntries entries;
     try {
         // Re-read, so a key the installer wrote since start-up survives.
@@ -477,6 +480,41 @@ void save() {
         install::write_settings_file(s.data_dir, entries);
     } catch (const std::exception &e) {
         std::cerr << "[settings] cannot write settings.ini: " << e.what() << "\n";
+    }
+}
+
+void record_snapshot() noexcept {
+    const auto observer = testing::active_observer();
+    if (!observer) return;
+    try {
+        State &s = state();
+        if (!s.loaded) load(s);
+        testing::Fields all, visible;
+        const auto digest = [](const std::string &value) {
+            return psprecomp::sha256_bytes(std::span<const std::uint8_t>(
+                reinterpret_cast<const std::uint8_t *>(value.data()), value.size()));
+        };
+        for (const auto &field : all_fields()) {
+            const std::string key = field.key;
+            const auto value = field.format(s.values);
+            all.push_back({key, value});
+            const bool sensitive = key == "input.name" || key == "text.font" ||
+                key == "video.texture_pack_folder" || key == "ui.last_folder" ||
+                key == "network.server" || key == "network.nickname" ||
+                key == "network.mac" || key == "network.recent";
+            visible.push_back({sensitive ? key + ".sha256" : key,
+                               sensitive ? digest(value) : value});
+        }
+        const auto hash = digest(testing::fields_json(all));
+        static std::weak_ptr<testing::GameObserver> previous_observer;
+        static std::string previous_hash;
+        if (previous_observer.lock() == observer && previous_hash == hash) return;
+        visible.push_back({"settings_sha256", hash});
+        observer->emit(testing::EventKind::State, "config.effective", std::move(visible), true);
+        previous_observer = observer;
+        previous_hash = hash;
+    } catch (...) {
+        observer->emit(testing::EventKind::Error, "config.capture_failed", {}, true);
     }
 }
 

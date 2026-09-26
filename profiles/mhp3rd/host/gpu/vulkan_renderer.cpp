@@ -15,6 +15,7 @@
 #include "perf/perf_overlay.hpp"
 #include "input/bindings.hpp"
 #include "settings/settings.hpp"
+#include "testing/sdl_observers.hpp"
 
 #if defined(MHP3RD_ANDROID_APP)
 #include "platform/android_jni.hpp"
@@ -4666,7 +4667,11 @@ bool VulkanRenderer::pump_events() {
             impl_->mouse_buttons |= 1u << event.button.button;
         if (event.type == SDL_EVENT_MOUSE_BUTTON_UP && event.button.button < 32u)
             impl_->mouse_buttons &= ~(1u << event.button.button);
-        if (impl_->event_hook && impl_->event_hook(event)) continue;
+        const bool ui_consumed = impl_->event_hook && impl_->event_hook(event);
+        testing::observe_sdl_event(event, SDL_GetWindowID(impl_->window),
+                                   (SDL_GetWindowFlags(impl_->window) & SDL_WINDOW_INPUT_FOCUS) != 0u,
+                                   ui_consumed, testing::scripted_override_active());
+        if (ui_consumed) continue;
         if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_F3 && !event.key.repeat && impl_->overlay_ready)
             impl_->overlay_visible = !impl_->overlay_visible;
     }
@@ -4674,6 +4679,7 @@ bool VulkanRenderer::pump_events() {
     // lost stays down in SDL's snapshot, which the guest sees as a held
     // direction it can never release.
     const bool focused = (SDL_GetWindowFlags(impl_->window) & SDL_WINDOW_INPUT_FOCUS) != 0u;
+    if (const auto observer = testing::active_observer()) observer->focus(focused);
     impl_->update_pointer(focused);
     impl_->sample_pad(focused);
     return !impl_->quit;
@@ -4685,7 +4691,9 @@ void VulkanRenderer::sample_pad() {
     // and the interface's, wait for the next pump_events(). The keyboard's
     // and the gamepads' state follow what was pumped.
     SDL_PumpEvents();
-    impl_->sample_pad((SDL_GetWindowFlags(impl_->window) & SDL_WINDOW_INPUT_FOCUS) != 0u);
+    const bool focused = (SDL_GetWindowFlags(impl_->window) & SDL_WINDOW_INPUT_FOCUS) != 0u;
+    if (const auto observer = testing::active_observer()) observer->focus(focused);
+    impl_->sample_pad(focused);
 }
 
 void VulkanRenderer::Impl::sample_pad(bool focused) {

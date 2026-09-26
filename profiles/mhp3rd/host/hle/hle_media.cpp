@@ -3,6 +3,7 @@
 // list completion callbacks, blocking audio output); the drawing and the
 // mixing themselves live under gpu/ and audio/.
 #include "hle_common.hpp"
+#include "testing/game_observers.hpp"
 #include "kernel/fast_loading.hpp"
 #include "kernel/load_trace.hpp"
 
@@ -226,6 +227,8 @@ std::uint64_t frame_start_us(std::uint64_t latest_vblank_us) {
 }
 
 void present_frame(Runtime &rt) {
+    if (auto observer = testing::active_observer())
+        observer->frame(kernel().now_us(), kernel().vblank_count());
     load_trace::note_flip();
     // Overlays are swapped between frames; re-check before drawing the next one.
     revalidate_overlays(rt);
@@ -432,6 +435,9 @@ void register_display_ctrl(HleRegistrar &hle) {
             memory.store8(entry + 11u, right_y);
             for (std::uint32_t j = 12u; j < 16u; ++j) memory.store8(entry + j, 0u);
         }
+        if (auto observer = testing::active_observer())
+            observer->pad({kernel().now_us(), kernel().vblank_count(), buttons, count,
+                           analog_x, analog_y, right_x, right_y});
         WaitState wait{};
         wait.type = WaitType::VBlank;
         kernel().block(ctx, wait, count);

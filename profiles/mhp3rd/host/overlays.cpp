@@ -10,6 +10,7 @@
 #include "hle/hle_common.hpp"
 #include "overlay_module.hpp"
 #include "psprecomp/common.hpp"
+#include "testing/game_observers.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -104,6 +105,62 @@ std::uint64_t header_hash(const psprecomp::GuestMemory &memory, std::uint32_t ba
     if (const std::uint8_t *head = memory.raw_pointer(base, kOverlayHeaderBytes); head != nullptr)
         return fnv1a64(head, kOverlayHeaderBytes);
     return fnv1a64(read_guest(memory, base, kOverlayHeaderBytes));
+}
+
+std::string fingerprint(std::string_view prefix, std::uint64_t value) {
+    constexpr char hex[] = "0123456789abcdef";
+    std::string text(prefix);
+    for (int shift = 60; shift >= 0; shift -= 4) text += hex[(value >> shift) & 15u];
+    return text;
+}
+
+void observe_slot(Runtime &runtime, std::uint32_t base) noexcept {
+    const auto observer = testing::active_observer();
+    if (!observer) return;
+    try {
+        const auto &memory = runtime.memory();
+        if (!memory.contains(base, kOverlayHeaderBytes)) {
+            observer->overlay_unload(base, "unmapped_header");
+            return;
+        }
+        const auto head = read_guest(memory, base, kOverlayHeaderBytes);
+        const auto word = [&head](std::size_t at) {
+            return std::uint32_t{head[at]} | (std::uint32_t{head[at + 1]} << 8u) |
+                (std::uint32_t{head[at + 2]} << 16u) | (std::uint32_t{head[at + 3]} << 24u);
+        };
+        if (head[0] != 'M' || head[1] != 'W' || head[2] != 'o' || head[3] != '3' || word(8) != base) {
+            observer->overlay_unload(base, "no_overlay_header");
+            return;
+        }
+        const std::uint32_t code_size = word(12);
+        const std::uint64_t image_size = std::uint64_t{kOverlayHeaderBytes} + code_size + word(16);
+        // An observer work limit, not an assertion about every valid format.
+        constexpr std::uint32_t max_observed_code = 8u * 1024u * 1024u;
+        if (code_size > max_observed_code || image_size > 0xffffffffull ||
+            !memory.contains(base, static_cast<std::size_t>(image_size))) {
+            observer->overlay_unload(base, "identity_bounds_unavailable");
+            return;
+        }
+        const auto *code = memory.raw_pointer(base, kOverlayHeaderBytes + code_size);
+        if (code == nullptr) {
+            observer->overlay_unload(base, "identity_memory_unavailable");
+            return;
+        }
+        const auto hash = fnv1a64(code, kOverlayHeaderBytes + code_size);
+        bool matched = false;
+        for (const auto &corpus : overlay_corpora())
+            if (corpus.base == base && corpus.hash == hash && corpus.size == image_size && corpus.code_size == code_size)
+                matched = true;
+        std::string name;
+        for (std::size_t i = 32; i < 64 && head[i] != 0; ++i)
+            name += head[i] >= 32 && head[i] < 127 ? static_cast<char>(head[i]) : '?';
+        if (name.empty()) name = "<unnamed>";
+        observer->overlay({base, static_cast<std::uint32_t>(image_size), code_size, std::move(name),
+                           fingerprint("fnv1a64-header:", fnv1a64(head)),
+                           fingerprint("fnv1a64-header-code:", hash), matched});
+    } catch (...) {
+        observer->overlay_unload(base, "identity_capture_failed");
+    }
 }
 
 // Slot containing `address`, or {0, 0}.
@@ -280,6 +337,7 @@ bool install_overlay_for(Runtime &runtime, std::uint32_t pc) {
         corpus.install(runtime);
         installed[slot_start] = corpus.hash;
         installed_headers()[slot_start] = header_hash(runtime.memory(), slot_start);
+        observe_slot(runtime, slot_start);
         std::cout << "[overlay] installed " << corpus.name << " (" << corpus.size / 1024u << " KiB) at "
                   << psprecomp::hex32(slot_start) << "\n";
         return true;
@@ -291,6 +349,7 @@ bool install_overlay_for(Runtime &runtime, std::uint32_t pc) {
                  " loaded at " + psprecomp::hex32(slot_start));
     dump_slot(runtime.memory(), slot_start, slot_end);
     unmatched_slots()[slot_start] = header_hash(runtime.memory(), slot_start);
+    observe_slot(runtime, slot_start);
     return false;
 }
 
@@ -321,6 +380,7 @@ void revalidate_overlays(Runtime &runtime) {
             if (candidate.base == slot_start && candidate.hash == hash) corpus = &candidate;
         }
         if (corpus == nullptr) {
+            if (auto observer = testing::active_observer()) observer->overlay_unload(slot_start, "corpus_unavailable");
             installed_headers().erase(slot_start);
             it = installed_overlays().erase(it);
             continue;
@@ -334,12 +394,14 @@ void revalidate_overlays(Runtime &runtime) {
         }
         if (identity_hash(runtime.memory(), *corpus) == hash) {
             installed_headers()[slot_start] = header_hash(runtime.memory(), slot_start);
+            observe_slot(runtime, slot_start);
             ++it;
             continue;
         }
         // A different overlay now occupies the slot: drop the stale code so the
         // next dispatch there goes through the miss hook.
         runtime.unregister_functions(corpus->base, corpus->base + corpus->size);
+        if (auto observer = testing::active_observer()) observer->overlay_unload(slot_start, "image_replaced");
         std::cout << "[overlay] " << corpus->name << " was replaced in " << psprecomp::hex32(slot_start) << "\n";
         installed_headers().erase(slot_start);
         it = installed_overlays().erase(it);
@@ -347,6 +409,15 @@ void revalidate_overlays(Runtime &runtime) {
 }
 
 void forget_unmatched_overlays() { unmatched_slots().clear(); }
+
+void observe_overlay_code_epoch(Runtime &runtime, std::string_view reason) noexcept {
+    if (auto observer = testing::active_observer()) {
+        observer->time(kernel().now_us(), kernel().vblank_count());
+        observer->code_epoch(reason);
+        for (std::size_t i = 0; i + 1 < std::size(kOverlaySlots); ++i)
+            observe_slot(runtime, kOverlaySlots[i]);
+    }
+}
 
 void install_overlay_support(Runtime &runtime) {
     (void)runtime;

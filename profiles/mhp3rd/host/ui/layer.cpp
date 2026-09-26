@@ -9,6 +9,7 @@
 #include "input/bindings.hpp"
 #include "install/user_data.hpp"
 #include "settings/settings.hpp"
+#include "testing/game_observers.hpp"
 
 #include "backends/imgui_impl_sdl3.h"
 #include "imgui.h"
@@ -266,6 +267,16 @@ void Layer::end_frame() {
 }
 
 bool Layer::run(const std::function<bool()> &frame, bool show_game) {
+    const auto observer = testing::active_observer();
+    const testing::InputDomain previous_domain =
+        observer ? observer->underlying_domain() : testing::InputDomain::Setup;
+    if (observer)
+        observer->domain(show_game ? testing::InputDomain::PausedUi : testing::InputDomain::Setup);
+    struct RestoreDomain {
+        std::shared_ptr<testing::GameObserver> observer;
+        testing::InputDomain previous;
+        ~RestoreDomain() { if (observer) observer->domain(previous); }
+    } restore{observer, previous_domain};
     for (;;) {
         const Clock::time_point start = Clock::now();
         script::tick();

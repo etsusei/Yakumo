@@ -219,7 +219,7 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 is completed. OBS-002 is next.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
+Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 is completed. OBS-002 and OBS-003 are in progress.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
 
 Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with OBS-002 observational input/timeline/overlay adapters and OBS-003 certified probes on the completed shared journal. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
 

@@ -1,4 +1,5 @@
 #include "camera/camera_input.hpp"
+#include "testing/game_observers.hpp"
 
 #include <algorithm>
 #include <array>
@@ -26,22 +27,36 @@ void add(Turn &to, const Turn &from) {
     to.pitch_held |= from.pitch_held;
 }
 
+void observe(testing::CameraObservation::Action action, Source source,
+             const Turn &turn, float seconds = 0.0f, float speed = 0.0f) noexcept {
+    if (auto observer = testing::active_observer())
+        observer->camera({action, static_cast<std::uint32_t>(source),
+                          turn.yaw_degrees, turn.pitch_degrees, seconds, speed,
+                          turn.yaw_held, turn.pitch_held});
+}
+
 } // namespace
 
 void set_rate(Source source, float yaw, float pitch) {
     const auto index = static_cast<std::size_t>(source);
     if (index >= kSources) return;
     rates[index] = Rate{std::clamp(yaw, -1.0f, 1.0f), std::clamp(pitch, -1.0f, 1.0f)};
+    observe(testing::CameraObservation::Action::Rate, source,
+            {rates[index].yaw, rates[index].pitch, rates[index].yaw != 0.0f, rates[index].pitch != 0.0f});
 }
 
 void add_motion(Source source, float yaw_degrees, float pitch_degrees) {
     const auto index = static_cast<std::size_t>(source);
     if (index >= kSources || !std::isfinite(yaw_degrees) || !std::isfinite(pitch_degrees)) return;
     add(motion[index], Turn{yaw_degrees, pitch_degrees, yaw_degrees != 0.0f, pitch_degrees != 0.0f});
+    observe(testing::CameraObservation::Action::Motion, source,
+            {yaw_degrees, pitch_degrees, yaw_degrees != 0.0f, pitch_degrees != 0.0f});
 }
 
 void advance(float seconds, float degrees_per_second) {
     if (!std::isfinite(seconds) || seconds <= 0.0f) return;
+    const auto observer = testing::active_observer();
+    const auto before = pending;
     const float step = std::min(seconds, kLongestStep) * degrees_per_second;
     for (const Rate &rate : rates) {
         pending.yaw_degrees += rate.yaw * step;
@@ -49,6 +64,10 @@ void advance(float seconds, float degrees_per_second) {
         pending.yaw_held |= rate.yaw != 0.0f;
         pending.pitch_held |= rate.pitch != 0.0f;
     }
+    if (observer)
+        observer->camera({testing::CameraObservation::Action::Advance, 4,
+                          pending.yaw_degrees - before.yaw_degrees, pending.pitch_degrees - before.pitch_degrees,
+                          std::min(seconds, kLongestStep), degrees_per_second, pending.yaw_held, pending.pitch_held});
 }
 
 Turn take() {
@@ -56,6 +75,7 @@ Turn take() {
     for (const Turn &source : motion) add(turn, source);
     pending = Turn{};
     motion.fill(Turn{});
+    observe(testing::CameraObservation::Action::ConsumeAll, Source::Count, turn);
     return turn;
 }
 
@@ -67,12 +87,24 @@ Turn peek(Source source) {
 Turn take(Source source) {
     const auto index = static_cast<std::size_t>(source);
     if (index >= kSources) return Turn{};
-    return std::exchange(motion[index], Turn{});
+    const auto turn = std::exchange(motion[index], Turn{});
+    observe(testing::CameraObservation::Action::ConsumeSource, source, turn);
+    return turn;
 }
 
 void discard() {
+    const auto observer = testing::active_observer();
+    Turn discarded{};
+    if (observer) {
+        discarded = pending;
+        for (const auto &source : motion) add(discarded, source);
+    }
     pending = Turn{};
     motion.fill(Turn{});
+    if (observer)
+        observer->camera({testing::CameraObservation::Action::Discard, 4,
+                          discarded.yaw_degrees, discarded.pitch_degrees, 0, 0,
+                          discarded.yaw_held, discarded.pitch_held});
 }
 
 Rate rate(Source source) {
@@ -82,6 +114,7 @@ Rate rate(Source source) {
 
 void reset() {
     rates.fill(Rate{});
+    observe(testing::CameraObservation::Action::Reset, Source::Count, {});
     discard();
 }
 

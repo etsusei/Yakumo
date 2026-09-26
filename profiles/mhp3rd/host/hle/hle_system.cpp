@@ -40,6 +40,7 @@ void register_utils(HleRegistrar &hle) {
         mods::code_loaded(rt);
         forget_unmatched_overlays();
         revalidate_overlays(rt);
+        observe_overlay_code_epoch(rt, "guest_icache_invalidation");
         kernel().finish(ctx, 0u);
     };
     hle.add("UtilsForUser", "sceKernelIcacheInvalidateAll", flush_icache);
