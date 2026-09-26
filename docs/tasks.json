@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 16,
+  "revision": 17,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T15:33:16Z",
+  "updated_at": "2026-09-26T15:45:54Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -1317,7 +1317,9 @@
           "Only Apple Silicon macOS and the registered ELF/GuestMemory behavior tested."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "49d8708"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -1425,7 +1427,9 @@
           "Only Apple Silicon macOS and the registered ELF/GuestMemory behavior tested."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "49d8708"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -1533,7 +1537,9 @@
           "Only Apple Silicon macOS and the registered ELF/GuestMemory behavior tested."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "49d8708"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -1690,7 +1696,7 @@
         "/root/offline_gate"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T15:33:16Z",
+      "updated_at": "2026-09-26T15:45:54Z",
       "started_at": "2026-09-26T15:31:43Z",
       "completed_at": null,
       "timestamp_note": null,
@@ -1701,18 +1707,42 @@
         "OFF-004",
         "OFF-005"
       ],
-      "work_summary": "All five original-code suites passed individually and the complete application compiled/linked without launch. Delegated reproducible combined gate/report tooling and synthetic runner-failure tests; root owns integration and actual gate execution.",
+      "work_summary": "Combined gate runner and nine synthetic runner tests are implemented and reviewed. Root CTest integration passes. Full application already built; actual clean-commit gate execution is next.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/scripts/check_offline.py",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "out/testing/offline/report.json",
           "kind": "report",
           "state": "planned",
+          "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_offline_gate.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/OFFLINE_VALIDATION.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/offline-gate-runner-tests.log",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/native-host-build.log",
+          "kind": "evidence",
+          "state": "existing",
           "local_only": true
         }
       ],
@@ -1722,7 +1752,14 @@
         "Report records exact coverage and pending live validation."
       ],
       "validation": {
-        "checks": [],
+        "checks": [
+          {
+            "name": "Root integrated gate-runner synthetic suite",
+            "status": "passed",
+            "tests": 9,
+            "evidence": "out/testing/offline-gate-runner-tests.log"
+          }
+        ],
         "limitations": []
       },
       "implementation_commits": [],
@@ -1746,6 +1783,15 @@
           "from_status": "in_progress",
           "to_status": "in_progress",
           "description": "All five original-code suites passed individually and the complete application compiled/linked without launch. Delegated reproducible combined gate/report tooling and synthetic runner-failure tests; root owns integration and actual gate execution."
+        },
+        {
+          "recorded_at": "2026-09-26T15:45:54Z",
+          "occurred_at": "2026-09-26T15:45:54Z",
+          "actor_id": "/root",
+          "action": "gate_runner_ready",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Combined gate runner and nine synthetic runner tests are implemented and reviewed. Root CTest integration passes. Full application already built; actual clean-commit gate execution is next."
         }
       ],
       "updated_by_agent_id": "/root"

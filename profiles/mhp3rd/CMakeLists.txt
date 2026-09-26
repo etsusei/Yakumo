@@ -359,7 +359,7 @@ set_target_properties(mhp3rd_resource_crosscheck PROPERTIES RUNTIME_OUTPUT_DIREC
 if(PSPRECOMP_BUILD_TESTS)
     find_package(Python3 3.9 QUIET COMPONENTS Interpreter)
     if(Python3_Interpreter_FOUND)
-        foreach(suite baseline_registration resource_preparation)
+        foreach(suite baseline_registration resource_preparation offline_gate)
             add_test(NAME mhp3rd_${suite}_tests
                 COMMAND "${Python3_EXECUTABLE}" -m unittest discover
                     -s "${MHP3RD_PROFILE_DIR}/tests" -p "test_${suite}.py" -v)
