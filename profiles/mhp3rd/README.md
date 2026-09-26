@@ -337,6 +337,7 @@ The Android app starts from other defaults where a phone differs, with the same 
 | Controls | Hunter name | `input.name` | `MHP3RD_OSK_TEXT` | Default `Hunter`; up to 12 characters. Setting the variable also answers at once unless `MHP3RD_OSK_MODE` says otherwise |
 | Mods | Use mods | `[general] enabled` in `mods.ini` | `MHP3RD_NO_MODS` | On (default) or off: every mod off, the game's own files only. See [Mods](#mods) |
 | Mods | A row per mod: On, Priority | `[mod <folder>] enabled`, `rank` in `mods.ini` | | Off (default) or on; a higher rank wins where two mods replace the same file |
+| System | Language / interface language | `ui.language` | `MHP3RD_UI_LANGUAGE` | `zh-CN` (default in this fork) or `en`; applies immediately |
 | System | Pause the game when the menu opens | `ui.menu_pause` | `MHP3RD_MENU_PAUSE` | On (default) or off: the game keeps running behind the menu |
 | System | Pause during multiplayer | `ui.menu_pause_multiplayer` | `MHP3RD_MENU_PAUSE_MULTIPLAYER` | Off (default): during ad hoc play the game keeps running behind the menu; on: the setting above decides |
 | System | Add a timestamp to the backup name | `saves.backup_timestamp` | | On (default): each backup from *Back up saves…* is a new folder named by its time; off: plain folder names, replaced after asking |
@@ -348,7 +349,17 @@ Everything applies without a restart, apart from mods that change a file's size 
 
 The Network section also shows the connection and has the troubleshooting tools described under [Multiplayer](#multiplayer-ad-hoc). The file also keeps `network.mac`, the address other players know you by (made up the first time you go on line; `MHP3RD_ADHOC_MAC` overrides it), `ui.menu_hint_seen`, set once the menu has been opened (until then a hint at the bottom of the screen says how to open it during the first seconds of play), and `ui.last_folder`, where the setup's file browser opens.
 
-The interface is drawn with [Dear ImGui](third_party/imgui/README.md). Its text uses a system font: San Francisco or Helvetica on macOS, Noto Sans, DejaVu Sans or Liberation Sans on Linux, Segoe UI on Windows, with a Japanese font merged in for file names; `MHP3RD_UI_FONT` names another `.ttf`. It scales with the window: about 27-pixel text on a Steam Deck's 1280×800 screen.
+The interface is drawn with [Dear ImGui](third_party/imgui/README.md). Its text uses a system font: San Francisco or Helvetica on macOS, Noto Sans, DejaVu Sans or Liberation Sans on Linux, Segoe UI on Windows, with Chinese and Japanese fallback fonts merged in for interface text and file names; `MHP3RD_UI_FONT` names another `.ttf`. It scales with the window: about 27-pixel text on a Steam Deck's 1280×800 screen.
+
+### Interface language
+
+This fork starts with Simplified Chinese for Yakumo's setup, settings, save management, texture packs, mods and file browser. Use **Language / interface language** on the welcome screen or the menu's **System** page to switch to English. The choice applies immediately and is saved as `ui.language=zh-CN` or `ui.language=en` in `settings.ini`. `MHP3RD_UI_LANGUAGE` overrides it for one run and locks the selector; unset the variable to restore the saved choice.
+
+This changes Yakumo's interface only. Game dialogue, items, quests, community mod descriptions and operating-system error details are not translated. The developer-only Debug page and console diagnostics remain in English. Game translation patches are separate from this setting.
+
+Chinese and Japanese glyphs are loaded together so switching languages does not require a restart. The loader tries system CJK fonts (including Chinese system fonts on macOS and Windows), then the bundled CJK fallback. `MHP3RD_UI_FONT` still selects the main interface font. On Linux, install Noto Sans CJK if building from source without the bundled font.
+
+Interface literals are translated explicitly through `ui/localization.hpp`; the catalog is `host/ui/translations/zh_cn.inc`. Keep configuration keys, file paths, protocol state comparisons and user-entered content untranslated. Use numbered placeholders with `tr_format` for sentences whose word order changes, and preserve printf argument types and ImGui ID suffixes.
 
 ## Game text
 

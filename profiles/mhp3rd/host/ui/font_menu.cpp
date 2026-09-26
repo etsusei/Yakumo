@@ -2,6 +2,7 @@
 
 #include "ui/layer.hpp"
 #include "ui/widgets.hpp"
+#include "ui/localization.hpp"
 
 #include "fonts/game_font.hpp"
 #include "install/user_data.hpp"
@@ -43,7 +44,7 @@ RowOptions options_for(const char *key, std::string description) {
     options.description = std::move(description);
     if (const char *variable = settings::overridden_by(key)) {
         options.disabled = true;
-        options.note = std::string("Set by ") + variable;
+        options.note = std::string(tr("Set by ")) + variable;
     }
     return options;
 }
@@ -181,8 +182,8 @@ void draw_preview() {
 
 std::string current_font_label() {
     const settings::Settings &s = settings::current();
-    if (s.font.empty()) return "Default";
-    if (!fonts::problem().empty()) return "Default (chosen font unreadable)";
+    if (s.font.empty()) return tr("Default");
+    if (!fonts::problem().empty()) return tr("Default (chosen font unreadable)");
     return fonts::active_name();
 }
 
@@ -193,28 +194,28 @@ bool font_list_open() { return list_open; }
 void font_rows() {
     settings::Settings &s = settings::current();
     fonts::start_catalog();
-    section("Text");
+    section(tr("Text"));
     {
-        RowOptions o = options_for("text.font", "The font the game's text is drawn with. Characters it lacks, such "
-                                                "as Japanese in a Latin font, come from the default: " +
+        RowOptions o = options_for("text.font", tr("The font the game's text is drawn with. Characters it lacks, such "
+                                                "as Japanese in a Latin font, come from the default: ") +
                                                     fonts::fallback_name() + ".");
         if (!fonts::problem().empty()) o.description += "\n" + fonts::problem();
         if (focus_font_row) {
             focus_next_row();
             focus_font_row = false;
         }
-        if (value_row("Font", current_font_label(), o)) {
+        if (value_row(tr("Font"), current_font_label(), o)) {
             list_open = true;
             focus_current = true;
         }
     }
     {
-        static const char *const kWeights[] = {"Regular", "Bold", "Heavy"};
+        const char *const kWeights[] = {tr("Regular"), tr("Bold"), tr("Heavy")};
         const int current = static_cast<int>(std::min(s.font_weight, settings::kMaxFontWeight));
         if (const int delta = choice_row(
-                "Weight", kWeights[current],
-                options_for("text.weight", "Thickens the strokes of the game's text. The game squeezes Latin "
-                                           "letters to half width, which thins them; Bold makes up for it."))) {
+                tr("Weight"), kWeights[current],
+                options_for("text.weight", tr("Thickens the strokes of the game's text. The game squeezes Latin "
+                                           "letters to half width, which thins them; Bold makes up for it.")))) {
             const int count = static_cast<int>(settings::kMaxFontWeight) + 1;
             s.font_weight = static_cast<std::uint32_t>(((current + delta) % count + count) % count);
             settings::save();
@@ -222,8 +223,8 @@ void font_rows() {
         }
     }
     draw_preview();
-    if (button_row("Open the fonts folder",
-                   {false, {}, "Fonts put in this folder (.ttf, .otf, .ttc) are listed first under Font: " +
+    if (button_row(tr("Open the fonts folder"),
+                   {false, {}, tr("Fonts put in this folder (.ttf, .otf, .ttc) are listed first under Font: ") +
                                    fonts::user_font_folder()})) {
         const std::string folder = fonts::user_font_folder();
         std::error_code ec;
@@ -241,10 +242,10 @@ bool font_list(bool back) {
         return true;
     }
     const settings::Settings &s = settings::current();
-    section("Font");
+    section(tr("Font"));
     ImGui::Indent(px(16.0f));
-    paragraph("The game's text changes as soon as you choose. Characters a font lacks come from the default; "
-              "fonts in the fonts folder are listed first.",
+    paragraph(tr("The game's text changes as soon as you choose. Characters a font lacks come from the default; "
+              "fonts in the fonts folder are listed first."),
               colors::kTextDim);
     ImGui::Unindent(px(16.0f));
     ImGui::Dummy({0.0f, px(4.0f)});
@@ -265,13 +266,13 @@ bool font_list(bool back) {
             picked = true;
         }
     };
-    entry("##default", "Default: " + fonts::fallback_name(), "Japanese", "");
+    entry("##default", tr("Default: ") + fonts::fallback_name(), tr("Japanese"), "");
     for (std::size_t i = 0; i < choices.size(); ++i) {
         const fonts::FontChoice &choice = choices[i];
         ImGui::PushID(static_cast<int>(i));
-        const std::string detail = choice.user_folder ? (choice.japanese ? "Your font, Japanese" : "Your font")
-                                   : choice.japanese  ? "Japanese"
-                                                      : "Latin";
+        const std::string detail = choice.user_folder ? (choice.japanese ? tr("Your font, Japanese") : tr("Your font"))
+                                   : choice.japanese  ? tr("Japanese")
+                                                      : tr("Latin");
         entry("##font", choice.name, detail, choice.value);
         ImGui::PopID();
     }
@@ -280,7 +281,7 @@ bool font_list(bool back) {
     focus_current = false;
     if (!done) {
         ImGui::Indent(px(16.0f));
-        paragraph("Looking for installed fonts…", colors::kTextDim);
+        paragraph(tr("Looking for installed fonts…"), colors::kTextDim);
         ImGui::Unindent(px(16.0f));
     }
     if (picked) {

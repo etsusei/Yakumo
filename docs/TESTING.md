@@ -8,6 +8,19 @@
 
 Until those exist, changes are checked by playing, with the smoke test below.
 
+## Interface localization
+
+The localization checks need no disc image or renderer:
+
+```bash
+cmake --build out/mhp3rd --target mhp3rd_ui_localization_tests mhp3rd_settings_tests -j2
+ctest --test-dir out/mhp3rd -R 'mhp3rd_(ui_localization|settings)' --output-on-failure
+```
+
+They check language defaults, persistence, invalid values, environment overrides, switching within a process, fallback text, catalog uniqueness, format arguments and hidden widget IDs. The tests use temporary data directories and remove them afterward.
+
+For visual verification, use a separate `MHP3RD_DATA_DIR`. Check the welcome screen in both languages; in game, change **System > Language**, visit all six pages, and reopen the menu. Restart to check persistence. Check saves, texture packs, mods, the file browser, text input and confirmation dialogs. At 960x544 and a smaller window, check CJK glyph coverage, scrolling, footer wrapping and button labels. Keep the game data and any existing saves outside the test directory. An interface-only preview does not verify gameplay, Vulkan presentation or another platform's font availability.
+
 ## Smoke test
 
 About fifteen minutes. It walks through every part of the game that currently works, so a regression anywhere shows up. Start from a fresh profile — rename `profiles/mhp3rd/game/ms0` aside — so earlier state cannot hide a problem.

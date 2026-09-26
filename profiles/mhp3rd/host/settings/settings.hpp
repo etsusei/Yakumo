@@ -19,6 +19,7 @@
 namespace mhp3rd::settings {
 
 enum class PresentMode { Fifo, Mailbox, Immediate };
+enum class UiLanguage { English, SimplifiedChinese };
 // How the game's picture meets the window. Original keeps the PSP's shape with
 // black bars, Stretch fills the window by stretching it, and Fill gives the
 // game the window's shape: its view widens or narrows to match (the vertical
@@ -108,6 +109,7 @@ struct Settings {
     std::uint32_t adhoc_host_port{27312};   // the built-in server's adhocctl port; the relay is on the next
 
     // Interface
+    UiLanguage ui_language{UiLanguage::SimplifiedChinese};
     bool menu_pause{true};             // opening the menu pauses the game
     bool menu_pause_multiplayer{};     // ...also during ad hoc play, where a paused game stops answering its peers
     bool menu_hint_seen{};             // the "Esc / L3+R3 opens the menu" hint was shown

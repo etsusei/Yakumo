@@ -1,6 +1,6 @@
 #include "ui/layer.hpp"
 
-#include "app_paths.hpp"
+#include "ui/fonts.hpp"
 
 #include "ui/input_script.hpp"
 #include "ui/widgets.hpp"
@@ -37,78 +37,6 @@ constexpr auto kEscapeWindow = std::chrono::milliseconds(100);
 // they would spin, so they are held to about 120 per second.
 constexpr auto kMinFrameTime = std::chrono::microseconds(8'333);
 
-// Text faces with Latin and Cyrillic, then a Japanese face merged in for file
-// names. The first one found is used; a release's own font in fonts/ is the
-// last resort for the Japanese face.
-const char *const kTextFonts[] = {
-    "/System/Library/Fonts/SFNS.ttf",
-    "/System/Library/Fonts/Helvetica.ttc",
-    "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
-    "/usr/share/fonts/noto/NotoSans-Regular.ttf",
-    "/usr/share/fonts/google-noto/NotoSans-Regular.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "/usr/share/fonts/TTF/DejaVuSans.ttf",
-    "/usr/share/fonts/dejavu/DejaVuSans.ttf",
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-    "C:/Windows/Fonts/segoeui.ttf",
-    "C:/Windows/Fonts/arial.ttf",
-};
-const char *const kJapaneseFonts[] = {
-    "/System/Library/Fonts/ヒラギノ角ゴシック W4.ttc",
-    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
-    "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc",
-    "/run/host/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
-    "/run/host/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    "/run/host/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc",
-    "C:/Windows/Fonts/meiryo.ttc",
-    "C:/Windows/Fonts/msgothic.ttc",
-};
-
-bool exists(const char *path) {
-    std::error_code ec;
-    return std::filesystem::is_regular_file(install::path_from_utf8(path), ec);
-}
-
-void load_fonts() {
-    ImGuiIO &io = ImGui::GetIO();
-    const char *text_font = std::getenv("MHP3RD_UI_FONT");
-    if (text_font != nullptr && !exists(text_font)) {
-        std::cout << "[ui] MHP3RD_UI_FONT " << text_font << " not found\n";
-        text_font = nullptr;
-    }
-    for (const char *candidate : kTextFonts) {
-        if (text_font != nullptr) break;
-        if (exists(candidate)) text_font = candidate;
-    }
-    ImFont *font = text_font != nullptr ? io.Fonts->AddFontFromFileTTF(text_font) : nullptr;
-#if defined(__ANDROID__)
-    // Android's own faces are variable fonts; the Japanese font the app
-    // carries has Latin too, and the symbols the menu uses (… ○ ×).
-    if (font == nullptr)
-        for (const std::filesystem::path &bundled : bundled_fonts()) {
-            font = io.Fonts->AddFontFromFileTTF(install::path_to_utf8(bundled).c_str());
-            if (font != nullptr) {
-                std::cout << "[ui] text in " << install::path_to_utf8(bundled.filename()) << "\n";
-                return;
-            }
-        }
-#endif
-    if (font == nullptr) {
-        io.Fonts->AddFontDefaultVector();
-        std::cout << "[ui] no system font found; using Dear ImGui's own\n";
-        return;
-    }
-    std::vector<std::string> japanese(std::begin(kJapaneseFonts), std::end(kJapaneseFonts));
-    for (const std::filesystem::path &bundled : bundled_fonts()) japanese.push_back(install::path_to_utf8(bundled));
-    for (const std::string &candidate : japanese) {
-        if (!exists(candidate.c_str())) continue;
-        ImFontConfig merge;
-        merge.MergeMode = true;
-        io.Fonts->AddFontFromFileTTF(candidate.c_str(), 0.0f, &merge);
-        break;
-    }
-}
 
 bool face_button_held() {
     int count = 0;
@@ -150,7 +78,7 @@ bool Layer::attach(gpu::VulkanRenderer &renderer) {
     }
     // Any connected pad drives the interface, not only the one the game reads.
     ImGui_ImplSDL3_SetGamepadMode(ImGui_ImplSDL3_GamepadMode_AutoAll);
-    load_fonts();
+    load_interface_fonts();
     std::string error;
     if (!renderer.initialize_ui(error)) {
         std::cout << "[ui] cannot draw the interface (" << error << "); no menu\n";
