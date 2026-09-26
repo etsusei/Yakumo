@@ -476,8 +476,12 @@ int main(int argc, char **argv) {
         if (recording) {
             const auto &reason = runtime.stop_reason();
             const bool completed = reason.empty() || reason == "window closed" || reason == "quit from the menu";
-            if (!recording->close(reason.empty() ? "guest_finished" : reason, completed))
+            if (!recording->close(reason.empty() ? "guest_finished" : reason, completed)) {
                 std::cerr << "[recording] run evidence is incomplete; see recorder health\n";
+                // A late sink-finalization failure can occur after RunEnd was
+                // written. The supervisor needs an independent failure signal.
+                return 5;
+            }
         }
         // "Set up game data again" in the in-game menu.
         if (mhp3rd::install::setup_requested_on_exit()) return mhp3rd::install::restart_for_setup(argv[0]);

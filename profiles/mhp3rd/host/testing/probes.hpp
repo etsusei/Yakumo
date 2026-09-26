@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <string_view>
 #include <thread>
 
 namespace psprecomp {
@@ -147,7 +148,7 @@ private:
 // The caller must enable this only after accepting the supported ELF identity.
 void configure_native_probes(std::shared_ptr<GameObserver> observer, std::uint32_t mask) noexcept;
 // final=true detaches the session and marks outstanding scopes incomplete.
-void flush_native_probes(bool final = false) noexcept;
+void flush_native_probes(bool final = false, std::string_view boundary = {}) noexcept;
 void flush_native_probe_detail() noexcept;
 
 // These names and signatures are consumed by instrument_probes.py.
@@ -155,6 +156,10 @@ void native_probe_aot_enter(psprecomp::Runtime &runtime, const psprecomp::Allegr
                             std::uint32_t entry) noexcept;
 void native_probe_aot_exit(psprecomp::Runtime &runtime, const psprecomp::AllegrexContext &context,
                            std::uint32_t entry, std::uint32_t jump_target) noexcept;
+// Called only after a native prediction and bounded original-code result differ.
+void native_probe_verification_mismatch(psprecomp::Runtime &runtime,
+                                        const psprecomp::AllegrexContext &context,
+                                        std::uint32_t entry) noexcept;
 
 class NativeProbeScope {
 public:

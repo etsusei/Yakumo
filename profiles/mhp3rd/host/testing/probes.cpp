@@ -26,6 +26,7 @@ constexpr std::array<std::uint32_t, 5> kBits{
     kProbeAngle, kProbeScale, kProbeTranslation, kProbeVector, kProbeCopy,
 };
 constexpr std::array<const char *, 4> kVariantNames{"aot", "native", "verify", "fallback"};
+std::atomic<std::uint64_t> next_counter_epoch{1};
 
 const char *outcome_name(ProbeOutcome outcome) noexcept {
     switch (outcome) {
@@ -386,7 +387,8 @@ ProbeSnapshot ProbeTracker::flush(bool final) noexcept {
 class NativeProbeSession {
 public:
     NativeProbeSession(std::shared_ptr<GameObserver> observer, std::uint32_t mask)
-        : observer_(std::move(observer)), tracker_(mask), mask_(mask & kProbeAll) {}
+        : observer_(std::move(observer)), tracker_(mask), mask_(mask & kProbeAll),
+          counter_epoch_(next_counter_epoch.fetch_add(1, std::memory_order_relaxed)) {}
 
     [[nodiscard]] bool active() const noexcept { return active_.load(std::memory_order_acquire); }
     [[nodiscard]] std::uint32_t mask() const noexcept { return mask_; }
@@ -427,7 +429,7 @@ public:
     void invalidate_current_thread() noexcept {
         if (active()) tracker_.invalidate_current_thread();
     }
-    void emit_snapshot(bool final) noexcept {
+    void emit_snapshot(bool final, std::string_view boundary = {}) noexcept {
         if (final) active_.store(false, std::memory_order_release);
         else if (!active()) return;
         const auto snapshot = tracker_.flush(final);
@@ -447,6 +449,8 @@ public:
                 Fields fields{
                     {"entry", static_cast<std::uint64_t>(stats.entry)},
                     {"leaf", std::string(kNames[i])},
+                    {"boundary", std::string(boundary)},
+                    {"counter_epoch", counter_epoch_},
                     {"coverage", std::string(coverage)},
                     {"coverage_complete", coverage_complete},
                     {"certification", std::string("full_current_span_sha256_per_entry")},
@@ -490,6 +494,25 @@ public:
     void emit_detail() noexcept { emit_detail(tracker_.flush()); }
 
 private:
+    friend void native_probe_verification_mismatch(psprecomp::Runtime &runtime,
+                                                   const psprecomp::AllegrexContext &context,
+                                                   std::uint32_t entry) noexcept;
+    void emit_verification_mismatch(psprecomp::Runtime &runtime,
+                                    const psprecomp::AllegrexContext &context,
+                                    std::uint32_t entry) noexcept {
+        if (!active() || !selected(entry) || !observer_) return;
+        const bool certified = certify(runtime, entry);
+        try {
+            observer_->emit(EventKind::Error, "native.verification_mismatch", {
+                {"entry", static_cast<std::uint64_t>(entry)},
+                {"evidence", std::string("same_input_reference")},
+                {"certified", certified},
+                {"guest_pc", static_cast<std::uint64_t>(context.pc)},
+            });
+        } catch (...) {
+            observer_->emit(EventKind::Error, "probe.reporting_error");
+        }
+    }
     void emit_detail(const ProbeSnapshot &snapshot) noexcept {
         std::lock_guard lock(detail_mutex_);
         if (snapshot.recent_count == 0) return;
@@ -533,6 +556,7 @@ private:
     std::shared_ptr<GameObserver> observer_;
     ProbeTracker tracker_;
     const std::uint32_t mask_;
+    const std::uint64_t counter_epoch_;
     std::atomic<bool> active_{true};
     std::mutex detail_mutex_;
     std::uint64_t last_emitted_sequence_{};
@@ -585,7 +609,7 @@ void configure_native_probes(std::shared_ptr<GameObserver> observer, std::uint32
     if (previous) previous->emit_snapshot(true);
 }
 
-void flush_native_probes(bool final) noexcept {
+void flush_native_probes(bool final, std::string_view boundary) noexcept {
     std::shared_ptr<NativeProbeSession> session;
     if (final) {
         current_mask.store(0, std::memory_order_release);
@@ -594,12 +618,20 @@ void flush_native_probes(bool final) noexcept {
     } else {
         session = std::atomic_load_explicit(&current_session, std::memory_order_acquire);
     }
-    if (session) session->emit_snapshot(final);
+    if (session) session->emit_snapshot(final, boundary);
 }
 
 void flush_native_probe_detail() noexcept {
     auto session = std::atomic_load_explicit(&current_session, std::memory_order_acquire);
     if (session && session->active()) session->emit_detail();
+}
+
+void native_probe_verification_mismatch(psprecomp::Runtime &runtime,
+                                        const psprecomp::AllegrexContext &context,
+                                        std::uint32_t entry) noexcept {
+    if (current_mask.load(std::memory_order_acquire) == 0) return;
+    auto session = std::atomic_load_explicit(&current_session, std::memory_order_acquire);
+    if (session) session->emit_verification_mismatch(runtime, context, entry);
 }
 
 void native_probe_aot_enter(psprecomp::Runtime &runtime,

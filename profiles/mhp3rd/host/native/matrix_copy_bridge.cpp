@@ -78,6 +78,7 @@ void bridge(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &context) {
             const bool matches = same_context(prediction, context) && shadow.matches(memory);
             if (!matches) {
                 ++stats.mismatches;
+                testing::native_probe_verification_mismatch(runtime, context, kMatrixCopyAddress);
                 probe.finish(testing::ProbeVariant::Verify, false);
                 std::cerr << "[native-matrix-copy] mismatch; original result retained, reference used until exit\n";
             } else probe.finish(testing::ProbeVariant::Verify);

@@ -63,10 +63,10 @@ public:
         set_environment(names_[index], value);
     }
 private:
-    static constexpr std::array<const char *, 6> names_{
+    static constexpr std::array<const char *, 7> names_{
         "MHP3RD_RECORD_DIR", "MHP3RD_RECORD_ROLE", "MHP3RD_RECORD_RUN_ID",
         "MHP3RD_RECORD_BATCH_ID", "MHP3RD_RECORD_BASELINE_ID",
-        "MHP3RD_RECORD_BASELINE_COMMIT"};
+        "MHP3RD_RECORD_BASELINE_COMMIT", "MHP3RD_RECORD_CONTEXT_SHA256"};
     std::array<std::optional<std::string>, names_.size()> old_{};
 };
 
@@ -157,9 +157,15 @@ void test_disabled_and_environment() {
     env.set(5, "abc123g");
     check_throws([&] { (void)recording_options_from_environment(); }, "nonhex baseline commit is rejected");
     env.set(5, "abcdef0");
+    env.set(6, "invalid");
+    check_throws([&] { (void)recording_options_from_environment(); }, "short context digest rejected");
+    env.set(6, std::string(64, 'A'));
+    check_throws([&] { (void)recording_options_from_environment(); }, "noncanonical context digest rejected");
+    env.set(6, std::string(64, 'a'));
     const auto parsed = recording_options_from_environment();
     check(parsed && parsed->role == "baseline" && parsed->baseline_commit == "abcdef0" &&
-          parsed->directory == run, "valid environment produces expected options");
+          parsed->directory == run && parsed->context_sha256 == std::string(64, 'a'),
+          "valid environment produces expected bound options");
     check(!fs::exists(run), "environment parsing never creates the run directory");
     auto recording = start_runtime_recording(Fields{{"test_context", std::string("synthetic")}});
     check(recording && active_observer() == recording->observer(),
@@ -168,6 +174,8 @@ void test_disabled_and_environment() {
     const auto recovered = read_journal(run / "events.journal");
     check(recovered.complete() && !recovered.records.empty(),
           "enabled factory creates a complete journal");
+    check(contains(recovered.records.front().payload, "\"context_sha256\":\"" + std::string(64, 'a') + "\""),
+          "RunBegin binds the supplied launch context");
 }
 
 void test_metadata_and_directories() {

@@ -69,6 +69,7 @@ void bridge(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &ctx) {
                 const bool matches = same_context(prediction, ctx) && shadow.matches(memory);
                 if (!matches) {
                     ++stats.mismatches;
+                    testing::native_probe_verification_mismatch(runtime, ctx, kVectorConstructAddress);
                     probe.finish(testing::ProbeVariant::Verify, false);
                     std::cerr << "[native-vector] mismatch; original result retained, reference used until exit\n";
                 } else probe.finish(testing::ProbeVariant::Verify);

@@ -74,6 +74,7 @@ void bridge(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &ctx) {
                 const bool matches = same_context(prediction, ctx) && same_memory;
                 if (!matches) {
                     ++stats.mismatches;
+                    testing::native_probe_verification_mismatch(runtime, ctx, kScaleMatrixAddress);
                     probe.finish(testing::ProbeVariant::Verify, false);
                     std::cerr << "[native-scale] mismatch; original result retained, reference used until exit\n";
                 } else probe.finish(testing::ProbeVariant::Verify);

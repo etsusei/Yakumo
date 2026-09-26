@@ -57,6 +57,13 @@ void validate_options(const RecordingOptions &options) {
         throw std::invalid_argument("recording identity must be a nonempty ASCII-safe ID of at most 96 bytes");
     if (!hex_commit(options.baseline_commit))
         throw std::invalid_argument("baseline commit must be 7 to 40 hexadecimal digits");
+    if (!options.context_sha256.empty()) {
+        if (options.context_sha256.size() != 64)
+            throw std::invalid_argument("recording context digest must contain 64 lowercase hexadecimal digits");
+        for (const char c : options.context_sha256)
+            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
+                throw std::invalid_argument("recording context digest must contain 64 lowercase hexadecimal digits");
+    }
 }
 
 Fields begin_fields(const RecordingOptions &options, Fields app_metadata) {
@@ -71,6 +78,7 @@ Fields begin_fields(const RecordingOptions &options, Fields app_metadata) {
         {"baseline_commit", options.baseline_commit},
         {"input_identity_status", std::string("pending")},
     };
+    if (!options.context_sha256.empty()) fields.push_back({"context_sha256", options.context_sha256});
     fields.insert(fields.end(), std::make_move_iterator(app_metadata.begin()),
                   std::make_move_iterator(app_metadata.end()));
     // This validates all caller fields and catches duplicate reserved names
@@ -135,6 +143,8 @@ std::optional<RecordingOptions> recording_options_from_environment() {
         options.baseline_id = value;
     if (const char *value = std::getenv("MHP3RD_RECORD_BASELINE_COMMIT"))
         options.baseline_commit = value;
+    if (const char *value = std::getenv("MHP3RD_RECORD_CONTEXT_SHA256"))
+        options.context_sha256 = value;
     validate_options(options);
     return options;
 }
