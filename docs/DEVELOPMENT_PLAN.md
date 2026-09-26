@@ -34,7 +34,7 @@ A native leaf behind a guest ABI adapter is a useful intermediate result, not ev
 - Angle helper: **806,432 offline differential cases passed**, but **zero calls** were observed on the tested village route. In-game coverage remains absent.
 - Scale-matrix helper: **100,512 offline cases passed**, including 10,000 prefix fallbacks. Live verification compared **48,365 calls with zero mismatches**; a separate native run used **48,405 calls with zero fallback**.
 - The tested route was read-save, character selection, village entry, and a short walk. Audio output, combat/quests, multiplayer, other platforms, and long-session stability were not verified.
-- Full raw resource extraction **has not been performed**. The guarded extraction tool and synthetic tests await integration review; the paired recorder, case panel, and comparison pipeline have not been implemented. Existing input scripts inject input; they are not a complete recorder.
+- Full raw resource extraction and source-anchored reuse verification passed. All 6,043 decoded entries matched the independent C++ path byte for byte; the paired recorder, case panel, and comparison pipeline have not been implemented. Existing input scripts inject input; they are not a complete recorder.
 
 See [NATIVE_EXPERIMENT.md](NATIVE_EXPERIMENT.md) for the exact experiment boundaries. Historical successful boot tests do not override the new offline-first workflow.
 
@@ -54,8 +54,8 @@ Task IDs match the ledger. A checked box means the task's stated scope is comple
 ### Milestone 0 — Freeze inputs and prepare raw resources
 
 - [x] **RES-001** — Register B0, source/build/dependency identities, input fingerprints, and immutable starting-save snapshots.
-- [ ] **RES-002** — Build and test a guarded resource-preparation command around the existing ISO/DATA.BIN readers.
-- [ ] **RES-003** — Extract the full raw image contents and DATA.BIN entries locally; generate and validate the manifest.
+- [x] **RES-002** — Build and test a guarded resource-preparation command around the existing ISO/DATA.BIN readers.
+- [x] **RES-003** — Extract the full raw image contents and DATA.BIN entries locally; generate and validate the manifest.
 
 Resource preparation requirements:
 
@@ -219,9 +219,9 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation: **RES-001 is completed; RES-002 awaits integration review; RES-003 has not started.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Resource preparation source and independent synthetic tests exist, but integration review remains pending. Full local extraction and byte-for-byte cross-checking belong to RES-003; do not infer that they have run from the presence of an extraction script.
+Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 is next.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
 
-Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Complete RES-002 review and evidence recording, then RES-003, followed by the Milestone 1 offline work. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
+Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with OFF-001 common native contracts, then the Milestone 1 leaves and offline gate. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
 
 ### Task ledger fields and update rules
 

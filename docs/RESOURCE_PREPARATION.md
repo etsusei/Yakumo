@@ -59,6 +59,39 @@ DATA.BIN handling must bound reads to the archive and each entry, preserve order
 
 Synthetic tests cover malformed/truncated structures, unsafe paths, cycles, duplicates, empty entries, padding/exact sizes, verbatim data, overlay headers, chunk-boundary deobfuscation, interrupted publication and tampered reuse. Fixtures must not depend on copyrighted game bytes.
 
+## Extraction and verification commands
+
+Prepare the full local workspace using the ISO SHA-256 recorded in the B0 manifest:
+
+```bash
+python3 profiles/mhp3rd/tools/prepare_resources.py /path/to/game.iso \
+  --output profiles/mhp3rd/analysis/resources \
+  --expected-iso-sha256 <registered-iso-sha256>
+```
+
+The command publishes a checked staging directory, writes read-only raw files, and keeps `derived/` and `working/` separate. On repeat execution it verifies the existing workspace against source spans and independently regenerated entry hashes, and preserves those editable directories. Changing a raw output and its manifest hash together is rejected. The source ISO is rehashed after verification to detect changes during the check. A mismatch is an error; it never silently rebuilds over existing work. `--verify-only` requires an existing workspace. Multi-extent/interleaved ISO records are not supported and are rejected explicitly.
+
+The size-table row count is inferred from ordered valid rows followed by an opaque trailer. Some malformed rows can resemble trailer bytes; no universal corruption-detection guarantee is claimed. The manifest preserves the encrypted directory/trailer fingerprints and byte spans, and `raw-disc/` retains their original bytes.
+
+Run the synthetic suites, which require Python 3.9 or newer:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+  -s profiles/mhp3rd/tests -p 'test_resource_preparation.py' -v
+ctest --test-dir out/mhp3rd \
+  -R 'mhp3rd_(baseline_registration|resource_preparation)_tests' --output-on-failure
+```
+
+CMake registers both suites when testing is enabled and a suitable Python interpreter is available. The independent cross-check target compares every extracted entry byte with the existing C++ runtime decoder. Use it only after the preparation tool validates the ISO/archive span; read the offset and size from `manifest.json`:
+
+```bash
+cmake --build out/mhp3rd --target mhp3rd_resource_crosscheck -j2
+out/mhp3rd/bin/mhp3rd_resource_crosscheck /path/to/game.iso \
+  <archive-offset> <archive-size> profiles/mhp3rd/analysis/resources/raw-entries
+```
+
+Neither command launches gameplay. The C++ verifier is independently implemented relative to the Python extraction path, but both implement the same documented format; agreement does not establish the semantic meaning of every resource.
+
 ## Inspection evidence before full extraction
 
 The registered local image was inspected without launching gameplay. Both the existing Python reader and an independent use of the project's C++ directory/deobfuscation code reported:
@@ -66,7 +99,7 @@ The registered local image was inspected without launching gameplay. Both the ex
 | Fact | Observed value |
 | --- | --- |
 | ISO logical block size | 2,048 bytes |
-| ISO filesystem | 14 files, 5 directories; no multi-extent records |
+| ISO filesystem | 14 files, 4 subdirectories plus root; no multi-extent records |
 | DATA.BIN source offset | 114,688,000 bytes |
 | DATA.BIN stored size | 1,208,858,624 bytes |
 | Archive entries | 6,043 |
@@ -78,6 +111,18 @@ The registered local image was inspected without launching gameplay. Both the ex
 | Largest entry | 140,812,288 bytes |
 
 These counts describe this image, not universal parser constants. Directory agreement does not yet prove a full extraction. After extraction, compare every output entry against the independent C++ decode path and compare raw-disc file bytes with the original image. Record full-data results separately from this preflight evidence.
+
+## Full local preparation result
+
+On 2026-09-27 (Asia/Tokyo), Apple Silicon macOS:
+
+- All 14 ISO files and 6,043 DATA.BIN entries were extracted locally. Three empty entries and all 355 overlay identities were retained.
+- The C++ runtime path compared all **1,207,519,280 decoded entry bytes** with zero differences. A separate span reader compared all **1,323,335,431 raw-disc file bytes** with the original ISO.
+- Source-anchored reuse passed without changing the manifest. Original ISO, ELF, save archive, and four source-save file hashes remained unchanged; raw reference files are read-only and ignored by Git.
+- Seventeen synthetic preparation tests and eleven baseline-registration tests passed, including coordinated output/manifest tampering and source mutation during reuse. The C++ checker accepted an independent miniature fixture and rejected same-length payload corruption.
+- Local evidence: `out/testing/resource-unit-tests.log`, `resource-ctest.log`, `resource-byte-crosscheck.json`, `resource-source-preservation.json`, `resource-reuse-report.json`, and `resource-inventory-report.json` under `out/testing/`. The full inventory is `profiles/mhp3rd/analysis/resources/manifest.json`.
+
+Header classification leaves 4,535 nonempty entries unknown. Signature matches and overlay-header validation are byte-level evidence, not confirmation that animations, collision, AI, or models have been understood. No game was launched, and no new runtime resource-loader behavior was introduced.
 
 ## Limits
 

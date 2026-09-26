@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 7,
+  "revision": 10,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T15:04:52Z",
+  "updated_at": "2026-09-26T15:11:26Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -113,9 +113,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "RES-002",
-    "next_task_id": "RES-003",
-    "next_action": "Review and validate the RES-002 handoff, then publish and independently verify the local resource workspace under RES-003.",
+    "current_task_id": null,
+    "next_task_id": "OFF-001",
+    "next_action": "Standardize native contracts, switches, fallbacks and counters before adding the next three native leaves.",
     "implementation_after_documentation_started": true
   },
   "references": {
@@ -768,7 +768,7 @@
       "title": "Guarded raw-resource preparation tool",
       "phase": "milestone_0",
       "kind": "finite",
-      "status": "awaiting_review",
+      "status": "completed",
       "owner_agent_id": "/root/resource_format_audit",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -777,15 +777,15 @@
         "/root/resource_preparation_tests"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T15:04:52Z",
+      "updated_at": "2026-09-26T15:11:26Z",
       "started_at": "2026-09-26T14:53:00Z",
-      "completed_at": null,
+      "completed_at": "2026-09-26T15:11:26Z",
       "timestamp_note": null,
       "scope": "Wrap existing extractors with safe bounds, staging, manifest and repeatability checks.",
       "depends_on": [
         "RES-001"
       ],
-      "work_summary": "Guarded resource-preparation implementation and independent synthetic tests are ready for root integration review. Both contributing agents report 15 passing synthetic checks after hardening, including staged failure cleanup. Root built the independent C++ byte comparison tool. Full actual extraction and cross-language byte verification have not run.",
+      "work_summary": "Implemented and reviewed guarded streaming ISO/DATA.BIN preparation, read-only raw outputs, atomic staged publication and source-anchored verified reuse. Fixed coordinated raw/manifest tampering and source-change detection. Root passed 17 preparation tests plus 11 baseline tests via CTest. Independent C++ comparison builds and rejects same-length synthetic corruption.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/tools/prepare_resources.py",
@@ -819,12 +819,31 @@
             "tests": 15,
             "reported_by_agent_id": "/root/resource_preparation_tests",
             "note": "Agent-reported result; root integration review remains pending."
+          },
+          {
+            "name": "Root synthetic suite and CTest integration",
+            "status": "passed",
+            "tests": 26,
+            "evidence": "out/testing/resource-unit-tests.log",
+            "note": "15 preparation plus 11 baseline tests; CTest LastTest.log is under out/resource-validation/Testing/Temporary."
+          },
+          {
+            "name": "Independent C++ fixture and corruption rejection",
+            "status": "passed",
+            "evidence": "out/testing/resource-crosscheck-synthetic.json"
+          },
+          {
+            "name": "Source-anchored verification regressions and CTest",
+            "status": "passed",
+            "tests": 28,
+            "evidence": "out/testing/resource-ctest.log",
+            "note": "17 preparation plus 11 baseline tests; root rerun after review fix."
           }
         ],
         "limitations": [
-          "No full game was launched.",
-          "Full actual extraction and byte-for-byte output comparison have not run.",
-          "Integration review remains pending. Multi-extent/interleaved ISO records are rejected; the opaque archive size-table trailer limits definitive malformed-row detection."
+          "Apple Silicon macOS only; no gameplay run.",
+          "Multi-extent/interleaved records are rejected; opaque size-table trailer limits definitive malformed-row detection.",
+          "Checks do not lock against concurrent replacement after final verification."
         ]
       },
       "implementation_commits": [],
@@ -866,6 +885,33 @@
           "from_status": "in_progress",
           "to_status": "awaiting_review",
           "description": "Both implementation and independent test agents handed off their assigned files. Preserve unchecked checklist until root integration review is complete."
+        },
+        {
+          "recorded_at": "2026-09-26T15:07:23Z",
+          "occurred_at": "2026-09-26T15:07:23Z",
+          "actor_id": "/root",
+          "action": "integration_verified",
+          "from_status": "awaiting_review",
+          "to_status": "completed",
+          "description": "Integrated guarded streaming extraction and manifest/reuse checks. Root reran all 15 synthetic preparation tests and both CTest suites (26 tests total); independent C++ comparison accepted the synthetic fixture and rejected same-length byte corruption. C++ target builds on Apple Silicon macOS. Full supported-image extraction remains RES-003."
+        },
+        {
+          "recorded_at": "2026-09-26T15:08:45Z",
+          "occurred_at": "2026-09-26T15:08:45Z",
+          "actor_id": "/root",
+          "action": "reopened_from_review",
+          "from_status": "completed",
+          "to_status": "in_progress",
+          "description": "Post-integration review found coordinated output/manifest tampering could pass reuse verification. Reopened to anchor every reused payload hash directly to the source ISO; independent test agent owns the fix and regression tests."
+        },
+        {
+          "recorded_at": "2026-09-26T15:11:26Z",
+          "occurred_at": "2026-09-26T15:11:26Z",
+          "actor_id": "/root",
+          "action": "review_fix_verified",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented and reviewed guarded streaming ISO/DATA.BIN preparation, read-only raw outputs, atomic staged publication and source-anchored verified reuse. Fixed coordinated raw/manifest tampering and source-change detection. Root passed 17 preparation tests plus 11 baseline tests via CTest. Independent C++ comparison builds and rejects same-length synthetic corruption."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -875,49 +921,75 @@
       "title": "Full local extraction and resource index",
       "phase": "milestone_0",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "completed",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-26T15:11:26Z",
+      "started_at": "2026-09-26T15:07:23Z",
+      "completed_at": "2026-09-26T15:11:26Z",
       "timestamp_note": null,
       "scope": "Extract raw ISO filesystem and DATA.BIN entries without semantic conversions or changing runtime input.",
       "depends_on": [
         "RES-002"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Extracted 14 ISO files and all 6043 archive entries, including 3 empty spans and 355 unique overlays. Independent C++ decoder compared 1207519280 bytes with zero differences; raw ISO spans compared 1323335431 bytes. Full source-anchored repeat verification passed without manifest changes. Original ISO/ELF/save archive/source-save hashes remained unchanged; raw outputs remain read-only and ignored.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/analysis/resources/manifest.json",
           "kind": "manifest",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
           "path": "profiles/mhp3rd/analysis/resources/raw-disc",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
           "path": "profiles/mhp3rd/analysis/resources/raw-entries",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
           "path": "profiles/mhp3rd/analysis/resources/derived",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
           "path": "profiles/mhp3rd/analysis/resources/working",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/resource-byte-crosscheck.json",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/resource-source-preservation.json",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/resource-reuse-report.json",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/resource-inventory-report.json",
+          "kind": "evidence",
+          "state": "existing",
           "local_only": true
         }
       ],
@@ -927,13 +999,59 @@
         "Baseline/candidate continue reading original ISO."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "All decoded entries compared with C++ runtime",
+            "status": "passed",
+            "entries": 6043,
+            "bytes": 1207519280,
+            "evidence": "out/testing/resource-byte-crosscheck.json"
+          },
+          {
+            "name": "Raw-disc spans and original input preservation",
+            "status": "passed",
+            "evidence": "out/testing/resource-source-preservation.json"
+          },
+          {
+            "name": "Source-anchored repeat verification",
+            "status": "passed",
+            "evidence": "out/testing/resource-reuse-report.json"
+          },
+          {
+            "name": "Overlay identities and resource inventory",
+            "status": "passed",
+            "evidence": "out/testing/resource-inventory-report.json"
+          }
+        ],
+        "limitations": [
+          "4535 nonempty entries have unknown header types.",
+          "Byte-level extraction does not decode animation/model/AI semantics.",
+          "No game or alternate runtime loader was exercised."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T15:07:23Z",
+          "occurred_at": "2026-09-26T15:07:23Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Preparing all raw local resources using the registered B0 ISO fingerprint, then checking every byte with the independent runtime decoder and original ISO spans."
+        },
+        {
+          "recorded_at": "2026-09-26T15:11:26Z",
+          "occurred_at": "2026-09-26T15:11:26Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Extracted 14 ISO files and all 6043 archive entries, including 3 empty spans and 355 unique overlays. Independent C++ decoder compared 1207519280 bytes with zero differences; raw ISO spans compared 1323335431 bytes. Full source-anchored repeat verification passed without manifest changes. Original ISO/ELF/save archive/source-save hashes remained unchanged; raw outputs remain read-only and ignored."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
