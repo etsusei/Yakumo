@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 10,
+  "revision": 12,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T15:11:26Z",
+  "updated_at": "2026-09-26T15:13:30Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -74,6 +74,22 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/native_contract_audit",
+      "type": "agent",
+      "role": "Offline native ABI audit and common contract implementation",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/offline_format_tests",
+      "type": "agent",
+      "role": "Synthetic native ISO reader and PSMF demuxer regression coverage",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -113,10 +129,13 @@
     ]
   },
   "execution_state": {
-    "current_task_id": null,
-    "next_task_id": "OFF-001",
-    "next_action": "Standardize native contracts, switches, fallbacks and counters before adding the next three native leaves.",
-    "implementation_after_documentation_started": true
+    "current_task_id": "OFF-001",
+    "next_task_id": "OFF-002",
+    "next_action": "Complete shared native contracts and full angle/scale offline validation, then implement the translation/vector/copy leaves.",
+    "implementation_after_documentation_started": true,
+    "parallel_task_ids": [
+      "OFF-005"
+    ]
   },
   "references": {
     "chinese_ui_pr": "https://github.com/etsusei/Yakumo/pull/1",
@@ -729,7 +748,9 @@
           "Full extraction has not run yet."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "ed54da9"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -846,7 +867,9 @@
           "Checks do not lock against concurrent replacement after final verification."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "c9579a7"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -1029,7 +1052,9 @@
           "No game or alternate runtime loader was exercised."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "c9579a7"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -1059,20 +1084,23 @@
       "title": "Uniform native-helper contracts and evidence",
       "phase": "milestone_1",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "in_progress",
+      "owner_agent_id": "/root/native_contract_audit",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/native_contract_audit"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
+      "updated_at": "2026-09-26T15:12:45Z",
+      "started_at": "2026-09-26T15:12:45Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Separate portable computation from ABI glue; standardize modes, counts and declared side effects.",
       "depends_on": [
         "RES-003"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Audited full leaf fingerprints and guest ABI semantics from local ELF/generated code. Implementing shared mode/counter contracts and standardizing existing angle/scale adapters with bounded original-code tests.",
       "deliverables": [
         {
           "path": "docs/NATIVE_MODULES.md",
@@ -1099,7 +1127,17 @@
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T15:12:45Z",
+          "occurred_at": "2026-09-26T15:12:45Z",
+          "actor_id": "/root",
+          "action": "started_and_delegated",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Audited full leaf fingerprints and guest ABI semantics from local ELF/generated code. Implementing shared mode/counter contracts and standardizing existing angle/scale adapters with bounded original-code tests."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
@@ -1251,20 +1289,23 @@
       "title": "Synthetic ISO and PSMF regression coverage",
       "phase": "milestone_1",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "in_progress",
+      "owner_agent_id": "/root/offline_format_tests",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/offline_format_tests"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
+      "updated_at": "2026-09-26T15:13:30Z",
+      "started_at": "2026-09-26T15:13:30Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Add tests to already-native components; do not count this as new game-code migration.",
       "depends_on": [
         "RES-002"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Implementing independent synthetic ISO/PSMF regression fixtures in parallel with helper contracts. Existing native infrastructure assurance only; no game/movie playback claim.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/tests/iso_image_tests.cpp",
@@ -1291,7 +1332,17 @@
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T15:13:30Z",
+          "occurred_at": "2026-09-26T15:13:30Z",
+          "actor_id": "/root",
+          "action": "started_and_delegated",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Implementing independent synthetic ISO/PSMF regression fixtures in parallel with helper contracts. Existing native infrastructure assurance only; no game/movie playback claim."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
