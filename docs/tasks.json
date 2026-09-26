@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 26,
+  "revision": 27,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T17:48:19Z",
+  "updated_at": "2026-09-26T17:54:11Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -641,7 +641,7 @@
         "/root"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T15:04:22Z",
+      "updated_at": "2026-09-26T17:54:11Z",
       "started_at": "2026-09-26T14:22:54Z",
       "completed_at": "2026-09-26T14:33:08Z",
       "timestamp_note": null,
@@ -730,6 +730,15 @@
           "from_status": "completed",
           "to_status": "completed",
           "description": "Refreshed durable continuation pointer, task-field/status documentation and actual implementation progress. Retained the complete 28-task checklist and scoped acceptance boundaries."
+        },
+        {
+          "recorded_at": "2026-09-26T17:54:11Z",
+          "occurred_at": "2026-09-26T17:54:11Z",
+          "actor_id": "/root",
+          "action": "handoff_refreshed",
+          "from_status": "completed",
+          "to_status": "completed",
+          "description": "Reconciled the existing 28-task plan and ledger for the requested durable handoff. Added a context-recovery procedure and explicit tracking-field map. Preserved prior task statuses, original attribution, implementation evidence, and the OBS-003 continuation pointer; no gameplay or implementation work was performed in this documentation refresh. Validation passed for all 28 task IDs, checklist/status agreement, acyclic dependencies, timestamp formats, actor references, existing deliverable paths, continuation pointers, and diff whitespace."
         }
       ],
       "updated_by_agent_id": "/root"

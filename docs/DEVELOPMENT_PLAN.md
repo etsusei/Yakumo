@@ -230,3 +230,25 @@ Each task records its stable `id`, scope, dependencies, status, `created_at`/`up
 Allowed statuses are `not_started`, `in_progress`, `awaiting_review`, `awaiting_user_test`, `blocked`, `paused`, `completed`, and `cancelled`; their meanings are defined in the JSON. Only `completed` maps to a checked box. Recording an artifact as existing does not establish that its task has passed review or gameplay acceptance.
 
 Before a handoff or context reset, refresh the current/next task pointer, actual work and deliverables, evidence, and unresolved limitations. Preserve historical attribution and entries. Keep this document's checklist synchronized with the JSON in the same change.
+
+### Context-recovery checklist
+
+Use this procedure after context compression or when another agent takes over. These are recurring checks, not additional implementation tasks.
+
+1. Read `AGENTS.md`, this plan, and `tasks.json`; compare them with the current working tree before making changes.
+2. Follow `execution_state.current_task_id`, then read that task's latest history, dependencies, deliverables, and validation limitations. An `in_progress` entry identifies unfinished work; it does not prove an agent or process is still running.
+3. Check that the needed files and evidence exist. Treat a missing local artifact as unavailable until recovered or regenerated; retain the historical record of the original result.
+4. Resume from the first unmet acceptance criterion. Do not repeat completed extraction, full builds, or gameplay navigation just to reconstruct context.
+5. Record actual work and attribution, append history, refresh timestamps and continuation pointers, and synchronize the checklist before handing off again.
+
+| Tracking requirement | JSON fields |
+| --- | --- |
+| Stable task number and dependencies | `id`, `depends_on` |
+| Creation, latest modification, start, and completion | `created_at`, `updated_at`, `started_at`, `completed_at` |
+| Actual responsible and contributing agents | `owner_agent_id`, `contributor_agent_ids`, `updated_by_agent_id`, `history[].actor_id` |
+| What changed and why | `scope`, `work_summary`, `history[].description` |
+| Deliverable location and availability | `deliverables[].path`, `state`, `local_only` |
+| Progress and resumption conditions | `status`, `pause_reason`, `blockers` |
+| Proof and remaining uncertainty | `acceptance_criteria`, `validation.checks`, `validation.limitations` |
+
+The task ledger retains history rather than overwriting it with a new chat summary. Planning an output, compiling an application, and passing user gameplay acceptance remain separate facts.
