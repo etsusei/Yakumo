@@ -339,6 +339,30 @@ else()
     message(STATUS "mhp3rd: developer tools not compiled in")
 endif()
 
+# Offline byte comparison against the runtime's DATA.BIN implementation.
+# The CLI requires a separately validated local ISO and prepared raw entries.
+add_executable(mhp3rd_resource_crosscheck
+    tools/resource_crosscheck.cpp
+    host/mods/mhp3rd_data_bin.cpp
+    host/mods/file_overlay.cpp
+    host/mods/mod_ini.cpp)
+target_include_directories(mhp3rd_resource_crosscheck PRIVATE "${MHP3RD_PROFILE_DIR}/host")
+set_target_properties(mhp3rd_resource_crosscheck PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+# Synthetic preparation tests never require or launch the game.
+if(PSPRECOMP_BUILD_TESTS)
+    find_package(Python3 3.9 QUIET COMPONENTS Interpreter)
+    if(Python3_Interpreter_FOUND)
+        foreach(suite baseline_registration resource_preparation)
+            add_test(NAME mhp3rd_${suite}_tests
+                COMMAND "${Python3_EXECUTABLE}" -m unittest discover
+                    -s "${MHP3RD_PROFILE_DIR}/tests" -p "test_${suite}.py" -v)
+            set_tests_properties(mhp3rd_${suite}_tests PROPERTIES
+                ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
+        endforeach()
+    endif()
+endif()
+
 # Save-data checks that need no game data: crypto test vectors and round trips.
 add_executable(mhp3rd_savedata_tests
     tests/savedata_tests.cpp

@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 2,
+  "revision": 10,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T14:33:08Z",
+  "updated_at": "2026-09-26T15:11:26Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -50,6 +50,30 @@
       "id": "project-owner",
       "type": "human",
       "role": "Manual case execution and subjective acceptance"
+    },
+    {
+      "id": "/root/baseline_registration",
+      "type": "agent",
+      "role": "Baseline/input freeze implementation and synthetic tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/resource_format_audit",
+      "type": "agent",
+      "role": "Resource format audit and guarded extraction implementation",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/resource_preparation_tests",
+      "type": "agent",
+      "role": "Independent synthetic ISO/DATA.BIN preparation fixtures and tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -90,9 +114,9 @@
   },
   "execution_state": {
     "current_task_id": null,
-    "next_task_id": "RES-001",
-    "next_action": "After persistence validation, freeze the formal B0/input manifests, then prepare and execute raw extraction.",
-    "implementation_after_documentation_started": false
+    "next_task_id": "OFF-001",
+    "next_action": "Standardize native contracts, switches, fallbacks and counters before adding the next three native leaves.",
+    "implementation_after_documentation_started": true
   },
   "references": {
     "chinese_ui_pr": "https://github.com/etsusei/Yakumo/pull/1",
@@ -523,7 +547,7 @@
         "/root"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:33:08Z",
+      "updated_at": "2026-09-26T15:04:22Z",
       "started_at": "2026-09-26T14:22:54Z",
       "completed_at": "2026-09-26T14:33:08Z",
       "timestamp_note": null,
@@ -603,6 +627,15 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Created the complete revised development plan with synchronized task checklist, a 28-task JSON ledger, and the AGENTS.md continuation entrypoint. Validated JSON, task IDs, dependency graph, status/checklist consistency, timestamps, actor attribution, relative paths and existing outputs. No extraction, game run or future implementation was performed in this task."
+        },
+        {
+          "recorded_at": "2026-09-26T15:04:22Z",
+          "occurred_at": "2026-09-26T15:04:22Z",
+          "actor_id": "/root",
+          "action": "handoff_refreshed",
+          "from_status": "completed",
+          "to_status": "completed",
+          "description": "Refreshed durable continuation pointer, task-field/status documentation and actual implementation progress. Retained the complete 28-task checklist and scoped acceptance boundaries."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -612,32 +645,53 @@
       "title": "Freeze Baseline B0 and register test inputs",
       "phase": "milestone_0",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "completed",
+      "owner_agent_id": "/root/baseline_registration",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/baseline_registration"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-26T14:53:00Z",
+      "started_at": "2026-09-26T14:38:15Z",
+      "completed_at": "2026-09-26T14:53:00Z",
       "timestamp_note": null,
       "scope": "Freeze 4292eb6 with all native replacements off; register independent starting-save snapshots.",
       "depends_on": [
         "PLAN-002"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Implemented and ran source-frozen B0 registration twice on the local inputs. Pinned 4292eb6 source/tree, archived 362 source/historical evidence files, recorded source/dependency fingerprints, and created a verified read-only content-addressed starting-save snapshot. Reuse verified all archived output hashes; original ISO/ELF/archive fingerprints stayed unchanged. Existing binary provenance is explicitly historical, not a newly built B0 application.",
       "deliverables": [
         {
           "path": "out/testing/baselines/B0/manifest.json",
           "kind": "manifest",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
           "path": "profiles/mhp3rd/analysis/testing/start-saves",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/tools/register_baseline.py",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_baseline_registration.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/RESOURCE_PREPARATION.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
         }
       ],
       "acceptance_criteria": [
@@ -646,13 +700,67 @@
         "Snapshot restoration cannot overwrite a running process."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "synthetic registration suite",
+            "status": "passed",
+            "tests": 11,
+            "evidence": "out/testing/baseline-unit-tests.log"
+          },
+          {
+            "name": "actual creation and verified reuse",
+            "status": "passed",
+            "passes": 2,
+            "evidence": "out/testing/baselines/B0/manifest.json"
+          },
+          {
+            "name": "source fingerprints and snapshot file modes",
+            "status": "passed"
+          },
+          {
+            "name": "fresh run destination guard",
+            "status": "passed",
+            "note": "Existing destination is rejected without modification."
+          }
+        ],
+        "limitations": [
+          "No full game was launched.",
+          "B0 paired application remains pending PAIR-002; archived binary is historical evidence.",
+          "Full extraction has not run yet."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T14:38:15Z",
+          "occurred_at": "2026-09-26T14:38:15Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Freezing the B0 source identity, current build/dependency evidence and immutable local input/save snapshots without launching the game."
+        },
+        {
+          "recorded_at": "2026-09-26T14:39:49Z",
+          "occurred_at": "2026-09-26T14:39:49Z",
+          "actor_id": "/root",
+          "action": "delegated",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Assigned the registration tool and synthetic tests to /root/baseline_registration; root retains actual-data verification, integration, ledger and publication."
+        },
+        {
+          "recorded_at": "2026-09-26T14:53:00Z",
+          "occurred_at": "2026-09-26T14:53:00Z",
+          "actor_id": "/root",
+          "action": "verified_completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented and ran source-frozen B0 registration twice on the local inputs. Pinned 4292eb6 source/tree, archived 362 source/historical evidence files, recorded source/dependency fingerprints, and created a verified read-only content-addressed starting-save snapshot. Reuse verified all archived output hashes; original ISO/ELF/archive fingerprints stayed unchanged. Existing binary provenance is explicitly historical, not a newly built B0 application."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
@@ -660,31 +768,41 @@
       "title": "Guarded raw-resource preparation tool",
       "phase": "milestone_0",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "completed",
+      "owner_agent_id": "/root/resource_format_audit",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/resource_format_audit",
+        "/root/resource_preparation_tests"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-26T15:11:26Z",
+      "started_at": "2026-09-26T14:53:00Z",
+      "completed_at": "2026-09-26T15:11:26Z",
       "timestamp_note": null,
       "scope": "Wrap existing extractors with safe bounds, staging, manifest and repeatability checks.",
       "depends_on": [
         "RES-001"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Implemented and reviewed guarded streaming ISO/DATA.BIN preparation, read-only raw outputs, atomic staged publication and source-anchored verified reuse. Fixed coordinated raw/manifest tampering and source-change detection. Root passed 17 preparation tests plus 11 baseline tests via CTest. Independent C++ comparison builds and rejects same-length synthetic corruption.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/tools/prepare_resources.py",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "profiles/mhp3rd/tests/test_resource_preparation.py",
           "kind": "test",
-          "state": "planned",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/resource_crosscheck.cpp",
+          "kind": "source",
+          "state": "existing",
           "local_only": false
         }
       ],
@@ -694,13 +812,108 @@
         "No full game boot required."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Independent synthetic preparation suite",
+            "status": "passed",
+            "tests": 15,
+            "reported_by_agent_id": "/root/resource_preparation_tests",
+            "note": "Agent-reported result; root integration review remains pending."
+          },
+          {
+            "name": "Root synthetic suite and CTest integration",
+            "status": "passed",
+            "tests": 26,
+            "evidence": "out/testing/resource-unit-tests.log",
+            "note": "15 preparation plus 11 baseline tests; CTest LastTest.log is under out/resource-validation/Testing/Temporary."
+          },
+          {
+            "name": "Independent C++ fixture and corruption rejection",
+            "status": "passed",
+            "evidence": "out/testing/resource-crosscheck-synthetic.json"
+          },
+          {
+            "name": "Source-anchored verification regressions and CTest",
+            "status": "passed",
+            "tests": 28,
+            "evidence": "out/testing/resource-ctest.log",
+            "note": "17 preparation plus 11 baseline tests; root rerun after review fix."
+          }
+        ],
+        "limitations": [
+          "Apple Silicon macOS only; no gameplay run.",
+          "Multi-extent/interleaved records are rejected; opaque size-table trailer limits definitive malformed-row detection.",
+          "Checks do not lock against concurrent replacement after final verification."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T14:53:00Z",
+          "occurred_at": "2026-09-26T14:53:00Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Implementing guarded ISO/DATA.BIN preparation after B0 registration. The read-only audit identified unsafe legacy bounds/path handling and full-entry decryption memory use; independent C++ directory preflight agrees with the supplied archive inventory."
+        },
+        {
+          "recorded_at": "2026-09-26T14:56:49Z",
+          "occurred_at": "2026-09-26T14:56:49Z",
+          "actor_id": "/root",
+          "action": "delegated",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "The format-audit agent owns guarded extraction implementation; a separate agent owns independent synthetic fixtures/tests. Root owns integration, independent C++ checks, actual extraction and ledger."
+        },
+        {
+          "recorded_at": "2026-09-26T15:04:22Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "progress_registered",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Guarded resource-preparation implementation and independent synthetic tests exist locally. The test agent reports 15 passing synthetic checks, including staged failure cleanup. Root built the independent C++ byte comparison tool; integration review and final hardening remain pending. Full actual extraction has not run."
+        },
+        {
+          "recorded_at": "2026-09-26T15:04:52Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "handoff_received",
+          "from_status": "in_progress",
+          "to_status": "awaiting_review",
+          "description": "Both implementation and independent test agents handed off their assigned files. Preserve unchecked checklist until root integration review is complete."
+        },
+        {
+          "recorded_at": "2026-09-26T15:07:23Z",
+          "occurred_at": "2026-09-26T15:07:23Z",
+          "actor_id": "/root",
+          "action": "integration_verified",
+          "from_status": "awaiting_review",
+          "to_status": "completed",
+          "description": "Integrated guarded streaming extraction and manifest/reuse checks. Root reran all 15 synthetic preparation tests and both CTest suites (26 tests total); independent C++ comparison accepted the synthetic fixture and rejected same-length byte corruption. C++ target builds on Apple Silicon macOS. Full supported-image extraction remains RES-003."
+        },
+        {
+          "recorded_at": "2026-09-26T15:08:45Z",
+          "occurred_at": "2026-09-26T15:08:45Z",
+          "actor_id": "/root",
+          "action": "reopened_from_review",
+          "from_status": "completed",
+          "to_status": "in_progress",
+          "description": "Post-integration review found coordinated output/manifest tampering could pass reuse verification. Reopened to anchor every reused payload hash directly to the source ISO; independent test agent owns the fix and regression tests."
+        },
+        {
+          "recorded_at": "2026-09-26T15:11:26Z",
+          "occurred_at": "2026-09-26T15:11:26Z",
+          "actor_id": "/root",
+          "action": "review_fix_verified",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented and reviewed guarded streaming ISO/DATA.BIN preparation, read-only raw outputs, atomic staged publication and source-anchored verified reuse. Fixed coordinated raw/manifest tampering and source-change detection. Root passed 17 preparation tests plus 11 baseline tests via CTest. Independent C++ comparison builds and rejects same-length synthetic corruption."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
@@ -708,49 +921,75 @@
       "title": "Full local extraction and resource index",
       "phase": "milestone_0",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "completed",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-26T15:11:26Z",
+      "started_at": "2026-09-26T15:07:23Z",
+      "completed_at": "2026-09-26T15:11:26Z",
       "timestamp_note": null,
       "scope": "Extract raw ISO filesystem and DATA.BIN entries without semantic conversions or changing runtime input.",
       "depends_on": [
         "RES-002"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Extracted 14 ISO files and all 6043 archive entries, including 3 empty spans and 355 unique overlays. Independent C++ decoder compared 1207519280 bytes with zero differences; raw ISO spans compared 1323335431 bytes. Full source-anchored repeat verification passed without manifest changes. Original ISO/ELF/save archive/source-save hashes remained unchanged; raw outputs remain read-only and ignored.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/analysis/resources/manifest.json",
           "kind": "manifest",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
           "path": "profiles/mhp3rd/analysis/resources/raw-disc",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
           "path": "profiles/mhp3rd/analysis/resources/raw-entries",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
           "path": "profiles/mhp3rd/analysis/resources/derived",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
           "path": "profiles/mhp3rd/analysis/resources/working",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/resource-byte-crosscheck.json",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/resource-source-preservation.json",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/resource-reuse-report.json",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/resource-inventory-report.json",
+          "kind": "evidence",
+          "state": "existing",
           "local_only": true
         }
       ],
@@ -760,13 +999,59 @@
         "Baseline/candidate continue reading original ISO."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "All decoded entries compared with C++ runtime",
+            "status": "passed",
+            "entries": 6043,
+            "bytes": 1207519280,
+            "evidence": "out/testing/resource-byte-crosscheck.json"
+          },
+          {
+            "name": "Raw-disc spans and original input preservation",
+            "status": "passed",
+            "evidence": "out/testing/resource-source-preservation.json"
+          },
+          {
+            "name": "Source-anchored repeat verification",
+            "status": "passed",
+            "evidence": "out/testing/resource-reuse-report.json"
+          },
+          {
+            "name": "Overlay identities and resource inventory",
+            "status": "passed",
+            "evidence": "out/testing/resource-inventory-report.json"
+          }
+        ],
+        "limitations": [
+          "4535 nonempty entries have unknown header types.",
+          "Byte-level extraction does not decode animation/model/AI semantics.",
+          "No game or alternate runtime loader was exercised."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T15:07:23Z",
+          "occurred_at": "2026-09-26T15:07:23Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Preparing all raw local resources using the registered B0 ISO fingerprint, then checking every byte with the independent runtime decoder and original ISO spans."
+        },
+        {
+          "recorded_at": "2026-09-26T15:11:26Z",
+          "occurred_at": "2026-09-26T15:11:26Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Extracted 14 ISO files and all 6043 archive entries, including 3 empty spans and 355 unique overlays. Independent C++ decoder compared 1207519280 bytes with zero differences; raw ISO spans compared 1323335431 bytes. Full source-anchored repeat verification passed without manifest changes. Original ISO/ELF/save archive/source-save hashes remained unchanged; raw outputs remain read-only and ignored."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
