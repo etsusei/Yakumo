@@ -4,6 +4,10 @@ Working notes for anyone changing this repository: people and coding agents alik
 
 Yakumo is a native port of *Monster Hunter Portable 3rd HD Ver.* (`NPJB-40001`). It recompiles the game's PSP (MIPS) code to C++ ahead of time and supplies the PSP system around it: the kernel, HLE modules, a Vulkan GE renderer, audio, input, save data, ad hoc networking and an ImGui interface. The C++ lives in `profiles/mhp3rd/host/` (the port) and `include/psprecomp/` plus `src/` (the reusable runtime and recompiler).
 
+## Continuation state
+
+Before starting project work, read [the development plan](docs/DEVELOPMENT_PLAN.md) and [the task ledger](docs/tasks.json). They preserve the agreed offline-first development order and user-led paired acceptance workflow. Keep task status, timestamps, actual agent attribution, evidence, deliverable paths, and the plan checklist synchronized when work progresses; never infer completion from an old chat summary.
+
 ## Rules
 
 - **English only** in everything committed: code, comments, docs, commit messages, pull requests. The only exceptions are the translations `README.ru.md` and `README.es.md`, and they change in the same pull request as `README.md`.

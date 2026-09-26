@@ -1,0 +1,1720 @@
+{
+  "schema_version": 1,
+  "plan_version": "1.1",
+  "revision": 2,
+  "project": "Yakumo MHP3 native migration",
+  "plan_path": "docs/DEVELOPMENT_PLAN.md",
+  "path_base": "repository_root",
+  "created_at": "2026-09-26T14:31:18Z",
+  "updated_at": "2026-09-26T14:33:08Z",
+  "timezone": "Asia/Tokyo",
+  "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
+  "status_definitions": {
+    "not_started": "Planned, no execution begun.",
+    "in_progress": "An identified agent is actively working on the scoped task.",
+    "awaiting_review": "Deliverables exist and are waiting for review.",
+    "awaiting_user_test": "A test package is ready and user-run cases are pending.",
+    "blocked": "Cannot progress; blockers and resumption condition must be recorded.",
+    "paused": "Intentionally suspended; pause_reason must be recorded.",
+    "completed": "The task-specific required outputs and acceptance criteria have evidence.",
+    "cancelled": "Explicitly abandoned or superseded; preserve the reason/history."
+  },
+  "evidence_policy": "Implementation completion and gameplay acceptance are separate. Zero calls means not_covered. Distinguish synthetic, local-ELF differential, replay, live observation and user acceptance. Planned deliverable paths do not assert files exist.",
+  "actors": [
+    {
+      "id": "/root",
+      "type": "agent",
+      "role": "Primary implementation and planning agent",
+      "model": null,
+      "model_note": "Exact primary model was not exposed; do not invent it."
+    },
+    {
+      "id": "/root/recorder_audit",
+      "type": "agent",
+      "role": "Historical read-only recorder planning audit",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "fork_turns": "none",
+      "historical": true
+    },
+    {
+      "id": "/root/offline_roadmap",
+      "type": "agent",
+      "role": "Historical offline-test and helper-candidate planning audit",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "fork_turns": "none",
+      "historical": true
+    },
+    {
+      "id": "project-owner",
+      "type": "human",
+      "role": "Manual case execution and subjective acceptance"
+    }
+  ],
+  "future_subagent_policy": {
+    "fork_turns": "none",
+    "model": "gpt-6-sol",
+    "reasoning_effort": "max",
+    "context_requirement": "Provide all task context, constraints, paths, expected outputs and verification requirements in the task message.",
+    "historical_note": "The earlier planning audits used gpt-5.6-luna under the then-current instructions; their provenance is not rewritten."
+  },
+  "decisions": {
+    "target": "Preserve original content and feel while removing PSP execution dependencies.",
+    "initial_platform": "Apple Silicon macOS",
+    "baseline": {
+      "source_commit": "4292eb6",
+      "chinese_interface": true,
+      "native_replacements": "all off",
+      "recorder_revision": "same observational revision on both roles",
+      "automatic_upstream_updates": false
+    },
+    "manual_batch_minutes_total": [
+      15,
+      30
+    ],
+    "manual_interface": "in-game Chinese case panel",
+    "first_priority": "full raw extraction/index, then expanded offline native migration before first manual handoff",
+    "offline_boundary": "No full game boot or manually triggered scene; local ELF/resource harnesses are allowed.",
+    "original_data_policy": "Keep inputs untouched; each test uses independent save copies.",
+    "runtime_resource_source": "Keep original ISO until a separately validated loader change.",
+    "automatic_upload": false,
+    "screenshots": "Supporting observations only, never the behavioral oracle.",
+    "initial_exclusions": [
+      "new gameplay",
+      "HD remastering",
+      "new native Metal backend",
+      "public room-code hosting",
+      "App Store distribution"
+    ]
+  },
+  "execution_state": {
+    "current_task_id": null,
+    "next_task_id": "RES-001",
+    "next_action": "After persistence validation, freeze the formal B0/input manifests, then prepare and execute raw extraction.",
+    "implementation_after_documentation_started": false
+  },
+  "references": {
+    "chinese_ui_pr": "https://github.com/etsusei/Yakumo/pull/1",
+    "native_experiments_pr": "https://github.com/etsusei/Yakumo/pull/2",
+    "experiment_report": "docs/NATIVE_EXPERIMENT.md",
+    "compatibility_report": "docs/COMPATIBILITY.md"
+  },
+  "update_protocol": [
+    "Read the plan, ledger and repository instructions before choosing work.",
+    "Claim only a dependency-ready finite task; record actual agent identity and start time.",
+    "Append history on meaningful work, reassignment, status change and handoff; refresh updated_at.",
+    "Use repository-relative paths and distinguish planned vs existing and local-only artifacts.",
+    "Completion requires scoped evidence; manual coverage remains separate.",
+    "Update the plan checkbox and ledger together.",
+    "Record blockers or pause reasons and explicit resumption conditions.",
+    "Preserve prior records and unknown historical timestamps."
+  ],
+  "tasks": [
+    {
+      "id": "FOUND-001",
+      "title": "Chinese interface and language selection",
+      "phase": "foundation",
+      "kind": "finite",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root"
+      ],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": "Historical execution timestamps are unknown; created_at and updated_at describe ledger registration.",
+      "scope": "Existing interface localization, not game-content translation.",
+      "depends_on": [],
+      "work_summary": "Implemented 631 interface translations, language persistence and CJK fallback; five targeted tests and local UI previews passed.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/ui/localization.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/ui/translations/zh_cn.inc",
+          "kind": "translation_catalog",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/ui_localization_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Chinese/English UI switching and persistence implemented; scoped validation recorded."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "settings/localization tests",
+            "status": "passed",
+            "evidence_url": "https://github.com/etsusei/Yakumo/pull/1",
+            "note": "Five checks passed in the recorded localization turn."
+          }
+        ],
+        "limitations": [
+          "Game text and complete gameplay were not part of the localization scope."
+        ]
+      },
+      "implementation_commits": [
+        "e5a5d9a"
+      ],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T14:31:18Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "historical_completion_registered",
+          "from_status": null,
+          "to_status": "completed",
+          "description": "Implemented 631 interface translations, language persistence and CJK fallback; five targeted tests and local UI previews passed.",
+          "evidence_note": "Retrospective entry based on repository artifacts and prior conversation; not a new execution."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "FOUND-002",
+      "title": "Local inputs and historical gameplay baseline",
+      "phase": "foundation",
+      "kind": "finite",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root"
+      ],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": "Historical execution timestamps are unknown; created_at and updated_at describe ledger registration.",
+      "scope": "Identify supplied image/save and establish an observed source-compatible baseline; not full extraction.",
+      "depends_on": [],
+      "work_summary": "Confirmed NPJB40001, 6,043 archive entries and 355 matching code overlays; checked save hashes/decryption and a copied-save village route.",
+      "deliverables": [
+        {
+          "path": "docs/NATIVE_EXPERIMENT.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/native-experiment/overlay-check.json",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/native-experiment/save-validation.log",
+          "kind": "evidence",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Supported executable and overlay identity checked.",
+        "Save checks and bounded baseline route documented."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "overlay code identities",
+            "status": "passed",
+            "count": 355
+          },
+          {
+            "name": "save integrity/decryption",
+            "status": "passed"
+          },
+          {
+            "name": "baseline village route",
+            "status": "limited_pass"
+          }
+        ],
+        "limitations": [
+          "No full raw extraction yet.",
+          "No full-game, combat, multiplayer, audio-output or long-session acceptance."
+        ]
+      },
+      "implementation_commits": [
+        "4292eb6"
+      ],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T14:31:18Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "historical_completion_registered",
+          "from_status": null,
+          "to_status": "completed",
+          "description": "Confirmed NPJB40001, 6,043 archive entries and 355 matching code overlays; checked save hashes/decryption and a copied-save village route.",
+          "evidence_note": "Retrospective entry based on repository artifacts and prior conversation; not a new execution."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "FOUND-003",
+      "title": "Native angle-step pilot",
+      "phase": "foundation",
+      "kind": "finite",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root"
+      ],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": "Historical execution timestamps are unknown; created_at and updated_at describe ledger registration.",
+      "scope": "Implement and offline-validate one angle leaf; gameplay coverage is a separate obligation.",
+      "depends_on": [
+        "FOUND-002"
+      ],
+      "work_summary": "Implemented a portable angle calculation and ABI bridge; 806,432 original-ELF comparisons passed.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/native/angle_step.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/angle_step_bridge.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/native_angle_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "806,432 original-code differential cases pass.",
+        "Off/verify/native modes and fingerprint protection implemented."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "original-code differential",
+            "status": "passed",
+            "cases": 806432
+          },
+          {
+            "name": "village live coverage",
+            "status": "not_covered",
+            "calls": 0
+          }
+        ],
+        "limitations": [
+          "Zero observed calls on the village route; no live equivalence claim."
+        ]
+      },
+      "implementation_commits": [
+        "26398fe",
+        "f60e77f"
+      ],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T14:31:18Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "historical_completion_registered",
+          "from_status": null,
+          "to_status": "completed",
+          "description": "Implemented a portable angle calculation and ABI bridge; 806,432 original-ELF comparisons passed.",
+          "evidence_note": "Retrospective entry based on repository artifacts and prior conversation; not a new execution."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "FOUND-004",
+      "title": "Native scale-matrix pilot",
+      "phase": "foundation",
+      "kind": "finite",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root"
+      ],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": "Historical execution timestamps are unknown; created_at and updated_at describe ledger registration.",
+      "scope": "Validate one graphics helper; not the whole animation or rendering system.",
+      "depends_on": [
+        "FOUND-002"
+      ],
+      "work_summary": "Passed 100,512 offline cases including 10,000 prefix fallbacks; compared 48,365 live calls without mismatch, then executed 48,405 native calls without fallback.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/native/scale_matrix.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/scale_matrix_bridge.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/native_scale_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/NATIVE_EXPERIMENT.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "100,512 offline cases pass.",
+        "Live verification and native-route evidence recorded with limits."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "original-code differential",
+            "status": "passed",
+            "cases": 100512,
+            "prefix_fallback_cases": 10000
+          },
+          {
+            "name": "live verifier",
+            "status": "passed",
+            "calls": 48365,
+            "mismatches": 0,
+            "fallbacks": 0
+          },
+          {
+            "name": "native village route",
+            "status": "limited_pass",
+            "native_calls": 48405,
+            "fallbacks": 0
+          }
+        ],
+        "limitations": [
+          "Separate-run clock was not pinned; screenshots/call counts are not claimed identical.",
+          "Audio, combat/quests, multiplayer, other platforms and long sessions unverified.",
+          "No speedup claim; default remains off."
+        ]
+      },
+      "implementation_commits": [
+        "f60e77f",
+        "4292eb6"
+      ],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T14:31:18Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "historical_completion_registered",
+          "from_status": null,
+          "to_status": "completed",
+          "description": "Passed 100,512 offline cases including 10,000 prefix fallbacks; compared 48,365 live calls without mismatch, then executed 48,405 native calls without fallback.",
+          "evidence_note": "Retrospective entry based on repository artifacts and prior conversation; not a new execution."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "PLAN-001",
+      "title": "Repository audits and agreed development policy",
+      "phase": "planning",
+      "kind": "finite",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root",
+        "/root/recorder_audit",
+        "/root/offline_roadmap"
+      ],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": "Historical execution timestamps are unknown; created_at and updated_at describe ledger registration.",
+      "scope": "Read-only investigation and user decisions for verification-first development.",
+      "depends_on": [
+        "FOUND-004"
+      ],
+      "work_summary": "Root consolidated two read-only subagent audits and user choices: Mac first, expanded offline migration, current Chinese baseline with experiments off, Chinese case panel, 15\u201330-minute paired batches, and full raw extraction first.",
+      "deliverables": [
+        {
+          "path": "docs/DEVELOPMENT_PLAN.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Preserve user choices and precise candidate identities.",
+        "Separate offline evidence from manual acceptance."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "planning exploration",
+            "status": "completed",
+            "note": "No source mutations or game runs were part of the planning audits."
+          }
+        ],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T14:31:18Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "historical_completion_registered",
+          "from_status": null,
+          "to_status": "completed",
+          "description": "Root consolidated two read-only subagent audits and user choices: Mac first, expanded offline migration, current Chinese baseline with experiments off, Chinese case panel, 15\u201330-minute paired batches, and full raw extraction first.",
+          "evidence_note": "Retrospective entry based on repository artifacts and prior conversation; not a new execution."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "PLAN-002",
+      "title": "Persist revised plan and task ledger",
+      "phase": "planning",
+      "kind": "finite",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root"
+      ],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:33:08Z",
+      "started_at": "2026-09-26T14:22:54Z",
+      "completed_at": "2026-09-26T14:33:08Z",
+      "timestamp_note": null,
+      "scope": "Create durable Markdown/checklist and JSON execution history, with a continuation pointer.",
+      "depends_on": [
+        "PLAN-001"
+      ],
+      "work_summary": "Created the complete revised development plan with synchronized task checklist, a 28-task JSON ledger, and the AGENTS.md continuation entrypoint. Validated JSON, task IDs, dependency graph, status/checklist consistency, timestamps, actor attribution, relative paths and existing outputs. No extraction, game run or future implementation was performed in this task.",
+      "deliverables": [
+        {
+          "path": "docs/DEVELOPMENT_PLAN.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/tasks.json",
+          "kind": "task_ledger",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "AGENTS.md",
+          "kind": "continuation_entrypoint",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "All agreed decisions and raw extraction step are recorded.",
+        "Checklist IDs/statuses match the ledger.",
+        "Task IDs, dependencies, timestamps, actor references and paths validate."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "documentation and ledger consistency",
+            "status": "passed",
+            "task_count": 28,
+            "checks": [
+              "JSON syntax",
+              "unique IDs",
+              "acyclic and existing dependencies",
+              "checklist/status agreement",
+              "ISO 8601 timestamps",
+              "actor references",
+              "repository-relative paths",
+              "existence of materialized deliverables",
+              "no private absolute paths",
+              "git diff whitespace check"
+            ]
+          }
+        ],
+        "limitations": [
+          "Future implementation artifacts are planned paths, not existing outputs.",
+          "Historical execution timestamps remain unknown where not recorded."
+        ]
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T14:31:18Z",
+          "occurred_at": "2026-09-26T14:31:18Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Writing the complete revised plan and task ledger; added the AGENTS.md continuation entrypoint."
+        },
+        {
+          "recorded_at": "2026-09-26T14:33:08Z",
+          "occurred_at": "2026-09-26T14:33:08Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Created the complete revised development plan with synchronized task checklist, a 28-task JSON ledger, and the AGENTS.md continuation entrypoint. Validated JSON, task IDs, dependency graph, status/checklist consistency, timestamps, actor attribution, relative paths and existing outputs. No extraction, game run or future implementation was performed in this task."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "RES-001",
+      "title": "Freeze Baseline B0 and register test inputs",
+      "phase": "milestone_0",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Freeze 4292eb6 with all native replacements off; register independent starting-save snapshots.",
+      "depends_on": [
+        "PLAN-002"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "out/testing/baselines/B0/manifest.json",
+          "kind": "manifest",
+          "state": "planned",
+          "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/analysis/testing/start-saves",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Build/dependency/config/source identities recorded.",
+        "Original ISO/save remain unchanged.",
+        "Snapshot restoration cannot overwrite a running process."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "RES-002",
+      "title": "Guarded raw-resource preparation tool",
+      "phase": "milestone_0",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Wrap existing extractors with safe bounds, staging, manifest and repeatability checks.",
+      "depends_on": [
+        "RES-001"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/tools/prepare_resources.py",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_resource_preparation.py",
+          "kind": "test",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Synthetic nested/empty/truncated/unsafe-path inputs tested.",
+        "Manifest tracks IDs, sizes, hashes, provenance and unknown types.",
+        "No full game boot required."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "RES-003",
+      "title": "Full local extraction and resource index",
+      "phase": "milestone_0",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Extract raw ISO filesystem and DATA.BIN entries without semantic conversions or changing runtime input.",
+      "depends_on": [
+        "RES-002"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/analysis/resources/manifest.json",
+          "kind": "manifest",
+          "state": "planned",
+          "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/analysis/resources/raw-disc",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/analysis/resources/raw-entries",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/analysis/resources/derived",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/analysis/resources/working",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Supported image has all 6,043 indexed entries and 355 identified overlays.",
+        "Lengths/hashes and repeat extraction verified; empty entries retained.",
+        "Baseline/candidate continue reading original ISO."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "OFF-001",
+      "title": "Uniform native-helper contracts and evidence",
+      "phase": "milestone_1",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Separate portable computation from ABI glue; standardize modes, counts and declared side effects.",
+      "depends_on": [
+        "RES-003"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "docs/NATIVE_MODULES.md",
+          "kind": "documentation",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/contracts.hpp",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Each helper has complete fingerprint and explicit state/memory contract.",
+        "Existing angle/scale switches preserved.",
+        "Common calls/verified/native/fallbacks/mismatches/errors definitions."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "OFF-002",
+      "title": "Native translation-matrix leaf",
+      "phase": "milestone_1",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Implement 0x08878B4C, 36 bytes, standard-prefix native path and exact original fallback.",
+      "depends_on": [
+        "OFF-001"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/native/translation_matrix.cpp",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/native_translation_matrix_tests.cpp",
+          "kind": "test",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Raw FPR bits, memory stores, VFPU state and delay slot match local ELF.",
+        "Nonstandard prefixes use exact fallback.",
+        "Mode MHP3RD_NATIVE_TRANSLATION_MATRIX defaults off."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "OFF-003",
+      "title": "Native four-word vector constructor",
+      "phase": "milestone_1",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Implement 0x08877818, 24 bytes, with raw-bit copy semantics.",
+      "depends_on": [
+        "OFF-001"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/native/vector_construct.cpp",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/native_vector_construct_tests.cpp",
+          "kind": "test",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Three input words and literal zero match original; other CPU fields/canaries unchanged.",
+        "NaNs, signed zero, aliases and changed fingerprints covered.",
+        "Mode MHP3RD_NATIVE_VECTOR_CONSTRUCT defaults off."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "OFF-004",
+      "title": "Native nine-word matrix-layout copy",
+      "phase": "milestone_1",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Implement 0x08879D08, 80 bytes, preserving original ordering and padding.",
+      "depends_on": [
+        "OFF-001"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/native/matrix_copy.cpp",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/native_matrix_copy_tests.cpp",
+          "kind": "test",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Nine words and final VFPU scratch state match local ELF.",
+        "Equal/overlapping/aliased pointers preserve original behavior.",
+        "Row-padding canaries stay unchanged; MHP3RD_NATIVE_MATRIX_COPY defaults off."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "OFF-005",
+      "title": "Synthetic ISO and PSMF regression coverage",
+      "phase": "milestone_1",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Add tests to already-native components; do not count this as new game-code migration.",
+      "depends_on": [
+        "RES-002"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/tests/iso_image_tests.cpp",
+          "kind": "test",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/psmf_demuxer_tests.cpp",
+          "kind": "test",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Synthetic parsing bounds, truncation, framing and end-of-stream cases covered.",
+        "No graphics/audio device or full game needed.",
+        "No claim of visual/audio resource fidelity."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "OFF-006",
+      "title": "Expanded offline acceptance gate",
+      "phase": "milestone_1",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Run all five native-helper original-code checks plus targeted infrastructure regression.",
+      "depends_on": [
+        "OFF-002",
+        "OFF-003",
+        "OFF-004",
+        "OFF-005"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/scripts/check_offline.py",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/offline/report.json",
+          "kind": "report",
+          "state": "planned",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Existing exhaustive suites are invoked with local ELF, not only CTest examples.",
+        "Supported cases have zero mismatches; fallback/refusal checks pass.",
+        "Report records exact coverage and pending live validation."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "OBS-001",
+      "title": "Recorder journal and recovery core",
+      "phase": "milestone_2",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Implement versioned append-only records, bounded buffering and failure visibility.",
+      "depends_on": [
+        "OFF-006"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/testing/session_recorder.hpp",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/session_recorder.cpp",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/session_recorder_tests.cpp",
+          "kind": "test",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Sequence/length/checksum framing and one-second/checkpoint persistence.",
+        "Truncation, corruption, overflow and disk failure are explicit.",
+        "No game boot needed for core tests."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "OBS-002",
+      "title": "Observational input and timeline adapters",
+      "phase": "milestone_2",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Record window/UI events, final applied game controls, camera input and overlay generations.",
+      "depends_on": [
+        "OBS-001"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/testing/game_observers.cpp",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/game_observer_tests.cpp",
+          "kind": "test",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Game frame, virtual time, read ordinal and UI domains distinguished.",
+        "Observe final HLE-transformed input and separate mouse/touch camera consumption.",
+        "No unrelated application input; no merged identities across overlay reuse."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "OBS-003",
+      "title": "Certified probes and read-only state observations",
+      "phase": "milestone_2",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Record accurate boundary-specific counts/timings and explicit coverage gaps.",
+      "depends_on": [
+        "OBS-001",
+        "OFF-006"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/testing/probes.cpp",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/probe_tests.cpp",
+          "kind": "test",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Logical scopes, entry hits and dispatch segments are distinct.",
+        "Baseline observation keeps original execution behavior.",
+        "State readers are fingerprint/context guarded; no cheat writes.",
+        "Detailed tracing overhead and incomplete scopes are labeled."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "OBS-004",
+      "title": "Local packaging and comparison reports",
+      "phase": "milestone_2",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Compare run packages by case/checkpoint/input compatibility and generate HTML/JSON findings.",
+      "depends_on": [
+        "OBS-001",
+        "OBS-002",
+        "OBS-003"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/tools/compare_test_runs.py",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_run_comparison.py",
+          "kind": "test",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/reports",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Mismatch, incomparable, incomplete and not-covered are distinct outcomes.",
+        "Human timing/RNG differences are not automatically reported as bugs.",
+        "Game bytes, whole saves and full RAM excluded from default packages."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "PAIR-001",
+      "title": "Chinese in-game case panel",
+      "phase": "milestone_2",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Expose case steps and markers while keeping recording automatic and observational.",
+      "depends_on": [
+        "OBS-001",
+        "OBS-002",
+        "OBS-003"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/ui/test_session_screen.cpp",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/ui/translations/zh_cn.inc",
+          "kind": "translation_catalog",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Role/version/recording health and case begin/checkpoint/anomaly/end controls.",
+        "Normal/abnormal/uncertain/skipped outcomes; unfinished close means interrupted.",
+        "Live usability remains pending until CASE-001."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "PAIR-002",
+      "title": "Paired Mac test applications and supervisor",
+      "phase": "milestone_2",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Package B0 and candidate with identical recorder revisions, isolated saves and post-exit collection.",
+      "depends_on": [
+        "OBS-004",
+        "PAIR-001",
+        "RES-001"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/tools/test_launcher.cpp",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/scripts/package_test_pair.sh",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/dist/Yakumo Baseline.app",
+          "kind": "application",
+          "state": "planned",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/Yakumo Candidate.app",
+          "kind": "application",
+          "state": "planned",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Original saves/resources protected; independent writable runs.",
+        "Supervisor handles normal exit, exceptions and abrupt child death.",
+        "Window-close code 4 interpreted using stop reason; no automatic upload."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "PAIR-003",
+      "title": "First case pack and delivery readiness",
+      "phase": "milestone_2",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Publish finite cases and validate lifecycle/export with synthetic processes before user gameplay.",
+      "depends_on": [
+        "PAIR-002"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/testing/cases/initial_batch.json",
+          "kind": "case_catalog",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEST_CASES.md",
+          "kind": "documentation",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/readiness.json",
+          "kind": "report",
+          "state": "planned",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "REC-01/02/03 and NATIVE-01 instructions in the Chinese panel.",
+        "Both builds together fit 15\u201330-minute target.",
+        "Readiness does not claim live or subjective acceptance."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "CASE-001",
+      "title": "User paired gameplay acceptance",
+      "phase": "milestone_3",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": "project-owner",
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "User performs initial cases; assistant does not substitute screenshot navigation.",
+      "depends_on": [
+        "PAIR-003"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "out/testing/runs",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Both roles produce packages from agreed starting conditions.",
+        "User observations and unfinished/uncertain cases retained.",
+        "Zero-trigger modules explicitly untested."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "CASE-002",
+      "title": "Analyze first paired acceptance and regress fixes",
+      "phase": "milestone_3",
+      "kind": "finite",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Assistant correlates evidence, fixes identified defects and reports scope honestly.",
+      "depends_on": [
+        "CASE-001"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "out/testing/reports/initial-batch",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        },
+        {
+          "path": "docs/COMPATIBILITY.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Differences separated from incomparable inputs and recorder defects.",
+        "Affected cases retested; replayable samples retained locally.",
+        "No module enabled by default before its required acceptance."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ITER-001",
+      "title": "Maintain migration inventory and finite batch specifications",
+      "phase": "milestone_4",
+      "kind": "workstream",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Track actual residual guest dependencies; create finite child tasks as research resolves boundaries.",
+      "depends_on": [
+        "CASE-002"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "docs/NATIVE_MODULES.md",
+          "kind": "documentation",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "docs/tasks.json",
+          "kind": "task_ledger",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Module inventory distinguishes portable logic from guest adapters.",
+        "Each batch has a bounded contract, switches, cases and evidence obligations."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ITER-002",
+      "title": "User-led gameplay and resource migration batches",
+      "phase": "milestone_4",
+      "kind": "workstream",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Repeat implementation, automatic checks, paired user cases, analysis and targeted regressions.",
+      "depends_on": [
+        "ITER-001"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/testing/cases",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/reports",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        },
+        {
+          "path": "docs/COMPATIBILITY.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Related changes delivered together with independent switches.",
+        "Animation/AI/combat claims require relevant observed cases and user acceptance.",
+        "New finite task IDs created for each batch; no speculative whole-game completion."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "EXIT-001",
+      "title": "Remove residual PSP execution dependencies",
+      "phase": "milestone_5",
+      "kind": "milestone",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Remove obsolete guest paths only after their callers and accepted scenarios no longer need them.",
+      "depends_on": [
+        "ITER-002"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "docs/NATIVE_DEPENDENCY_AUDIT.md",
+          "kind": "documentation",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Shipping candidate does not execute original PSP code or need interpreter fallback.",
+        "Original resources remain usable; baseline is only a test reference.",
+        "No completion percentage inferred from code size or hot-call totals."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "EXIT-002",
+      "title": "Final whole-game acceptance matrix",
+      "phase": "milestone_5",
+      "kind": "milestone",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-26T14:31:18Z",
+      "updated_at": "2026-09-26T14:31:18Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Complete the agreed content, save, multiplayer, platform and long-session gates.",
+      "depends_on": [
+        "EXIT-001"
+      ],
+      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "deliverables": [
+        {
+          "path": "docs/COMPATIBILITY.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/reports/final-acceptance",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "All required cases have explicit evidence and user sign-off where needed.",
+        "Unsupported platforms/scenarios remain labeled until verified.",
+        "No fixed full-rewrite deadline is assumed."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    }
+  ],
+  "last_updated_by_agent_id": "/root"
+}
