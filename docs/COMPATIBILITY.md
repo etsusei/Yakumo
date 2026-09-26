@@ -67,6 +67,11 @@ live coverage, dialog appearance and user acceptance remain pending. See
 [paired test applications](PAIRED_TEST_APPLICATIONS.md#recorded-offline-delivery-check)
 for the evidence scope.
 
+The formal first-case pack at commit `75ca5ff` subsequently passed its offline
+catalog/panel/journal tests and signed-app preparation-only readiness gate on
+the same platform. The four user cases are now ready, but CASE-001 gameplay
+acceptance has not occurred. See [the first handoff](TEST_CASES.md#recorded-first-handoff).
+
 ## Updating this page
 
 Run through [the smoke test](TESTING.md) on the platform, then change the cells you checked in the same pull request as the fix, or in a pull request of their own. Add a row to *Tested hardware* with the commit you tested. A result without a commit cannot be compared with anything later, so it does not go in the table.

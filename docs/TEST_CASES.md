@@ -132,3 +132,17 @@ identities, the actual C++/Python catalog interpretation, both real native
 launchers in headless preparation-only mode, independent save files, and shared
 case prerequisites. It never invokes ordinary game launch. A ready report
 means the pair is ready for the user's cases, not that those cases passed.
+
+## Recorded first handoff
+
+Implementation commit `75ca5ff` passed twelve integrated offline CTests and the
+signed-pair readiness gate on Apple Silicon macOS 27.0. Both final builds also
+passed 21 preflight checks and their standalone production AOT leaf checks.
+The local report is `out/testing/readiness.json`; the final catalog SHA-256 is
+`99f868d6cf0a9a465c1720b8f752a73555b645c7f6e4fc1f08f9691de568a48a`.
+
+The ready applications and Chinese companion guide are in
+`out/testing/dist/initial-batch/`. Older applications directly under `dist/`
+contain the provisional catalog and are not the first user handoff. No game
+was launched during delivery checks. CASE-001 now awaits the user's Baseline
+then Candidate runs; preparation-only output does not satisfy it.
