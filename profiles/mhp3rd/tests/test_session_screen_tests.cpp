@@ -6,6 +6,7 @@
 #include "testing/journal.hpp"
 #include "testing/session_recorder.hpp"
 #include "ui/layer.hpp"
+#include "ui/localization.hpp"
 #include "ui/widgets.hpp"
 
 #include "imgui.h"
@@ -19,6 +20,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -110,7 +112,7 @@ struct Fixture {
     std::shared_ptr<GameObserver> observer;
     std::shared_ptr<CaseController> controller;
 
-    explicit Fixture(std::string role = "baseline") {
+    explicit Fixture(std::string role = "baseline", std::optional<CaseCatalog> supplied = {}) {
         recorder = std::make_shared<SessionRecorder>(
             std::make_unique<MemorySink>(state), Fields{{"role", std::string("ui_test")}});
         observer = std::make_shared<GameObserver>(recorder);
@@ -130,6 +132,7 @@ struct Fixture {
         second.title = "Custom %s route";
         second.steps = {"Keep %d and {1} literal"};
         catalog.cases.push_back(std::move(second));
+        if (supplied) catalog = std::move(*supplied);
 
         CaseSessionInfo session{std::move(role), "build-1", "run-1", "batch-1", "B0", std::string(64, 'b')};
         CaseHooks hooks{
@@ -283,6 +286,36 @@ void test_candidate_role() {
     check(saw_info("\u6D4B\u8BD5\u89D2\u8272", "\u5019\u9009\u7248"), "Chinese candidate role is visible");
 }
 
+void test_published_catalog(const std::filesystem::path &path) {
+    const auto catalog = load_case_catalog(path);
+    Fixture fixture("candidate", catalog);
+    for (std::size_t index = 0; index < catalog.cases.size(); ++index) {
+        frame({}, index == 0 ? 0 : 1);
+        const auto &spec = catalog.cases[index];
+        const std::string title = mhp3rd::ui::tr(spec.title.c_str());
+        check(title != spec.title && saw(drawn.headings, title),
+              "published case title is translated by the real panel");
+        for (std::size_t step = 0; step < spec.steps.size(); ++step) {
+            const std::string instruction = mhp3rd::ui::tr(spec.steps[step].c_str());
+            check(instruction != spec.steps[step] &&
+                  saw(drawn.paragraphs, std::to_string(step + 1) + ".  " + instruction),
+                  "published step is translated by the real panel");
+        }
+        for (const auto &checkpoint : spec.checkpoints)
+            check(std::none_of(drawn.paragraphs.begin(), drawn.paragraphs.end(), [&](const auto &text) {
+                return text.find(checkpoint) != std::string::npos;
+            }), "published checkpoint has a user-facing translated label");
+        check(frame("\u5F00\u59CB\u672C\u6848\u4F8B"), "published case begins and returns to gameplay");
+        check(fixture.controller->active_case() == index, "published case selection matches the catalog");
+        for (std::size_t checkpoint = 0; checkpoint < spec.checkpoints.size(); ++checkpoint)
+            check(frame("\u8BB0\u5F55\u4E0B\u4E00\u4E2A\u68C0\u67E5\u70B9"),
+                  "published checkpoint returns to gameplay");
+        check(!frame("\u6807\u8BB0\u6B63\u5E38\u7ED3\u675F"), "published finish stays in the menu");
+        check(fixture.controller->progress()[index].state == CaseProgressState::Normal,
+              "published case accepts an explicit completed outcome");
+    }
+}
+
 } // namespace
 
 namespace mhp3rd::ui {
@@ -308,7 +341,8 @@ Layer &Layer::get() {
 
 } // namespace mhp3rd::ui
 
-int main() {
+int main(int argc, char **argv) {
+    if (argc != 1 && argc != 2) return 2;
     namespace fs = std::filesystem;
     const fs::path isolated_data = fs::temp_directory_path() /
         ("yakumo-test-session-ui-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
@@ -332,6 +366,7 @@ int main() {
     test_panel_flow();
     test_bad_recording_while_active();
     test_candidate_role();
+    if (argc == 2) test_published_catalog(argv[1]);
     ImGui::DestroyContext();
     check(!mhp3rd::ui::test_screen_available(), "panel disappears when session owner releases controller");
     std::error_code error;

@@ -427,6 +427,20 @@ if(PSPRECOMP_BUILD_TESTS)
             set_tests_properties(mhp3rd_${suite}_tests PROPERTIES
                 ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
         endforeach()
+        if(NOT MHP3RD_BASELINE_B0)
+            foreach(suite observed_baseline package_test_pair test_launcher pair_readiness initial_case_pack)
+                add_test(NAME mhp3rd_${suite}_tests
+                    COMMAND "${Python3_EXECUTABLE}" -m unittest discover
+                        -s "${MHP3RD_PROFILE_DIR}/tests" -p "test_${suite}.py" -v)
+                set_tests_properties(mhp3rd_${suite}_tests PROPERTIES
+                    ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
+            endforeach()
+            add_test(NAME mhp3rd_test_supervisor_tests
+                COMMAND "${Python3_EXECUTABLE}" -m unittest discover
+                    -s "${PROJECT_SOURCE_DIR}/tests" -p "test_test_supervisor.py" -v)
+            set_tests_properties(mhp3rd_test_supervisor_tests PROPERTIES
+                ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
+        endif()
     endif()
 endif()
 
@@ -586,6 +600,14 @@ if(PSPRECOMP_BUILD_TESTS AND Python3_Interpreter_FOUND)
     add_test(NAME mhp3rd_case_runtime_pipeline_tests COMMAND "${Python3_EXECUTABLE}"
         "${MHP3RD_PROFILE_DIR}/tests/test_case_runtime_pipeline.py" "$<TARGET_FILE:mhp3rd_case_runtime_fixture>")
     set_tests_properties(mhp3rd_case_runtime_pipeline_tests PROPERTIES ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
+    if(NOT MHP3RD_BASELINE_B0)
+        add_test(NAME mhp3rd_initial_case_pipeline_tests COMMAND "${Python3_EXECUTABLE}"
+            "${MHP3RD_PROFILE_DIR}/tests/test_initial_case_pipeline.py"
+            "$<TARGET_FILE:mhp3rd_case_runtime_fixture>"
+            "${MHP3RD_PROFILE_DIR}/testing/cases/initial_batch.json")
+        set_tests_properties(mhp3rd_initial_case_pipeline_tests PROPERTIES
+            ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
+    endif()
 endif()
 foreach(suite case_catalog case_controller)
     add_executable(mhp3rd_${suite}_tests tests/${suite}_tests.cpp)
@@ -607,6 +629,11 @@ set_target_properties(mhp3rd_test_session_screen_tests PROPERTIES RUNTIME_OUTPUT
 if(PSPRECOMP_BUILD_TESTS)
     add_test(NAME mhp3rd_test_session_screen_tests COMMAND mhp3rd_test_session_screen_tests)
     set_tests_properties(mhp3rd_test_session_screen_tests PROPERTIES TIMEOUT 30)
+    if(NOT MHP3RD_BASELINE_B0)
+        add_test(NAME mhp3rd_initial_case_screen_tests COMMAND mhp3rd_test_session_screen_tests
+            "${MHP3RD_PROFILE_DIR}/testing/cases/initial_batch.json")
+        set_tests_properties(mhp3rd_initial_case_screen_tests PROPERTIES TIMEOUT 30)
+    endif()
 endif()
 if(MHP3RD_PROBE_INSTRUMENTED_SOURCES)
     target_compile_definitions(Yakumo PRIVATE MHP3RD_CERTIFIED_AOT_PROBES=1)

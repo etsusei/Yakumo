@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 41,
+  "revision": 45,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T20:53:17Z",
+  "updated_at": "2026-09-26T21:07:19Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -255,6 +255,22 @@
       "id": "/root/native_test_launcher",
       "type": "agent",
       "role": "Native Mac supervisor launcher and headless synthetic integration tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/initial_case_pack",
+      "type": "agent",
+      "role": "Finite first-case catalog, Chinese panel instructions and localization checks",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/first_pack_pipeline",
+      "type": "agent",
+      "role": "Full first-pack offline C++ journal/controller pipeline validation",
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
@@ -3306,31 +3322,35 @@
       "title": "First case pack and delivery readiness",
       "phase": "milestone_2",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "in_progress",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/initial_case_pack",
+        "/root/first_pack_pipeline"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
+      "updated_at": "2026-09-26T21:07:19Z",
+      "started_at": "2026-09-26T20:55:37Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Publish finite cases and validate lifecycle/export with synthetic processes before user gameplay.",
       "depends_on": [
         "PAIR-002"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Four concrete first cases, 28 Chinese translations and an English guide are implemented. All 12 integrated offline CTests passed after building the two missing catalog/controller test executables. The final full-catalog pipeline preserves all checkpoints, keeps zero native coverage not_covered and midcase closure incomplete. Actual source synchronization, signed packaging and readiness check remain pending.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/testing/cases/initial_batch.json",
           "kind": "case_catalog",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "docs/TEST_CASES.md",
           "kind": "documentation",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
@@ -3338,6 +3358,30 @@
           "kind": "report",
           "state": "planned",
           "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_initial_case_pack.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_initial_case_pipeline.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_pair_readiness.py",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_pair_readiness.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
         }
       ],
       "acceptance_criteria": [
@@ -3346,13 +3390,61 @@
         "Readiness does not claim live or subjective acceptance."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Integrated first-pack offline CTests",
+            "status": "passed",
+            "evidence": "out/testing/initial-case-ctest.log",
+            "ctest_count": 12,
+            "game_launched": false
+          },
+          {
+            "name": "Final full-catalog C++ journal pipeline",
+            "status": "passed",
+            "evidence": "out/testing/reports/initial-case-pipeline-final/pipeline-summary.json",
+            "synthetic": true,
+            "normal_outcome": "not_covered",
+            "interrupted_outcome": "incomplete",
+            "game_launched": false
+          }
+        ],
+        "limitations": [
+          "Signed applications must be rebuilt/repackaged with the final observation revision and catalog before readiness is established.",
+          "No live controls, gameplay, dialog appearance or measured user completion time has been validated."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T20:55:37Z",
+          "occurred_at": "2026-09-26T20:55:37Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Finalizing concrete first-case instructions and Chinese localization; implementing an offline readiness gate for the actual signed pair, canonical catalog agreement and independent preparation-only runs."
+        },
+        {
+          "recorded_at": "2026-09-26T21:06:06Z",
+          "occurred_at": "2026-09-26T21:06:06Z",
+          "actor_id": "/root",
+          "action": "progress",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Implemented four finite cases and 28 Chinese panel translations, a full-catalog real C++ journal pipeline, published-catalog headless UI checks and signed-pair readiness tool. First pipeline proves zero native calls remain not_covered and interrupted REC-02 is incomplete. Ten integrated CTests passed; two selected tests lacked built executables and are being built before rerun. Final source/binary synchronization and actual packaged readiness gate remain pending."
+        },
+        {
+          "recorded_at": "2026-09-26T21:07:19Z",
+          "occurred_at": "2026-09-26T21:07:19Z",
+          "actor_id": "/root",
+          "action": "progress",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Four concrete first cases, 28 Chinese translations and an English guide are implemented. All 12 integrated offline CTests passed after building the two missing catalog/controller test executables. The final full-catalog pipeline preserves all checkpoints, keeps zero native coverage not_covered and midcase closure incomplete. Actual source synchronization, signed packaging and readiness check remain pending."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
