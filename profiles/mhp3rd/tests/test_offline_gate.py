@@ -180,6 +180,15 @@ if name in labels:
 
 
 class OfflineGateTests(OfflineFixture):
+    def test_current_and_legacy_ctest_summaries_require_all_passes(self):
+        expected = {"executed": 11, "failed": 0}
+        self.assertEqual(gate._ctest_summary("100% tests passed out of 11\n"), expected)
+        self.assertEqual(gate._ctest_summary("100% tests passed, 0 tests failed out of 11\n"), expected)
+        for summary in ("100% tests passed out of 10\n", "90% tests passed, 1 tests failed out of 11\n",
+                        "100% tests passed\n"):
+            with self.assertRaises(gate.GateError):
+                gate._ctest_summary(summary)
+
     def test_pass_records_all_commands_counts_hashes_and_relocated_elf(self):
         relocated = self.repo / "out/second-elf/EBOOT.ELF"
         relocated.parent.mkdir()

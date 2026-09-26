@@ -49,4 +49,4 @@ The full host application is separately compiled and linked to verify startup/ex
 
 ## Current result
 
-The five suites have passed individually, totaling 1,208,316 local-ELF differential cases. The complete application compiled and linked without launch. The combined runner is being implemented and has not yet produced its first complete report; see `OFF-006` in [tasks.json](tasks.json) for current status.
+The five suites have passed individually, totaling 1,208,316 local-ELF differential cases. The complete application compiled and linked without launch. The combined runner is implemented. Its first actual run passed all 11 CTests but stopped on the newer compact CTest summary format; support for both formats and a regression were added. A complete rerun is pending; see `OFF-006` in [tasks.json](tasks.json) for current status.

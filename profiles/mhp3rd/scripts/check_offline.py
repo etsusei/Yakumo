@@ -407,9 +407,14 @@ def _validate_ctest_listing(data: dict[str, Any], repo: Path, build: Path) -> No
 
 def _ctest_summary(output: str) -> dict[str, int]:
     match = re.search(r"100% tests passed,\s*(\d+) tests failed out of (\d+)", output)
-    if not match:
-        raise GateError("CTest did not print a complete test summary", status="failed")
-    failed, total = map(int, match.groups())
+    if match:
+        failed, total = map(int, match.groups())
+    else:
+        # Newer CTest versions omit the zero-failures clause on success.
+        compact = re.search(r"(?m)^100% tests passed out of (\d+)\s*$", output)
+        if not compact:
+            raise GateError("CTest did not print a complete test summary", status="failed")
+        failed, total = 0, int(compact.group(1))
     if failed or total != len(CTEST_NAMES):
         raise GateError(f"CTest completed {total} tests with {failed} failures; 11 passes required", status="failed")
     return {"executed": total, "failed": failed}
