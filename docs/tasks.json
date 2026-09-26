@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 22,
+  "revision": 23,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T16:17:32Z",
+  "updated_at": "2026-09-26T16:19:42Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -1884,7 +1884,7 @@
         "/root/session_recorder_tests"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T16:17:32Z",
+      "updated_at": "2026-09-26T16:19:42Z",
       "started_at": "2026-09-26T15:56:17Z",
       "completed_at": "2026-09-26T16:17:32Z",
       "timestamp_note": null,
@@ -1979,7 +1979,8 @@
         ]
       },
       "implementation_commits": [
-        "f354970"
+        "f354970",
+        "45a8062"
       ],
       "pause_reason": null,
       "blockers": [],
@@ -2011,6 +2012,15 @@
           "to_status": "completed",
           "description": "Implemented typed JSON fields, versioned little-endian CRC32 journal frames, strict prefix recovery and a bounded background writer with periodic/boundary flush, barriers, overflow records, explicit closure and sticky write/flush/finalization failures. Independent C++ golden/lifecycle/concurrency fixtures and Python decoding of real normal/_Exit/killed child files passed. ASan/UBSan core/process tests and TSan concurrency tests passed on Apple Silicon macOS. No live game hooks or gameplay acceptance are claimed.",
           "evidence": "out/testing/session-recorder-validation.json"
+        },
+        {
+          "recorded_at": "2026-09-26T16:19:42Z",
+          "occurred_at": "2026-09-26T16:19:42Z",
+          "actor_id": "/root",
+          "action": "published",
+          "from_status": "completed",
+          "to_status": "completed",
+          "description": "Published the tested background writer and independent lifecycle suites in commit 45a8062; PR #6 remains a draft because live integrations and paired delivery follow in separate tasks."
         }
       ],
       "updated_by_agent_id": "/root"
