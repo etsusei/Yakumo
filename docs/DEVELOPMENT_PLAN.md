@@ -34,7 +34,7 @@ A native leaf behind a guest ABI adapter is a useful intermediate result, not ev
 - Angle helper: **806,432 offline differential cases passed**, but **zero calls** were observed on the tested village route. In-game coverage remains absent.
 - Scale-matrix helper: **100,512 offline cases passed**, including 10,000 prefix fallbacks. Live verification compared **48,365 calls with zero mismatches**; a separate native run used **48,405 calls with zero fallback**.
 - The tested route was read-save, character selection, village entry, and a short walk. Audio output, combat/quests, multiplayer, other platforms, and long-session stability were not verified.
-- Full raw resource extraction and source-anchored reuse verification passed. All 6,043 decoded entries matched the independent C++ path byte for byte; the paired recorder, case panel, and comparison pipeline have not been implemented. Existing input scripts inject input; they are not a complete recorder.
+- Full raw resource extraction and source-anchored reuse verification passed. All 6,043 decoded entries matched the independent C++ path byte for byte; the shared journal core passed offline recovery and persistence checks. Live game observers, the case panel, and comparison pipeline remain to be implemented. Existing input scripts inject input; they are not a complete recorder.
 
 See [NATIVE_EXPERIMENT.md](NATIVE_EXPERIMENT.md) for the exact experiment boundaries. Historical successful boot tests do not override the new offline-first workflow.
 
@@ -101,7 +101,7 @@ ISO and PSMF components are already native. Their new tests count as infrastruct
 
 ### Milestone 2 — Implement the recorder and paired test delivery
 
-- [ ] **OBS-001** — Implement the versioned event journal, bounded buffering, crash-prefix recovery, and offline lifecycle tests.
+- [x] **OBS-001** — Implement the versioned event journal, bounded buffering, crash-prefix recovery, and offline lifecycle tests.
 - [ ] **OBS-002** — Connect observational input, timeline, camera, and overlay-identity sources.
 - [ ] **OBS-003** — Connect certified probes, read-only state observations, performance summaries, and errors.
 - [ ] **OBS-004** — Implement record packaging and the offline comparison/report command.
@@ -219,9 +219,9 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 is next.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
+Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 is completed. OBS-002 is next.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
 
-Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Start OBS-001: implement and offline-test the shared journal before attaching live input/state/probe observers. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
+Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with OBS-002 observational input/timeline/overlay adapters and OBS-003 certified probes on the completed shared journal. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
 
 ### Task ledger fields and update rules
 
