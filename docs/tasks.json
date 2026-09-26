@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 2,
+  "revision": 4,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T14:33:08Z",
+  "updated_at": "2026-09-26T14:39:49Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -50,6 +50,22 @@
       "id": "project-owner",
       "type": "human",
       "role": "Manual case execution and subjective acceptance"
+    },
+    {
+      "id": "/root/baseline_registration",
+      "type": "agent",
+      "role": "Baseline/input freeze implementation and synthetic tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/resource_format_audit",
+      "type": "agent",
+      "role": "Read-only extraction format and validation audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -89,10 +105,10 @@
     ]
   },
   "execution_state": {
-    "current_task_id": null,
-    "next_task_id": "RES-001",
-    "next_action": "After persistence validation, freeze the formal B0/input manifests, then prepare and execute raw extraction.",
-    "implementation_after_documentation_started": false
+    "current_task_id": "RES-001",
+    "next_task_id": "RES-002",
+    "next_action": "Finish the B0/input freeze, then implement and validate guarded raw extraction.",
+    "implementation_after_documentation_started": true
   },
   "references": {
     "chinese_ui_pr": "https://github.com/etsusei/Yakumo/pull/1",
@@ -612,20 +628,23 @@
       "title": "Freeze Baseline B0 and register test inputs",
       "phase": "milestone_0",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "in_progress",
+      "owner_agent_id": "/root/baseline_registration",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/baseline_registration"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
+      "updated_at": "2026-09-26T14:39:49Z",
+      "started_at": "2026-09-26T14:38:15Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Freeze 4292eb6 with all native replacements off; register independent starting-save snapshots.",
       "depends_on": [
         "PLAN-002"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Freezing the B0 source identity, current build/dependency evidence and immutable local input/save snapshots without launching the game.",
       "deliverables": [
         {
           "path": "out/testing/baselines/B0/manifest.json",
@@ -638,6 +657,18 @@
           "kind": "directory",
           "state": "planned",
           "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/tools/register_baseline.py",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_baseline_registration.py",
+          "kind": "test",
+          "state": "planned",
+          "local_only": false
         }
       ],
       "acceptance_criteria": [
@@ -652,7 +683,26 @@
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-26T14:38:15Z",
+          "occurred_at": "2026-09-26T14:38:15Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Freezing the B0 source identity, current build/dependency evidence and immutable local input/save snapshots without launching the game."
+        },
+        {
+          "recorded_at": "2026-09-26T14:39:49Z",
+          "occurred_at": "2026-09-26T14:39:49Z",
+          "actor_id": "/root",
+          "action": "delegated",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Assigned the registration tool and synthetic tests to /root/baseline_registration; root retains actual-data verification, integration, ledger and publication."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
