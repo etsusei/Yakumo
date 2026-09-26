@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 18,
+  "revision": 19,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T15:48:16Z",
+  "updated_at": "2026-09-26T15:50:11Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -153,9 +153,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "OFF-006",
+    "current_task_id": null,
     "next_task_id": "OBS-001",
-    "next_action": "Build full host integration and run a reproducible combined offline gate with input-preservation hashes, then begin recorder implementation.",
+    "next_action": "Implement and offline-test the shared versioned session recorder with bounded queues, persistence, recovery and explicit loss/error evidence before connecting game observers.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": []
   },
@@ -163,7 +163,10 @@
     "chinese_ui_pr": "https://github.com/etsusei/Yakumo/pull/1",
     "native_experiments_pr": "https://github.com/etsusei/Yakumo/pull/2",
     "experiment_report": "docs/NATIVE_EXPERIMENT.md",
-    "compatibility_report": "docs/COMPATIBILITY.md"
+    "compatibility_report": "docs/COMPATIBILITY.md",
+    "resource_preparation_pr": "https://github.com/etsusei/Yakumo/pull/4",
+    "offline_native_pr": "https://github.com/etsusei/Yakumo/pull/5",
+    "offline_gate_guide": "docs/OFFLINE_VALIDATION.md"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -1688,7 +1691,7 @@
       "title": "Expanded offline acceptance gate",
       "phase": "milestone_1",
       "kind": "finite",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -1696,9 +1699,9 @@
         "/root/offline_gate"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T15:48:16Z",
+      "updated_at": "2026-09-26T15:50:11Z",
       "started_at": "2026-09-26T15:31:43Z",
-      "completed_at": null,
+      "completed_at": "2026-09-26T15:50:11Z",
       "timestamp_note": null,
       "scope": "Run all five native-helper original-code checks plus targeted infrastructure regression.",
       "depends_on": [
@@ -1707,7 +1710,7 @@
         "OFF-004",
         "OFF-005"
       ],
-      "work_summary": "First actual gate passed all 11 CTests but correctly stopped when its parser did not recognize the newer compact CTest success summary. Preserved the failed report, added support for both summary formats and a regression; complete rerun is pending.",
+      "work_summary": "Completed the reproducible offline gate on clean commit 832d000: all 11 required CTests passed and all five original-ELF suites passed 1208316 cases total. Scale/translation each exercised 10000 prefix fallbacks. Registered original ISO/ELF/archive/source-save fingerprints matched before and after; report records 371 source file identities, CMake cache, 9 binary hashes and per-command logs. Root verified the report and full application compilation/link evidence. Fixed the first run's compact CTest summary parser failure and retained that failed run. No game was launched.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/scripts/check_offline.py",
@@ -1718,7 +1721,7 @@
         {
           "path": "out/testing/offline/report.json",
           "kind": "report",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
@@ -1744,6 +1747,12 @@
           "kind": "evidence",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "out/testing/offline/20260926T154835Z-06ef7b0de12b/report.json",
+          "kind": "versioned_report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -1758,12 +1767,38 @@
             "status": "passed",
             "tests": 9,
             "evidence": "out/testing/offline-gate-runner-tests.log"
+          },
+          {
+            "name": "Actual combined offline gate on clean source",
+            "status": "passed",
+            "source_commit": "832d0002b98c45838aa1bc7b75b86c64b4ac7eff",
+            "ctest_suites": 11,
+            "differential_cases": 1208316,
+            "evidence": "out/testing/offline/20260926T154835Z-06ef7b0de12b/report.json"
+          },
+          {
+            "name": "Runner regression suite after compact CTest summary fix",
+            "status": "passed",
+            "tests": 10,
+            "evidence": "out/testing/offline-gate-runner-tests.log"
+          },
+          {
+            "name": "Complete application compilation and link",
+            "status": "passed",
+            "evidence": "out/testing/native-host-build.log",
+            "note": "Application was not launched."
           }
         ],
-        "limitations": []
+        "limitations": [
+          "No new live call coverage or user gameplay acceptance.",
+          "macOS Apple Silicon only; other platforms unverified.",
+          "Synthetic PSMF tests do not establish audiovisual fidelity.",
+          "All native replacements remain off by default; guest-runtime dependencies remain."
+        ]
       },
       "implementation_commits": [
-        "065494f"
+        "065494f",
+        "832d000"
       ],
       "pause_reason": null,
       "blockers": [],
@@ -1804,6 +1839,16 @@
           "to_status": "in_progress",
           "description": "First actual gate passed all 11 CTests but correctly stopped when its parser did not recognize the newer compact CTest success summary. Preserved the failed report, added support for both summary formats and a regression; complete rerun is pending.",
           "evidence": "out/testing/offline/20260926T154612Z-f55f518740bd/report.json"
+        },
+        {
+          "recorded_at": "2026-09-26T15:50:11Z",
+          "occurred_at": "2026-09-26T15:50:11Z",
+          "actor_id": "/root",
+          "action": "combined_gate_completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Completed the reproducible offline gate on clean commit 832d000: all 11 required CTests passed and all five original-ELF suites passed 1208316 cases total. Scale/translation each exercised 10000 prefix fallbacks. Registered original ISO/ELF/archive/source-save fingerprints matched before and after; report records 371 source file identities, CMake cache, 9 binary hashes and per-command logs. Root verified the report and full application compilation/link evidence. Fixed the first run's compact CTest summary parser failure and retained that failed run. No game was launched.",
+          "evidence": "out/testing/offline/20260926T154835Z-06ef7b0de12b/report.json"
         }
       ],
       "updated_by_agent_id": "/root"

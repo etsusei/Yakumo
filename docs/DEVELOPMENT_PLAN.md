@@ -77,7 +77,7 @@ Resource preparation requirements:
 - [x] **OFF-003** — Add the four-word vector constructor at `0x08877818` (24 bytes including the delay slot).
 - [x] **OFF-004** — Add the nine-word matrix-layout copy at `0x08879D08` (80 bytes including the delay slot).
 - [x] **OFF-005** — Add independent synthetic ISO-reader and PSMF-demuxer regression coverage.
-- [ ] **OFF-006** — Run the complete offline gate and produce a versioned coverage report before manual handoff.
+- [x] **OFF-006** — Run the complete offline gate and produce a versioned coverage report before manual handoff.
 
 The three new leaves were identified from the existing local analysis and generated corpus. Recheck their full spans against the registered ELF before implementing:
 
@@ -219,9 +219,9 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-005 are completed; OFF-006 is in progress.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
+Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 is next.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
 
-Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Complete the combined OFF-006 gate and full application build, then begin the recorder milestone. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
+Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Start OBS-001: implement and offline-test the shared journal before attaching live input/state/probe observers. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
 
 ### Task ledger fields and update rules
 

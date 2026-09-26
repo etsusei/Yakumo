@@ -47,6 +47,16 @@ The report preserves command outcomes, durations, platform/build identity, binar
 
 The full host application is separately compiled and linked to verify startup/exit integration. Building that executable does not require launching it. User-led paired gameplay remains a later milestone, with the same observational recorder on both versions.
 
-## Current result
+## Recorded result
 
-The five suites have passed individually, totaling 1,208,316 local-ELF differential cases. The complete application compiled and linked without launch. The combined runner is implemented. Its first actual run passed all 11 CTests but stopped on the newer compact CTest summary format; support for both formats and a regression were added. A complete rerun is pending; see `OFF-006` in [tasks.json](tasks.json) for current status.
+On 2026-09-27 (Asia/Tokyo), the combined gate passed on clean source commit `832d0002b98c45838aa1bc7b75b86c64b4ac7eff`, Apple Silicon macOS:
+
+- All 11 required CTests passed.
+- All five local-ELF differential suites passed, totaling **1,208,316 cases** with zero failures. Scale and translation each included 10,000 prefix fallbacks.
+- Registered original input and starting-save fingerprints matched before and after execution.
+- The report records 371 source file identities, CMake cache fingerprints, nine binary hashes, exact commands, durations and log hashes.
+- The separate runner regression suite passed ten synthetic tests, including both legacy and compact CTest summary formats. The full application compiled and linked without launch.
+
+The immutable local run is `out/testing/offline/20260926T154835Z-06ef7b0de12b/report.json`; `out/testing/offline/report.json` currently contains the same result. The first run, which passed CTest but exposed the compact-summary parser incompatibility, remains at `out/testing/offline/20260926T154612Z-f55f518740bd/report.json`.
+
+No game was launched. New live helper coverage, paired user acceptance, audiovisual fidelity and other platforms remain unverified. The next task is OBS-001, the shared session recorder.
