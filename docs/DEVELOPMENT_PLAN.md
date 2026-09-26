@@ -34,7 +34,7 @@ A native leaf behind a guest ABI adapter is a useful intermediate result, not ev
 - Angle helper: **806,432 offline differential cases passed**, but **zero calls** were observed on the tested village route. In-game coverage remains absent.
 - Scale-matrix helper: **100,512 offline cases passed**, including 10,000 prefix fallbacks. Live verification compared **48,365 calls with zero mismatches**; a separate native run used **48,405 calls with zero fallback**.
 - The tested route was read-save, character selection, village entry, and a short walk. Audio output, combat/quests, multiplayer, other platforms, and long-session stability were not verified.
-- Full raw resource extraction, the paired recorder, case panel, and comparison pipeline **have not been implemented**. Existing input scripts inject input; they are not a complete recorder.
+- Full raw resource extraction **has not been performed**. The guarded extraction tool and synthetic tests await integration review; the paired recorder, case panel, and comparison pipeline have not been implemented. Existing input scripts inject input; they are not a complete recorder.
 
 See [NATIVE_EXPERIMENT.md](NATIVE_EXPERIMENT.md) for the exact experiment boundaries. Historical successful boot tests do not override the new offline-first workflow.
 
@@ -219,4 +219,14 @@ For each finite implementation task:
 
 ### Resume here
 
-Once `PLAN-002` is completed, the next task is **RES-001**, followed by **RES-002** and **RES-003**. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff. Completing this documentation task does not start those implementation tasks automatically.
+Current continuation: **RES-001 is completed; RES-002 awaits integration review; RES-003 has not started.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Resource preparation source and independent synthetic tests exist, but integration review remains pending. Full local extraction and byte-for-byte cross-checking belong to RES-003; do not infer that they have run from the presence of an extraction script.
+
+Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Complete RES-002 review and evidence recording, then RES-003, followed by the Milestone 1 offline work. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
+
+### Task ledger fields and update rules
+
+Each task records its stable `id`, scope, dependencies, status, `created_at`/`updated_at` and start/completion times, actual owner/contributors, `work_summary`, deliverable paths, validation evidence and limitations, blockers/pause reason, and append-only transition history. Timestamps use ISO 8601 UTC; the project timezone is Asia/Tokyo. Unknown historical times stay null. Paths are relative to the repository root, and local-only artifacts are marked explicitly.
+
+Allowed statuses are `not_started`, `in_progress`, `awaiting_review`, `awaiting_user_test`, `blocked`, `paused`, `completed`, and `cancelled`; their meanings are defined in the JSON. Only `completed` maps to a checked box. Recording an artifact as existing does not establish that its task has passed review or gameplay acceptance.
+
+Before a handoff or context reset, refresh the current/next task pointer, actual work and deliverables, evidence, and unresolved limitations. Preserve historical attribution and entries. Keep this document's checklist synchronized with the JSON in the same change.

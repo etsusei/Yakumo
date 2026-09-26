@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 6,
+  "revision": 7,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T14:56:49Z",
+  "updated_at": "2026-09-26T15:04:52Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -62,7 +62,7 @@
     {
       "id": "/root/resource_format_audit",
       "type": "agent",
-      "role": "Read-only extraction format and validation audit",
+      "role": "Resource format audit and guarded extraction implementation",
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
@@ -115,7 +115,7 @@
   "execution_state": {
     "current_task_id": "RES-002",
     "next_task_id": "RES-003",
-    "next_action": "Complete guarded extraction and synthetic tests, then publish and independently verify the local resource workspace.",
+    "next_action": "Review and validate the RES-002 handoff, then publish and independently verify the local resource workspace under RES-003.",
     "implementation_after_documentation_started": true
   },
   "references": {
@@ -547,7 +547,7 @@
         "/root"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:33:08Z",
+      "updated_at": "2026-09-26T15:04:22Z",
       "started_at": "2026-09-26T14:22:54Z",
       "completed_at": "2026-09-26T14:33:08Z",
       "timestamp_note": null,
@@ -627,6 +627,15 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Created the complete revised development plan with synchronized task checklist, a 28-task JSON ledger, and the AGENTS.md continuation entrypoint. Validated JSON, task IDs, dependency graph, status/checklist consistency, timestamps, actor attribution, relative paths and existing outputs. No extraction, game run or future implementation was performed in this task."
+        },
+        {
+          "recorded_at": "2026-09-26T15:04:22Z",
+          "occurred_at": "2026-09-26T15:04:22Z",
+          "actor_id": "/root",
+          "action": "handoff_refreshed",
+          "from_status": "completed",
+          "to_status": "completed",
+          "description": "Refreshed durable continuation pointer, task-field/status documentation and actual implementation progress. Retained the complete 28-task checklist and scoped acceptance boundaries."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -759,7 +768,7 @@
       "title": "Guarded raw-resource preparation tool",
       "phase": "milestone_0",
       "kind": "finite",
-      "status": "in_progress",
+      "status": "awaiting_review",
       "owner_agent_id": "/root/resource_format_audit",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -768,7 +777,7 @@
         "/root/resource_preparation_tests"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:56:49Z",
+      "updated_at": "2026-09-26T15:04:52Z",
       "started_at": "2026-09-26T14:53:00Z",
       "completed_at": null,
       "timestamp_note": null,
@@ -776,18 +785,24 @@
       "depends_on": [
         "RES-001"
       ],
-      "work_summary": "Implementing guarded ISO/DATA.BIN preparation after B0 registration. The read-only audit identified unsafe legacy bounds/path handling and full-entry decryption memory use; independent C++ directory preflight agrees with the supplied archive inventory.",
+      "work_summary": "Guarded resource-preparation implementation and independent synthetic tests are ready for root integration review. Both contributing agents report 15 passing synthetic checks after hardening, including staged failure cleanup. Root built the independent C++ byte comparison tool. Full actual extraction and cross-language byte verification have not run.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/tools/prepare_resources.py",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "profiles/mhp3rd/tests/test_resource_preparation.py",
           "kind": "test",
-          "state": "planned",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/resource_crosscheck.cpp",
+          "kind": "source",
+          "state": "existing",
           "local_only": false
         }
       ],
@@ -797,8 +812,20 @@
         "No full game boot required."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Independent synthetic preparation suite",
+            "status": "passed",
+            "tests": 15,
+            "reported_by_agent_id": "/root/resource_preparation_tests",
+            "note": "Agent-reported result; root integration review remains pending."
+          }
+        ],
+        "limitations": [
+          "No full game was launched.",
+          "Full actual extraction and byte-for-byte output comparison have not run.",
+          "Integration review remains pending. Multi-extent/interleaved ISO records are rejected; the opaque archive size-table trailer limits definitive malformed-row detection."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
@@ -821,6 +848,24 @@
           "from_status": "in_progress",
           "to_status": "in_progress",
           "description": "The format-audit agent owns guarded extraction implementation; a separate agent owns independent synthetic fixtures/tests. Root owns integration, independent C++ checks, actual extraction and ledger."
+        },
+        {
+          "recorded_at": "2026-09-26T15:04:22Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "progress_registered",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Guarded resource-preparation implementation and independent synthetic tests exist locally. The test agent reports 15 passing synthetic checks, including staged failure cleanup. Root built the independent C++ byte comparison tool; integration review and final hardening remain pending. Full actual extraction has not run."
+        },
+        {
+          "recorded_at": "2026-09-26T15:04:52Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "handoff_received",
+          "from_status": "in_progress",
+          "to_status": "awaiting_review",
+          "description": "Both implementation and independent test agents handed off their assigned files. Preserve unchecked checklist until root integration review is complete."
         }
       ],
       "updated_by_agent_id": "/root"
