@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 29,
+  "revision": 30,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T18:16:36Z",
+  "updated_at": "2026-09-26T18:18:46Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -240,7 +240,9 @@
     "offline_native_pr": "https://github.com/etsusei/Yakumo/pull/5",
     "offline_gate_guide": "docs/OFFLINE_VALIDATION.md",
     "session_recording_pr": "https://github.com/etsusei/Yakumo/pull/6",
-    "game_observation_pr": "https://github.com/etsusei/Yakumo/pull/7"
+    "game_observation_pr": "https://github.com/etsusei/Yakumo/pull/7",
+    "certified_probes_pr": "https://github.com/etsusei/Yakumo/pull/8",
+    "certified_probe_guide": "docs/CERTIFIED_PROBES.md"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -2324,7 +2326,7 @@
         "/root/native_probe_hooks"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T18:16:36Z",
+      "updated_at": "2026-09-26T18:18:46Z",
       "started_at": "2026-09-26T16:32:02Z",
       "completed_at": "2026-09-26T18:16:36Z",
       "timestamp_note": null,
@@ -2464,7 +2466,8 @@
         ]
       },
       "implementation_commits": [
-        "f44dc67"
+        "f44dc67",
+        "21fffbd"
       ],
       "pause_reason": null,
       "blockers": [],
@@ -2504,6 +2507,15 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Implemented guarded AOT/native scopes, distinct actual execution-path counts and timings, bounded recent detail and explicit incomplete coverage. Integrated supported-ELF and current-overlay guarded read-only state/performance sampling and diagnostics finalization. Production AOT object differential tests, existing native regressions, synthetic lifecycle/callback tests, sanitizers and full application build passed without a game launch. Reviewed and fixed overflow pairing, entry-return identity, incomplete reporting and bounded detail retention. Independent integration review by /root/readonly_observations found no actionable findings. The probe microbenchmark and exact source/binary/input identities are retained in the local validation report."
+        },
+        {
+          "recorded_at": "2026-09-26T18:18:46Z",
+          "occurred_at": "2026-09-26T18:18:46Z",
+          "actor_id": "/root",
+          "action": "published",
+          "from_status": "completed",
+          "to_status": "completed",
+          "description": "Published tested implementation commit 21fffbd in draft PR #8, stacked on #7. The task remains completed only for its offline scope; OBS-004 is the next implementation task."
         }
       ],
       "updated_by_agent_id": "/root"
