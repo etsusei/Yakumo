@@ -39,6 +39,14 @@ The built-in server (`server.cpp`, used by *Host a session* and `--adhoc-server`
 
 ## Profile code
 
+The portable pixel kernels in `profiles/mhp3rd/host/resources/pixel_decode.cpp`
+adapt this repository's existing MIT-licensed
+`profiles/mhp3rd/host/gpu/texture_decode.cpp`. The latter remains unchanged and
+is linked separately as a test-only software oracle. TMH builder dimensions,
+stride and palette state come from the locally analyzed original consumer,
+documented in `TEXTURE_LAYOUT_CONTRACT.md`; no original game bytes or external
+emulator source are included in the implementation or synthetic tests.
+
 A profile owns its generated AOT corpus, address-specific lowering, HLE behavior and native fast paths. Those files remain isolated under `profiles/<id>` so they do not become hidden dependencies of the generic framework.
 
 ## Analog camera
