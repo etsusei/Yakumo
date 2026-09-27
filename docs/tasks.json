@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 105,
+  "revision": 106,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T10:55:25Z",
+  "updated_at": "2026-09-27T10:56:29Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -674,7 +674,8 @@
     "owned_tmh_views_pr": "https://github.com/etsusei/Yakumo/pull/21",
     "portable_texture_commands": "docs/PORTABLE_TEXTURE_COMMANDS.md",
     "portable_texture_commands_pr": "https://github.com/etsusei/Yakumo/pull/26",
-    "texture_command_adapter": "docs/TEXTURE_COMMAND_ADAPTER.md"
+    "texture_command_adapter": "docs/TEXTURE_COMMAND_ADAPTER.md",
+    "texture_command_adapter_pr": "https://github.com/etsusei/Yakumo/pull/27"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -7601,7 +7602,7 @@
         "/root/texture_adapter_rejections"
       ],
       "created_at": "2026-09-27T10:40:22Z",
-      "updated_at": "2026-09-27T10:55:25Z",
+      "updated_at": "2026-09-27T10:56:29Z",
       "started_at": "2026-09-27T10:43:03Z",
       "completed_at": "2026-09-27T10:55:25Z",
       "scope": "Bridge the certified guest builder ABI to the portable value core in an offline harness. Validate complete source/output/state/stack ranges and physical disjointness, preserve exact CPU and memory effects, and reject unsupported inputs without mutation before any production registration.",
@@ -7724,7 +7725,9 @@
           "No game, GPU, rendering, performance or other-platform test. Delivered applications and actual user records remain unchanged."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "dd645b0d7e5ccd06a031e645c3e3994dea2133f7"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -7752,6 +7755,13 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Implemented the bounded offline guest adapter with per-call code/helper/table identity checks, main-RAM bounds, physical disjointness, bounded metadata traversal and exact state/register/stack effects. Actual adapter matches original AOT/interpreter across 2256 inputs and 4512 calls; 36 synthetic calls cover 52 slots. Ten modeled successes and 68 atomic rejections passed with full RAM/VRAM/CPU checks and memory sanitizers. No production hook or game run."
+        },
+        {
+          "recorded_at": "2026-09-27T10:56:29Z",
+          "occurred_at": "2026-09-27T10:56:29Z",
+          "actor_id": "/root",
+          "action": "published",
+          "description": "Published the offline adapter and actual original differential evidence in draft PR #27 at dd645b0. ASSET-012 allocation provenance audit remains planned; no production game change or new user case."
         }
       ],
       "updated_by_agent_id": "/root"
