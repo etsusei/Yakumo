@@ -135,3 +135,14 @@ registration, original fallback, per-call dependency guards, observation and
 Baseline exclusion would consume that authority. This contract must precede
 a production hook; no new manual case is requested merely to fill a static
 analysis gap.
+
+
+ASSET-012 progress: the original allocator family and a virtual slot-7 caller
+chain now have bounded AOT/interpreter evidence (168 top-level segments, all
+RAM/VRAM/CPU equal). The slot's fixed capacity is 0x5800 for the selected
+vtable, but the actual owner creation, successful load/ready event and exact
+free/reuse pairing are unresolved. Keep ASSET-012 in progress. Next trace the
+candidate 0x2F470-byte object allocation and overlay-side creation path without
+assuming that a matching size proves owner identity. No production hook is
+justified yet. See [allocator evidence](TEXTURE_ALLOCATION_CONTRACT.md) and
+[source audit](TEXTURE_CALLER_SOURCE_AUDIT.md).
