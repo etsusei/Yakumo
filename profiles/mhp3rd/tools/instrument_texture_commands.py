@@ -125,6 +125,7 @@ def instrument_source(source: str) -> tuple[str, dict]:
     )
     return_code = (
         f"    mhp3rd::native::{_RETURN_CALLBACK}({runtime_name}, ctx, jump_target);{newline}"
+        f"    if ({runtime_name}.stopped()) {{ ctx.pc = jump_target; return; }}{newline}"
     )
     output = source
     for at, addition in sorted((

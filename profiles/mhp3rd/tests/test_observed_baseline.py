@@ -28,6 +28,15 @@ def git(repo: Path, *args: str, input_data: bytes | None = None) -> bytes:
 
 
 class ObservedBaselineTests(unittest.TestCase):
+    def test_shared_texture_boundaries_are_staged_without_candidate_bridge(self) -> None:
+        for relative in (
+            "cmake/TextureCommandInstrumentation.cmake", "tools/instrument_texture_commands.py",
+            "host/native/texture_command_dispatch.hpp", "host/native/texture_command_dispatch.cpp",
+            "tests/texture_command_dispatch_tests.cpp",
+        ):
+            self.assertIn(PREP.PROFILE + relative, PREP.OBSERVATION_FILES)
+        self.assertNotIn(PREP.PROFILE + "host/native/texture_commands_bridge.cpp", PREP.OBSERVATION_FILES)
+
     def test_recording_revision_matches_cmake_input_order(self) -> None:
         repo = TOOL.parents[3]
         profile = TOOL.parents[1]

@@ -31,6 +31,7 @@ PROFILE = "profiles/mhp3rd/"
 OBSERVATION_FILES = (
     "profiles/mhp3rd/CMakeLists.txt",
     "profiles/mhp3rd/cmake/ProbeInstrumentation.cmake",
+    "profiles/mhp3rd/cmake/TextureCommandInstrumentation.cmake",
     "profiles/mhp3rd/host/main.cpp",
     "profiles/mhp3rd/host/camera/camera_input.cpp",
     "profiles/mhp3rd/host/gpu/texture_decode_policy.hpp",
@@ -45,6 +46,8 @@ OBSERVATION_FILES = (
     "profiles/mhp3rd/host/native/mode_registry.hpp",     # Shared mode names; B0 remains off.
     "profiles/mhp3rd/host/native/vector_metric_dispatch.hpp",  # Same-unit observation seam.
     "profiles/mhp3rd/host/native/vector_metric_dispatch.cpp",
+    "profiles/mhp3rd/host/native/texture_command_dispatch.hpp",  # Unowned original path in B0.
+    "profiles/mhp3rd/host/native/texture_command_dispatch.cpp",
     "profiles/mhp3rd/host/overlays.cpp",
     "profiles/mhp3rd/host/overlays.hpp",
     "profiles/mhp3rd/host/settings/settings.cpp",
@@ -63,6 +66,7 @@ OBSERVATION_FILES = (
     "profiles/mhp3rd/tools/native_modes.py",
     "profiles/mhp3rd/tools/texture_decode_policy.py",
     "profiles/mhp3rd/tools/instrument_probes.py",
+    "profiles/mhp3rd/tools/instrument_texture_commands.py",
     "profiles/mhp3rd/tools/prepare_observed_baseline.py",
     "profiles/mhp3rd/tools/prepare_resources.py",
     "profiles/mhp3rd/tools/register_baseline.py",
@@ -70,6 +74,8 @@ OBSERVATION_FILES = (
     "profiles/mhp3rd/tools/run_cases.py",
     "profiles/mhp3rd/tools/run_package.py",
     "profiles/mhp3rd/tests/aot_probe_tests.cpp",
+    "profiles/mhp3rd/tests/texture_command_dispatch_tests.cpp",
+    "profiles/mhp3rd/tests/test_texture_command_instrumentation.py",
     "profiles/mhp3rd/tests/case_catalog_tests.cpp",
     "profiles/mhp3rd/tests/case_controller_tests.cpp",
     "profiles/mhp3rd/tests/case_runtime_fixture.cpp",
@@ -223,6 +229,10 @@ def _recording_revision(stage: Path) -> str:
         PROFILE + "host/native/vector_metric_dispatch.hpp",
         PROFILE + "host/native/vector_metric_dispatch.cpp",
         PROFILE + "tools/instrument_probes.py",
+        PROFILE + "host/native/texture_command_dispatch.hpp",
+        PROFILE + "host/native/texture_command_dispatch.cpp",
+        PROFILE + "tools/instrument_texture_commands.py",
+        PROFILE + "cmake/TextureCommandInstrumentation.cmake",
         PROFILE + "host/gpu/texture_decode_policy.hpp",
         PROFILE + "host/hle/control_delivery.hpp",
         PROFILE + "host/hle/control_delivery.cpp",

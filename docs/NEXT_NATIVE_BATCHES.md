@@ -208,7 +208,10 @@ until their own evidence exists.
 ASSET-014 partial checkpoint: the prepared-plan bridge passed the full original
 corpus plus atomic/stale-plan/ownership checks and memory sanitizers. The
 [checkpoint map](TEXTURE_OBSERVATION_INTEGRATION.md) identifies both builder
-returns and lifecycle edges. Its injector is tested as a text transformation
-only; callback implementation, CMake wiring, producer/controller integration
-and actual production-path execution tests remain unfinished. No new manual
-case or application has been delivered.
+returns and lifecycle edges. CMake now builds the instrumented original unit,
+and scoped callbacks passed 32 entry/return fixtures plus 18 selected original
+caller-tail chains with full RAM/VRAM/CPU equality. Owner/source inputs and
+bounds remain constructed in those tests. The next step is actual lifecycle
+event production, serialization and an authority-backed mode controller;
+the application installs no callback owner yet. No new manual case or
+application has been delivered.
