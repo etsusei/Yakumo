@@ -1,0 +1,17 @@
+{
+  "schema": "yakumo-native-batch-v2",
+  "id": "vector-discovery-v1",
+  "case_catalog_sha256": "2ed3ef1dfea164b7a3b9b0aae18e33a8ef5568256d086e4ed01a60bae5c400e1",
+  "candidate_modes": {
+    "MHP3RD_NATIVE_ANGLE_STEP": "off",
+    "MHP3RD_NATIVE_SCALE_MATRIX": "off",
+    "MHP3RD_NATIVE_TRANSLATION_MATRIX": "off",
+    "MHP3RD_NATIVE_VECTOR_CONSTRUCT": "off",
+    "MHP3RD_NATIVE_MATRIX_COPY": "off",
+    "MHP3RD_NATIVE_VECTOR_NORM": "verify",
+    "MHP3RD_NATIVE_VECTOR_NORM_SQUARED": "verify",
+    "MHP3RD_NATIVE_VECTOR_DISTANCE": "verify",
+    "MHP3RD_NATIVE_VECTOR_DISTANCE_SQUARED": "verify"
+  },
+  "required_native_entries": []
+}

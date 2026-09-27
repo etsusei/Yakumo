@@ -421,12 +421,135 @@ def native_execution(report: dict, profile: dict) -> dict:
     no_native_targets = not profile["required_native_entries"]
     if no_native_targets:
         result["issues"].append("profile_requests_no_native_execution")
-    if no_native_targets and all_cases_eligible and result["issues"] == ["profile_requests_no_native_execution"]:
+    if no_native_targets:
         result["outcome"] = "not_covered"
     elif not missing and all_cases_eligible and not result["issues"]:
         result["outcome"] = "observed"
     elif not missing:
         result["outcome"] = "needs_review"
+    return result
+
+
+def _observation_window(case: dict | None, entry: int) -> dict:
+    """Expose a selected helper's scoped counters without making it required."""
+    if case is None:
+        return {"entry": entry, "minimum_calls": 1, "status": "not_covered", "delta": {},
+                "duration_totals_ns": {}, "duration_status": "not_covered",
+                "issues": ["case_missing_from_role"]}
+    result = probe_window(case, entry, 1)
+    result["duration_totals_ns"] = {}
+    result["duration_status"] = "not_covered"
+    if result["status"] != "covered":
+        return result
+    rows = [r["fields"] for r in case["events"] if r["kind"] == 9 and
+            r["fields"].get("event") == "probe.summary" and r["fields"].get("entry") == entry]
+    begin = next(r for r in rows if r.get("boundary") == "case_begin")
+    end = next(r for r in rows if r.get("boundary") == "case_end")
+    for variant in ("aot", "native", "verify", "fallback"):
+        key = variant + "_total_ns"
+        before, after = begin.get(key), end.get(key)
+        if not unsigned(before) or not unsigned(after):
+            result["issues"].append("missing_or_invalid_duration:" + key)
+        elif after < before:
+            result["issues"].append("reset_duration:" + key)
+        else:
+            result["duration_totals_ns"][variant] = after - before
+    result["duration_status"] = "complete" if len(result["duration_totals_ns"]) == 4 else "incomplete"
+    return result
+
+
+def profile_observations(report: dict, profile: dict, indexed: dict,
+                         catalog: dict) -> dict:
+    """Show optional enabled-helper windows; never decide native acceptance."""
+    mode_issues = []
+    for role in ("baseline", "candidate"):
+        identity = report["runs"][role]
+        if identity.get("native_mode_schema") != native_modes.V2_SCHEMA:
+            mode_issues.append(role + ":execution_mode_schema_differs_from_profile")
+        actual = identity.get("native_modes", {})
+        expected = ({name: "off" for name in native_modes.V2_FIELDS} if role == "baseline"
+                    else profile["candidate_modes"])
+        if actual != expected:
+            mode_issues.append(role + ":execution_modes_differ_from_profile")
+    enabled = [(entry, switch, profile["candidate_modes"][switch])
+               for entry, switch in native_modes.V2_BY_ENTRY.items()
+               if profile["candidate_modes"][switch] in ("verify", "native")]
+    result = {"profile_id": profile["id"], "profile_sha256": profile_sha256(profile),
+              "scope": "optional_scoped_helper_discovery_not_case_acceptance_or_speedup",
+              "duration_scope": "case_delta_of_cumulative_host_ns_including_observation_overhead; not a speedup comparison",
+              "mode_issues": mode_issues, "compatibility_issues": report["compatibility_issues"],
+              "cases": [], "unperformed_cases": []}
+    for spec in catalog["cases"]:
+        keys = sorted({key for role in ("baseline", "candidate") for key in indexed[role]
+                       if key[0] == spec["id"]})
+        if not keys:
+            result["unperformed_cases"].append({
+                "case_id": spec["id"], "coverage": "not_covered", "issue": "case_not_performed",
+                "entries": [{"entry": entry, "switch": switch, "candidate_mode": mode}
+                            for entry, switch, mode in enabled]})
+        for key in keys:
+            b, c = indexed["baseline"].get(key), indexed["candidate"].get(key)
+            shared_issues = []
+            if mode_issues or report["compatibility_issues"]:
+                shared_issues.append("profile_or_run_identity_incompatible")
+            if (any(not value.get("recording_complete") for value in report["recording_validation"].values()) or
+                    any(report["case_lifecycle_issues"].values()) or
+                    any(case is not None and (not case["lifecycle_complete"] or not case["complete"])
+                        for case in (b, c))):
+                shared_issues.append("recording_or_case_incomplete")
+            if b is None or c is None:
+                shared_issues.append("paired_case_attempt_missing")
+            elif (b["prerequisites_sha256"] != c["prerequisites_sha256"] or
+                  b["case_version"] != c["case_version"] or b["case_version"] != spec["version"]):
+                shared_issues.append("case_prerequisites_or_version_differ")
+            if any(r["kind"] in (11, 12) for case in (b, c) if case is not None for r in case["events"]):
+                shared_issues.append("case_diagnostics_require_review")
+            if any(report["outside_case_diagnostics"].values()) or any(
+                    report["outside_case_diagnostics_omitted"].values()):
+                shared_issues.append("outside_case_diagnostics_require_review")
+            if any(r["kind"] == 8 and r["fields"].get("event") == "config.effective"
+                   for case in (b, c) if case is not None for r in case["events"]):
+                shared_issues.append("configuration_changed_during_case")
+            entries = []
+            for entry, switch, mode in enabled:
+                baseline = _observation_window(b, entry)
+                candidate = _observation_window(c, entry)
+                issues = list(shared_issues)
+                if baseline["status"] == "covered" and baseline["delta"].get("aot_calls") != baseline["delta"].get("completed"):
+                    issues.append("baseline_scope_did_not_use_original_aot")
+                if candidate["status"] == "covered":
+                    if candidate["delta"].get("aot_calls"):
+                        issues.append("candidate_unexpected_aot_calls_in_enabled_mode")
+                    if mode == "verify" and candidate["delta"].get("native_calls"):
+                        issues.append("candidate_unexpected_native_calls_in_verify_mode")
+                    if mode == "native" and candidate["delta"].get("verify_calls"):
+                        issues.append("candidate_unexpected_verify_calls_in_native_mode")
+                for role, window in (("baseline", baseline), ("candidate", candidate)):
+                    if window["status"] == "covered" and window["duration_status"] != "complete":
+                        issues.append(role + ":duration_totals_incomplete")
+                if "profile_or_run_identity_incompatible" in issues or "case_prerequisites_or_version_differ" in issues:
+                    coverage = "incomparable"
+                elif "recording_or_case_incomplete" in issues or any(
+                        window["status"] == "incomplete" for window in (baseline, candidate)):
+                    coverage = "incomplete"
+                elif baseline["status"] != "covered" or candidate["status"] != "covered":
+                    coverage = "not_covered"
+                elif issues:
+                    coverage = "needs_review"
+                else:
+                    coverage = "observed"
+                verified = candidate["delta"].get("verify_calls", 0) if candidate["status"] == "covered" else 0
+                fallback = candidate["delta"].get("fallback_calls", 0) if candidate["status"] == "covered" else 0
+                if coverage == "observed" and mode == "verify" and verified:
+                    verification = ("covered" if verified == candidate["delta"]["completed"] else "partial")
+                else:
+                    verification = "not_covered"
+                entries.append({"entry": entry, "switch": switch, "candidate_mode": mode,
+                                "baseline": baseline, "candidate": candidate, "coverage": coverage,
+                                "candidate_verify_calls": verified, "candidate_fallback_calls": fallback,
+                                "candidate_reference_verification": verification, "issues": issues})
+            result["cases"].append({"case_id": spec["id"], "case_version": spec["version"],
+                                    "attempt": key[1], "entries": entries})
     return result
 
 
@@ -500,6 +623,9 @@ def compare_loaded(baseline: dict, candidate: dict, catalog: dict, execution_pro
     if execution_profile is not None:
         report["native_execution"] = native_execution(report, execution_profile)
         report["limitations"].append("Observed native execution is not an in-process same-input verification or whole-game acceptance.")
+        if execution_profile["schema"] == "yakumo-native-batch-v2":
+            report["profile_observations"] = profile_observations(report, execution_profile, indexed, catalog)
+            report["limitations"].append("Optional profile observations report scoped calls and instrumented durations only; they do not establish a speedup or human acceptance.")
     return report
 
 
@@ -547,6 +673,49 @@ def render_html(report: dict) -> str:
                           '</p><p>This checks which implementation ran. It does not establish same-input equivalence or whole-game acceptance.</p>' +
                           '<details><summary>Mode and coverage evidence</summary><pre>' +
                           escape(json.dumps(execution, indent=2)) + '</pre></details></section>')
+    observation_html = ""
+    if "profile_observations" in report:
+        observations = report["profile_observations"]
+        rows = [(case, entry) for case in observations["cases"] for entry in case["entries"]]
+        unperformed_rows = [(case, entry) for case in observations["unperformed_cases"]
+                            for entry in case["entries"]]
+        def window_text(window):
+            counts = window["delta"]
+            durations = window["duration_totals_ns"]
+            count_text = ", ".join(f"{name}: {counts.get(name + '_calls', '?')}"
+                                   for name in ("aot", "verify", "native", "fallback"))
+            duration_text = ", ".join(f"{name}: {durations.get(name, '?')}"
+                                      for name in ("aot", "verify", "native", "fallback"))
+            return (window["status"] + "; " + count_text + "; duration " + window["duration_status"] +
+                    "; total ns " + duration_text +
+                    ("; " + ", ".join(window["issues"]) if window["issues"] else ""))
+        table_rows = "".join(
+            "<tr><td>" + escape(case["case_id"]) + " #" + escape(case["attempt"]) +
+            "</td><td>" + escape(f"0x{entry['entry']:08X}") + " · " + escape(entry["candidate_mode"]) +
+            "</td><td>" + escape(window_text(entry["baseline"])) +
+            "</td><td>" + escape(window_text(entry["candidate"])) +
+            "</td><td>" + escape(entry["coverage"]) +
+            "; in-process Verify: " + escape(entry["candidate_reference_verification"]) +
+            ("; " + escape(", ".join(entry["issues"])) if entry["issues"] else "") +
+            "</td></tr>" for case, entry in rows[:96])
+        remaining = max(0, 96 - len(rows))
+        table_rows += "".join(
+            "<tr><td>" + escape(case["case_id"]) + " · no attempt</td><td>" +
+            escape(f"0x{entry['entry']:08X}") + " · " + escape(entry["candidate_mode"]) +
+            "</td><td>not covered</td><td>not covered</td><td>case not performed</td></tr>"
+            for case, entry in unperformed_rows[:remaining])
+        omitted = max(0, len(rows) + len(unperformed_rows) - 96)
+        observation_html = (
+            '<section><h2>Optional helper observations</h2>'
+            '<p>These case windows show certified calls and instrumented total durations. '
+            'The applications were played separately; these figures do not measure a speedup or establish human acceptance. '
+            'Only candidate Verify calls can support the separate in-process reference check.</p>'
+            '<p>Profile or run issues: ' + escape(", ".join(observations["mode_issues"] +
+                                                       observations["compatibility_issues"]) or "none") + '</p>'
+            '<table><thead><tr><th>Case</th><th>Helper</th><th>Baseline</th><th>Candidate</th><th>Coverage</th>'
+            '</tr></thead><tbody>' + table_rows + '</tbody></table>' +
+            (f'<p>{omitted} additional helper windows are in report.json.</p>' if omitted else '') +
+            ('<p>No case attempts were recorded.</p>' if not observations["cases"] else '') + '</section>')
     warnings = "".join("<li>" + escape(x) + "</li>" for x in report["limitations"])
     compatibility_text = escape(json.dumps(report["compatibility_issues"], indent=2))
     health = escape(json.dumps(report["recording_validation"], indent=2))
@@ -560,13 +729,15 @@ def render_html(report: dict) -> str:
             'body{font:16px/1.55 system-ui;margin:0;background:#f4f6f8;color:#17212b}'
             'main{max-width:1000px;margin:auto;padding:32px}header,section{background:white;padding:24px;margin:16px 0;border-radius:12px}'
             'h1{margin-top:0}h2{font-size:20px}.status{font-weight:700}pre{overflow:auto;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}'
-            'summary{cursor:pointer}li{margin:6px 0}</style><main><header><h1>Paired observation report</h1>'
+            'summary{cursor:pointer}li{margin:6px 0}table{border-collapse:collapse;width:100%;font-size:13px}'
+            'th,td{border:1px solid #dbe1e6;padding:8px;vertical-align:top;text-align:left;overflow-wrap:anywhere}'
+            '</style><main><header><h1>Paired observation report</h1>'
             f'<p class="status">{escape(labels.get(report["outcome"], "Needs review"))}</p><p>Evidence for the listed cases; this does not establish that the whole game is correct.</p>'
             f'<p>{escape(report["generated_at"])}</p><ul>{warnings}</ul></header>'
             f'<section><h2>Recording and starting conditions</h2><p>{"Review is required before relying on the comparison." if report["compatibility_issues"] else "No starting-condition differences were found in the supplied identities."}</p>'
             f'<details><summary>Identity details</summary><pre>{compatibility_text}</pre></details><details><summary>Recording health</summary><pre>{health}</pre></details>'
             f'<details><summary>Run diagnostics and unmatched cases</summary><pre>{run_findings}</pre></details></section>'
-            + execution_html + "".join(sections) + '</main></html>')
+            + execution_html + observation_html + "".join(sections) + '</main></html>')
 
 
 def write_report(report: dict, output: Path) -> None:

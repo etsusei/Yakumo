@@ -86,6 +86,158 @@ def encode(rows):
 
 
 class ComparisonTests(unittest.TestCase):
+    def discovery_report(self, *, baseline_calls=1, candidate_calls=1, candidate_variant="verify",
+                         profile_mode="verify", candidate_before=0,
+                         baseline_edit=None, candidate_edit=None, candidate_context=None):
+        vector_entry = 0x08877244
+        cases = catalog()
+        cases["cases"][0]["required_probes"] = ([{"entry": vector_entry, "min_calls": 1}]
+                                                if profile_mode == "native" else [])
+        modes = {name: "off" for name in native_modes.V2_FIELDS}
+        modes[native_modes.VECTOR_BY_ENTRY[vector_entry]] = profile_mode
+        profile = {"schema": "yakumo-native-batch-v2", "id": "vector-discovery",
+                   "case_catalog_sha256": compare.canonical_hash(cases),
+                   "candidate_modes": modes,
+                   "required_native_entries": [vector_entry] if profile_mode == "native" else []}
+
+        def prepare(role, rows, extra):
+            begin = rows[0][1]
+            begin["native_mode_schema"] = native_modes.V2_SCHEMA
+            begin.update({name: "off" for name in native_modes.V2_FIELDS})
+            if role == "candidate":
+                begin[native_modes.VECTOR_BY_ENTRY[vector_entry]] = profile_mode
+            for _, fields in rows:
+                if fields.get("event") == "probe.summary":
+                    fields["entry"] = vector_entry
+                    for variant in ("aot", "native", "verify", "fallback"):
+                        fields[variant + "_total_ns"] = fields[variant + "_calls"] * 10
+            if extra:
+                extra(rows)
+
+        baseline = self.packaged("baseline", cases=cases, calls=baseline_calls,
+                                 edit=lambda rows: prepare("baseline", rows, baseline_edit))
+        candidate = self.packaged("candidate", cases=cases, calls=candidate_calls,
+                                  before=candidate_before, mode=candidate_variant,
+                                  context_changes=candidate_context,
+                                  edit=lambda rows: prepare("candidate", rows, candidate_edit))
+        return compare.compare_runs(baseline, candidate, cases, execution_profile=profile)
+
+    def discovery_entry(self, **kwargs):
+        report = self.discovery_report(**kwargs)
+        return report, report["profile_observations"]["cases"][0]["entries"][0]
+
+    def test_optional_profile_zero_calls_do_not_create_acceptance(self):
+        report, entry = self.discovery_entry(baseline_calls=0, candidate_calls=0)
+        self.assertEqual(entry["coverage"], "not_covered")
+        self.assertEqual(entry["baseline"]["status"], "not_covered")
+        self.assertEqual(entry["candidate"]["status"], "not_covered")
+        self.assertEqual(entry["candidate_reference_verification"], "not_covered")
+        self.assertEqual(report["native_execution"]["outcome"], "not_covered")
+        self.assertEqual(report["cases"][0]["reference_verification"]["outcome"], "not_covered")
+
+    def test_optional_profile_reports_scoped_verified_counts_and_durations(self):
+        report, entry = self.discovery_entry(baseline_calls=2, candidate_calls=3)
+        self.assertEqual(entry["coverage"], "observed")
+        self.assertEqual(entry["baseline"]["delta"]["aot_calls"], 2)
+        self.assertEqual(entry["candidate"]["delta"]["verify_calls"], 3)
+        self.assertEqual(entry["baseline"]["duration_totals_ns"]["aot"], 20)
+        self.assertEqual(entry["candidate"]["duration_totals_ns"]["verify"], 30)
+        self.assertEqual(entry["candidate_verify_calls"], 3)
+        self.assertEqual(entry["candidate_fallback_calls"], 0)
+        self.assertEqual(entry["candidate_reference_verification"], "covered")
+        self.assertEqual(report["native_execution"]["outcome"], "not_covered")
+        self.assertEqual(report["cases"][0]["reference_verification"]["outcome"], "not_covered")
+        page = compare.render_html(report)
+        self.assertIn("Optional helper observations", page)
+        self.assertIn("in-process Verify: covered", page)
+        self.assertIn("do not measure a speedup", page)
+
+    def test_optional_profile_fallback_only_is_observed_without_verification(self):
+        report, entry = self.discovery_entry(candidate_variant="fallback")
+        self.assertEqual(entry["coverage"], "observed")
+        self.assertEqual(entry["candidate_verify_calls"], 0)
+        self.assertEqual(entry["candidate_fallback_calls"], 1)
+        self.assertEqual(entry["candidate_reference_verification"], "not_covered")
+        self.assertEqual(report["native_execution"]["outcome"], "not_covered")
+
+    def test_optional_profile_unexpected_aot_needs_review_in_verify_and_native_modes(self):
+        _, verify_entry = self.discovery_entry(candidate_variant="aot")
+        self.assertEqual(verify_entry["coverage"], "needs_review")
+        self.assertIn("candidate_unexpected_aot_calls_in_enabled_mode", verify_entry["issues"])
+        self.assertEqual(verify_entry["candidate_reference_verification"], "not_covered")
+
+        report, native_entry = self.discovery_entry(candidate_variant="aot", profile_mode="native")
+        self.assertEqual(native_entry["coverage"], "needs_review")
+        self.assertIn("candidate_unexpected_aot_calls_in_enabled_mode", native_entry["issues"])
+        self.assertEqual(report["native_execution"]["outcome"], "not_covered")
+
+    def test_optional_profile_one_role_only_is_not_paired_coverage(self):
+        def remove_case(rows):
+            rows[:] = [row for row in rows if row[0] not in (3, 4, 5, 9)]
+        _, entry = self.discovery_entry(baseline_edit=remove_case)
+        self.assertEqual(entry["baseline"]["issues"], ["case_missing_from_role"])
+        self.assertEqual(entry["candidate"]["status"], "covered")
+        self.assertEqual(entry["coverage"], "not_covered")
+        self.assertEqual(entry["candidate_reference_verification"], "not_covered")
+
+    def test_optional_profile_unperformed_case_is_explicit(self):
+        def remove_case(rows):
+            rows[:] = [row for row in rows if row[0] not in (3, 4, 5, 9)]
+        report = self.discovery_report(baseline_edit=remove_case, candidate_edit=remove_case)
+        observations = report["profile_observations"]
+        self.assertEqual(observations["cases"], [])
+        self.assertEqual(observations["unperformed_cases"][0]["coverage"], "not_covered")
+        self.assertEqual(observations["unperformed_cases"][0]["entries"][0]["entry"], 0x08877244)
+        self.assertIn("no attempt", compare.render_html(report))
+        self.assertEqual(report["native_execution"]["outcome"], "not_covered")
+
+    def test_optional_profile_reset_and_incomplete_counters_are_visible(self):
+        def reset(rows):
+            next(fields for _, fields in rows if fields.get("boundary") == "case_end")["counter_epoch"] = 2
+        _, reset_entry = self.discovery_entry(candidate_edit=reset)
+        self.assertEqual(reset_entry["coverage"], "not_covered")
+        self.assertIn("counter_epoch_or_order_differs", reset_entry["candidate"]["issues"])
+
+        def incomplete(rows):
+            end = next(fields for _, fields in rows if fields.get("boundary") == "case_end")
+            end.update(completed=0, incomplete=1, verify_calls=0)
+        _, incomplete_entry = self.discovery_entry(candidate_edit=incomplete)
+        self.assertEqual(incomplete_entry["coverage"], "incomplete")
+        self.assertIn("incomplete_probe_scopes", incomplete_entry["candidate"]["issues"])
+
+        def reset_duration(rows):
+            next(fields for _, fields in rows if fields.get("boundary") == "case_end")["verify_total_ns"] = 0
+        _, duration_entry = self.discovery_entry(candidate_before=5, candidate_edit=reset_duration)
+        self.assertEqual(duration_entry["candidate"]["duration_status"], "incomplete")
+        self.assertEqual(duration_entry["coverage"], "needs_review")
+        self.assertIn("reset_duration:verify_total_ns", duration_entry["candidate"]["issues"])
+
+    def test_optional_profile_incompatible_modes_config_and_prerequisites_cannot_verify(self):
+        def wrong_mode(rows):
+            rows[0][1]["MHP3RD_NATIVE_VECTOR_NORM"] = "native"
+        report, entry = self.discovery_entry(candidate_edit=wrong_mode)
+        self.assertEqual(entry["coverage"], "incomparable")
+        self.assertEqual(entry["candidate_reference_verification"], "not_covered")
+        self.assertTrue(report["profile_observations"]["mode_issues"])
+
+        def wrong_schema(rows):
+            rows[0][1].pop("native_mode_schema")
+        _, entry = self.discovery_entry(candidate_edit=wrong_schema)
+        self.assertEqual(entry["coverage"], "incomparable")
+        self.assertEqual(entry["candidate_reference_verification"], "not_covered")
+
+        def changed_config(rows):
+            rows.insert(6, (8, {"event": "config.effective", "settings_sha256": "d" * 64}))
+        _, entry = self.discovery_entry(candidate_edit=changed_config)
+        self.assertEqual(entry["coverage"], "needs_review")
+        self.assertEqual(entry["candidate_reference_verification"], "not_covered")
+
+        def changed_prerequisites(rows):
+            next(fields for kind, fields in rows if kind == 3)["prerequisites_sha256"] = "e" * 64
+        _, entry = self.discovery_entry(candidate_edit=changed_prerequisites)
+        self.assertEqual(entry["coverage"], "incomparable")
+        self.assertEqual(entry["candidate_reference_verification"], "not_covered")
+
     def vector_report(self, calls: int, mode: str = "native"):
         vector_entry = 0x08877244
         cases = catalog()

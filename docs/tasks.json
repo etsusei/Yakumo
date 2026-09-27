@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 70,
+  "revision": 72,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T06:06:25Z",
+  "updated_at": "2026-09-27T06:18:24Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -383,6 +383,14 @@
       "id": "/root/vector_observed_runtime_tests",
       "type": "agent",
       "role": "Independent production registration and observation tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/vector_discovery_report",
+      "type": "agent",
+      "role": "Optional profile observation reporting without invented coverage",
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
@@ -5069,10 +5077,11 @@
         "/root",
         "/root/vector_probe_integration",
         "/root/vector_mode_policy",
-        "/root/vector_observed_runtime_tests"
+        "/root/vector_observed_runtime_tests",
+        "/root/vector_discovery_report"
       ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T06:06:25Z",
+      "updated_at": "2026-09-27T06:18:24Z",
       "started_at": "2026-09-27T05:43:06Z",
       "completed_at": null,
       "timestamp_note": null,
@@ -5081,7 +5090,7 @@
         "VEC-002",
         "NAT-001"
       ],
-      "work_summary": "Integration and paired-build gates passed at 399754a: nine probes, scoped original-call suppression, owned registration including actual same-unit calls, and explicit backward-compatible v2 modes/profiles. Runtime, 12,060 metric comparisons, both 1,280-call legacy AOT gates, four CTests, 101 Python tests and 33 real-binary paired preflights passed. B0 and candidate share identical generated metric object and observer revision. Immutable binaries/build manifests are archived. VEC-003 remains in progress pending real gameplay triggers and finite related user cases; current apps unchanged.",
+      "work_summary": "Preparing a separate finite discovery pair, with four metrics Verify and no required metric calls. Added a localized bounded village observation catalog and explicit v2 profile; zero calls are evidence to retain, not a player error. Optional profile observation reporting and signed preparation-only delivery are in progress. Current native-data apps remain unchanged.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/testing/cases/vector_metrics_batch.json",
@@ -5190,6 +5199,30 @@
           "kind": "source_audit",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/testing/cases/vector_metrics_discovery.json",
+          "kind": "case_catalog",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/testing/profiles/vector_discovery_v1.json",
+          "kind": "execution_profile",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_vector_discovery_case.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/VECTOR_DISCOVERY_CASE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
         }
       ],
       "acceptance_criteria": [
@@ -5257,6 +5290,20 @@
           "actor_id": "/root",
           "action": "published_integration_checkpoint",
           "description": "Integration and paired-build gates passed at 399754a: nine probes, scoped original-call suppression, owned registration including actual same-unit calls, and explicit backward-compatible v2 modes/profiles. Runtime, 12,060 metric comparisons, both 1,280-call legacy AOT gates, four CTests, 101 Python tests and 33 real-binary paired preflights passed. B0 and candidate share identical generated metric object and observer revision. Immutable binaries/build manifests are archived. VEC-003 remains in progress pending real gameplay triggers and finite related user cases; current apps unchanged. Published draft PR #18 stacked on #17; no merge."
+        },
+        {
+          "recorded_at": "2026-09-27T06:12:00Z",
+          "occurred_at": "2026-09-27T06:12:00Z",
+          "actor_id": "/root",
+          "action": "discovery_preparation",
+          "description": "Preparing a separate finite discovery pair, with four metrics Verify and no required metric calls. Added a localized bounded village observation catalog and explicit v2 profile; zero calls are evidence to retain, not a player error. Optional profile observation reporting and signed preparation-only delivery are in progress. Current native-data apps remain unchanged."
+        },
+        {
+          "recorded_at": "2026-09-27T06:18:24Z",
+          "occurred_at": "2026-09-27T06:18:24Z",
+          "actor_id": "/root",
+          "action": "discovery_source_ready",
+          "description": "Authored one localized eight-step discovery case, no required metric calls, explicit four-Verify v2 profile; optional profile observations now distinguish observed calls, verification, fallback-only hits, missing/incompatible/reset evidence. Root ran 56 targeted Python tests and four CTests successfully. Signed pair assembly is next; no live trigger or manual acceptance claimed."
         }
       ],
       "updated_by_agent_id": "/root"
