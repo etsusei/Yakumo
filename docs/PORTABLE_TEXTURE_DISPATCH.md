@@ -63,11 +63,14 @@ concurrent jobs, malformed windows and the immediate/snapshot palette-boundary
 distinction. Paired-tool compatibility tests preserve historical records and
 reject inconsistent policy fields.
 
-Both roles built and passed 42 actual-binary preflight checks at the initial
-integration checkpoint. The extracted observation helper also passes real
+Both final roles built from observer revision `3256619` and passed 42
+actual-binary preflight checks, including baseline mode rejection and matching
+observer/build identities. A symbol audit confirms that the portable backend
+is linked only into Candidate. The extracted observation helper passes real
 journal tests for rate limiting, every counter field, finalization exactly
 once, suppression after recorder close and no rebinding to another session.
-The final observer revision's matched build check is pending. Live Vulkan
+Archived build identities and binaries are under the ignored
+`out/testing/observed-builds/texture-dispatch-3256619/` directory. Live Vulkan
 presentation, asynchronous scheduling
 under gameplay load, performance, exact source-to-draw mapping and user visual
 acceptance are not yet verified. Do not infer those from the offline core or
