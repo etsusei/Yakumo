@@ -95,3 +95,24 @@ gate. Original calls and delivered apps remain unchanged until a separately
 validated integration task. Any later native-execution handoff should group
 related validated changes, retain norm-squared's coverage gap, and avoid
 another one-feature village test.
+
+
+ASSET-010 is complete: the actual value core passed the full original gate,
+55 boundary/ownership checks, strict warnings and memory sanitizers. See
+[portable texture commands](PORTABLE_TEXTURE_COMMANDS.md).
+
+**ASSET-011 — Bounded offline guest adapter.** Convert validated guest inputs
+into descriptors and apply owned patches with the original state/register/stack
+effects. Guard the identified builder/helper/table dependencies, all selected
+read/write ranges, integer arithmetic and physical aliasing. Cached/uncached
+mirrors may be supported only when the underlying regions remain disjoint.
+Validate everything before committing; unsupported inputs must return without
+changing CPU or memory so the caller can retain the original behavior. Preserve
+no-command and partial-update semantics, count metadata, saved stack contents
+and untouched bytes. Test the actual adapter against original AOT/interpreter
+execution and canaries with bounded synthetic and corpus inputs.
+
+This finite task does not install a production hook. Its result must identify
+remaining call-site, fallback, observation and dependency invalidation work
+before integration. Preserve all delivered apps and existing acceptance
+evidence; group future manual acceptance with related native changes.
