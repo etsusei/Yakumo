@@ -409,6 +409,11 @@ State &state() {
     return value;
 }
 
+std::function<void()> &case_configuration_observer() {
+    static std::function<void()> callback;
+    return callback;
+}
+
 void load(State &s) {
     s.loaded = true;
     s.values = defaults();
@@ -498,12 +503,19 @@ std::string case_configuration_sha256() {
         reinterpret_cast<const std::uint8_t *>(serialized.data()), serialized.size()));
 }
 
+void set_case_configuration_observer(std::function<void()> callback) {
+    case_configuration_observer() = std::move(callback);
+}
+
 void record_snapshot() noexcept {
     const auto observer = testing::active_observer();
-    if (!observer) return;
+    auto &callback = case_configuration_observer();
+    if (!observer && !callback) return;
     try {
         State &s = state();
         if (!s.loaded) load(s);
+        if (callback) callback();
+        if (!observer) return;
         testing::Fields all, visible;
         const auto digest = [](const std::string &value) {
             return psprecomp::sha256_bytes(std::span<const std::uint8_t>(
@@ -529,7 +541,7 @@ void record_snapshot() noexcept {
         previous_observer = observer;
         previous_hash = hash;
     } catch (...) {
-        observer->emit(testing::EventKind::Error, "config.capture_failed", {}, true);
+        if (observer) observer->emit(testing::EventKind::Error, "config.capture_failed", {}, true);
     }
 }
 

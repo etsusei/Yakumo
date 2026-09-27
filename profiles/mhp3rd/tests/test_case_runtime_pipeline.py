@@ -8,7 +8,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from run_cases import validate_case_catalog
+from run_cases import CASE_END, collect_cases, validate_case_catalog
 from run_package import package_run, load_package, prerequisite_basis_sha256
 from compare_test_runs import canonical_hash, compare_runs, write_report
 
@@ -59,8 +59,24 @@ def pipeline(binary: Path, root: Path):
     baseline = run("baseline", "normal")
     outcomes = {}
     for mode, expected in (("normal", "observational_match"), ("interrupt", "incomplete"),
-                           ("changed_config", "incomplete"), ("skip", "inconclusive")):
+                           ("changed_config", "incomplete"),
+                           ("restored_config_save", "incomplete"),
+                           ("restored_config_snapshot", "incomplete"),
+                           ("navigation_only", "inconclusive"),
+                           ("skip", "inconclusive")):
         candidate = run("candidate", mode)
+        recorded = load_package(candidate)["records"]
+        case = collect_cases(recorded, cases)["cases"][0]
+        if mode.startswith("restored_config_"):
+            assert case["outcome"] is None and not case["lifecycle_complete"], case
+            assert not any(row["kind"] == CASE_END for row in case["events"]), case
+            assert any(row["fields"].get("event") == "case.interrupted" for row in case["events"]), case
+            snapshots = [row for row in case["events"] if row["fields"].get("event") == "config.effective"]
+            assert len(snapshots) == 2, case
+            assert snapshots[0]["fields"]["settings_sha256"] != snapshots[1]["fields"]["settings_sha256"], case
+        elif mode == "navigation_only":
+            assert case["outcome"] == "normal" and case["lifecycle_complete"], case
+            assert not any(row["fields"].get("event") == "case.interrupted" for row in case["events"]), case
         report = compare_runs(baseline, candidate, cases)
         assert report["outcome"] == expected, report
         write_report(report, root / (mode + "-report"))

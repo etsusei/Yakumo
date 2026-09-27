@@ -33,6 +33,7 @@
 #include "save_data/save_transfer.hpp"
 #include "settings/settings.hpp"
 #include "testing/game_observers.hpp"
+#include "testing/case_controller.hpp"
 #include "yakumo_version.hpp"
 #if defined(MHP3RD_ANDROID_APP)
 #include "platform/android_documents.hpp"
@@ -175,6 +176,10 @@ bool Menu::frame() {
 #endif
     const int test_tab = test_screen_available() ? static_cast<int>(tabs.size()) : -1;
     if (test_tab >= 0) tabs.push_back(tr("Test session"));
+    if (first_frame_ && test_tab >= 0) {
+        const auto controller = testing::active_case_controller();
+        if (controller && controller->active_case()) tab_ = test_tab;
+    }
     tab_ = std::clamp(tab_, 0, static_cast<int>(tabs.size()) - 1);
     const bool switched = tab_bar(tabs.data(), static_cast<int>(tabs.size()), tab_) || first_frame_;
     first_frame_ = false;

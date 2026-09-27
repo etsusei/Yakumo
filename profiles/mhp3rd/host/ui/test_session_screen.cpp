@@ -161,7 +161,9 @@ void recording_status(const CaseController &controller) {
     } else {
         paragraph(tr("Recording is active."), colors::kGood);
     }
-    if (!controller.last_error().empty())
+    if (controller.last_error() == "configuration_changed_during_case")
+        paragraph(tr("Settings changed during this case. Close this test run; restoring a setting does not restore its validity."), colors::kDanger);
+    else if (!controller.last_error().empty())
         paragraph(tr("The last test action could not be recorded."), colors::kDanger);
     paragraph(tr("Your marks describe what you saw. Results are checked after both runs."), colors::kTextDim);
 }

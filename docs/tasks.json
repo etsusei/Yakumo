@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 46,
+  "revision": 50,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-26T21:13:37Z",
+  "updated_at": "2026-09-27T03:02:18Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -274,6 +274,22 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/live_record_audit",
+      "type": "agent",
+      "role": "Independent live helper/diagnostics/coverage audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/transient_config_guard",
+      "type": "agent",
+      "role": "Regression fix for transient active-case configuration changes",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -313,9 +329,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "CASE-001",
-    "next_task_id": "CASE-002",
-    "next_action": "Await user-led paired runs of the signed apps in out/testing/dist/initial-batch. Use START_HERE.md and docs/TEST_CASES.md; do not launch or navigate the game automatically. For completion, require actual journal packages with batch_id initial-batch and the final catalog hash 99f868d6cf0a9a465c1720b8f752a73555b645c7f6e4fc1f08f9691de568a48a. Preparation-only outcomes are not user runs. Once both roles have evidence, analyze in CASE-002; preserve incomplete/uncertain/zero-coverage findings.",
+    "current_task_id": "ITER-001",
+    "next_task_id": "ITER-002",
+    "next_action": "Build the migration module/dependency inventory and define finite next batches from verified evidence. First live route provides scale and matrix-copy verify-mode coverage only. Keep angle/translation/vector marked uncovered, preserve immutable user records and do not enable native paths by default. Recorder guard/menu improvements are source-only until a future matched observer build is deliberately delivered.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": []
   },
@@ -338,7 +354,9 @@
     "paired_apps_pr": "https://github.com/etsusei/Yakumo/pull/11",
     "paired_apps_guide": "docs/PAIRED_TEST_APPLICATIONS.md",
     "first_case_pack_pr": "https://github.com/etsusei/Yakumo/pull/12",
-    "first_case_guide": "docs/TEST_CASES.md"
+    "first_case_guide": "docs/TEST_CASES.md",
+    "first_acceptance_report": "docs/FIRST_PAIRED_ACCEPTANCE.md",
+    "first_acceptance_pr": "https://github.com/etsusei/Yakumo/pull/13"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -3561,24 +3579,36 @@
       "title": "User paired gameplay acceptance",
       "phase": "milestone_3",
       "kind": "finite",
-      "status": "awaiting_user_test",
+      "status": "completed",
       "owner_agent_id": null,
       "responsible_actor_id": "project-owner",
       "contributor_agent_ids": [],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T21:13:37Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-27T03:00:34Z",
+      "started_at": "2026-09-27T02:32:14Z",
+      "completed_at": "2026-09-27T02:52:38Z",
       "timestamp_note": null,
       "scope": "User performs initial cases; assistant does not substitute screenshot navigation.",
       "depends_on": [
         "PAIR-003"
       ],
-      "work_summary": "Ready for the user to run Baseline then Candidate from out/testing/dist/initial-batch, following START_HERE.md and the four Chinese panel cases. Only preparation-only runs exist so far; they are not user gameplay evidence. After both sessions, the assistant reads local initial-batch records and performs CASE-002 analysis.",
+      "work_summary": "User reported both sessions finished. Independently loaded both complete, bound initial-batch packages: four normal case outcomes and five ordered checkpoints in each role, zero journal loss or diagnostics, normal menu exit. Configuration changes and manual-stream differences are retained for CASE-002; completion means user execution is recorded, not an unconditional compatibility pass.",
       "deliverables": [
         {
           "path": "out/testing/runs",
           "kind": "directory",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/runs/packages/run-8257f90ededf45aeab8ce60b126361c5",
+          "kind": "run_package",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/runs/packages/run-4393c2b8a01440558f76164235cdaeef",
+          "kind": "run_package",
           "state": "existing",
           "local_only": true
         }
@@ -3589,8 +3619,21 @@
         "Zero-trigger modules explicitly untested."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Two actual user-run packages and case markers",
+            "status": "passed",
+            "evidence": "out/testing/reports/initial-user-acceptance-1/report.json",
+            "roles": 2,
+            "normal_case_marks": 8,
+            "checkpoints_per_role": 5,
+            "recording_complete": true,
+            "identity_binding": "bound"
+          }
+        ],
+        "limitations": [
+          "Execution completion does not imply an unconditional route-equivalence pass; settings changes and manual differences are analyzed in CASE-002."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
@@ -3604,6 +3647,24 @@
           "from_status": "not_started",
           "to_status": "awaiting_user_test",
           "description": "Ready for the user to run Baseline then Candidate from out/testing/dist/initial-batch, following START_HERE.md and the four Chinese panel cases. Only preparation-only runs exist so far; they are not user gameplay evidence. After both sessions, the assistant reads local initial-batch records and performs CASE-002 analysis."
+        },
+        {
+          "recorded_at": "2026-09-27T02:32:14Z",
+          "occurred_at": "2026-09-27T02:32:14Z",
+          "actor_id": "/root",
+          "action": "user_requested_launch",
+          "from_status": "awaiting_user_test",
+          "to_status": "in_progress",
+          "description": "The user explicitly requested both apps be launched. Both final initial-batch launchers and game processes are live, with distinct recording directories. User gameplay cases and acceptance are still pending; the assistant has not driven inputs."
+        },
+        {
+          "recorded_at": "2026-09-27T02:52:38Z",
+          "occurred_at": "2026-09-27T02:52:38Z",
+          "actor_id": "/root",
+          "action": "user_runs_received",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "User reported both sessions finished. Independently loaded both complete, bound initial-batch packages: four normal case outcomes and five ordered checkpoints in each role, zero journal loss or diagnostics, normal menu exit. Configuration changes and manual-stream differences are retained for CASE-002; completion means user execution is recorded, not an unconditional compatibility pass."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -3613,25 +3674,29 @@
       "title": "Analyze first paired acceptance and regress fixes",
       "phase": "milestone_3",
       "kind": "finite",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "completed",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/live_record_audit",
+        "/root/transient_config_guard"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-27T03:02:18Z",
+      "started_at": "2026-09-27T02:52:38Z",
+      "completed_at": "2026-09-27T03:00:34Z",
       "timestamp_note": null,
       "scope": "Assistant correlates evidence, fixes identified defects and reports scope honestly.",
       "depends_on": [
         "CASE-001"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Analyzed both complete actual user records and preserved the original inconclusive comparison. Four normal user marks and all checkpoints per role are retained. Candidate scale/copy made 511126/9772 certified same-input verifications inside cases with no mismatch/fallback; angle/translation/vector remained untriggered. Two temporary resolution changes occurred in paused UI at unchanged guest frames. Fixed future recorder handling of observed change-then-restore settings, added an explicit Chinese interruption message, and reopened active cases directly at Test session. Full host build and six focused offline CTests passed. Existing apps/records were not replaced or replayed; native replacements remain off by default.",
       "deliverables": [
         {
-          "path": "out/testing/reports/initial-batch",
+          "path": "out/testing/reports/initial-user-acceptance-1",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
@@ -3639,6 +3704,24 @@
           "kind": "documentation",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "docs/FIRST_PAIRED_ACCEPTANCE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/acceptance-fix-build.log",
+          "kind": "log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/acceptance-fix-ctest.log",
+          "kind": "log",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -3647,13 +3730,65 @@
         "No module enabled by default before its required acceptance."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Independent complete paired record analysis",
+            "status": "passed",
+            "evidence": "out/testing/reports/initial-user-acceptance-1/analysis.json",
+            "comparison_outcome": "inconclusive",
+            "scope": "No confirmed helper regression; manual differences and transient settings preserved."
+          },
+          {
+            "name": "Observed transient configuration regression and panel integration",
+            "status": "passed",
+            "evidence": "out/testing/acceptance-fix-ctest.log",
+            "ctest_count": 6,
+            "full_application_build": "passed",
+            "game_launched": false
+          }
+        ],
+        "limitations": [
+          "Three helpers have no live coverage; all candidate activity used verify mode, not native mode.",
+          "Paused-menu internal scale changes and different manual streams prevent unconditional paired-route equality.",
+          "Updated menu/guard code passed offline checks but has not been re-run live or applied to delivered apps.",
+          "Combat, quests, monster AI, networking, long sessions and other platforms remain outside this route.",
+          "Changes without any save or snapshot remain observable only at a later marker."
+        ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "acbce56"
+      ],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T02:52:38Z",
+          "occurred_at": "2026-09-27T02:52:38Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Analyzing immutable live records and separating same-input helper verification from manual-input differences. Investigating transient render-scale changes and fixing the recorder guard that misses a change restored before the next checkpoint. No automatic replay of the user sessions."
+        },
+        {
+          "recorded_at": "2026-09-27T03:00:34Z",
+          "occurred_at": "2026-09-27T03:00:34Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Analyzed both complete actual user records and preserved the original inconclusive comparison. Four normal user marks and all checkpoints per role are retained. Candidate scale/copy made 511126/9772 certified same-input verifications inside cases with no mismatch/fallback; angle/translation/vector remained untriggered. Two temporary resolution changes occurred in paused UI at unchanged guest frames. Fixed future recorder handling of observed change-then-restore settings, added an explicit Chinese interruption message, and reopened active cases directly at Test session. Full host build and six focused offline CTests passed. Existing apps/records were not replaced or replayed; native replacements remain off by default."
+        },
+        {
+          "recorded_at": "2026-09-27T03:02:18Z",
+          "occurred_at": "2026-09-27T03:02:18Z",
+          "actor_id": "/root",
+          "action": "published",
+          "from_status": "completed",
+          "to_status": "completed",
+          "description": "Published the acceptance analysis and verified recorder/UI changes as acbce56 in draft PR #13, stacked on #12. Delivered apps and immutable user packages remain unchanged."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {

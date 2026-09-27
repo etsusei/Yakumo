@@ -69,8 +69,18 @@ for the evidence scope.
 
 The formal first-case pack at commit `75ca5ff` subsequently passed its offline
 catalog/panel/journal tests and signed-app preparation-only readiness gate on
-the same platform. The four user cases are now ready, but CASE-001 gameplay
-acceptance has not occurred. See [the first handoff](TEST_CASES.md#recorded-first-handoff).
+the same platform. That delivery check made the four user cases ready without
+establishing CASE-001 gameplay acceptance. See [the first handoff](TEST_CASES.md#recorded-first-handoff).
+
+The user subsequently completed both `75ca5ff` observation builds on
+2026-09-27. All four cases were marked normal in both roles and the recordings
+were complete. Candidate scale and matrix-copy helpers passed 511,126 and
+9,772 same-input verifications inside the marked cases, respectively. Three
+other helpers remained untriggered. Manual input differences and temporary
+paused-menu rendering-scale changes prevent an unconditional paired-route
+pass; no confirmed native-helper mismatch was recorded. No combat, quests,
+multiplayer or long-session result is added by this route. See
+[the scoped first acceptance report](FIRST_PAIRED_ACCEPTANCE.md).
 
 ## Updating this page
 

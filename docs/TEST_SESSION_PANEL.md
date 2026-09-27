@@ -76,7 +76,12 @@ The current configuration hash covers formatted settings, excluding navigation
 history (`ui.last_folder`, `ui.menu_hint_seen`) and per-instance network
 identity/history (`network.mac`, `network.nickname`, `network.recent`). Changing
 other settings during an active case interrupts it rather than silently
-continuing under old prerequisites. This fingerprint is a statement about
+continuing under old prerequisites. Saves and explicit settings snapshots
+notify the case controller immediately, so restoring a changed setting before
+the next checkpoint does not restore the interrupted attempt. Mutations with
+no save or snapshot remain detectable only at a later marker. Reopening the
+menu while a case is active selects Test session initially; a Chinese message
+explains a settings-related interruption. This fingerprint is a statement about
 registered inputs and known configuration, not a full game-state or RNG snapshot.
 
 ## Runtime and recording order
