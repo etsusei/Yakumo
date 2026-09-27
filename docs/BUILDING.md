@@ -236,3 +236,17 @@ MHP3RD_DATA_DIR=~/yakumo-a MHP3RD_GAME_DIR=~/game-a MHP3RD_WINDOW_TITLE="Yakumo 
 | `another build is running` | A build of the same directory is still going. Wait, or find the leftover `ninja` process |
 | No music and no movies | The build was configured with `-DMHP3RD_FFMPEG=OFF`, or the FFmpeg libraries next to the executable are missing; see [FFmpeg](#ffmpeg) |
 | `No game data found` | Run step 2 (`--install`) or step 3 (`prepare_game.sh`), or set `MHP3RD_GAME_DIR` |
+
+### Vector observation development targets
+
+The opt-in vector metric module has an asset-free target
+`mhp3rd_vector_metrics_core_tests` and two bounded local-ELF targets:
+`mhp3rd_native_vector_metrics_tests` and `mhp3rd_vector_metrics_runtime_tests`.
+Build through `cmake --build` and run the latter programs with the registered
+local `EBOOT.ELF`, bounded to 60 seconds (for example with a subprocess timeout).
+They execute isolated leaves/callers without starting the game. The runtime
+suite needs certified generated entry seams; modes cannot be enabled silently
+when those seams are compiled out. CMake resolves the metric unit from the
+original corpus and guards the four same-unit registrations. See
+[VECTOR_METRICS_OBSERVATION.md](VECTOR_METRICS_OBSERVATION.md) for record versions,
+B0 sealing, numerical limits and the verified build checkpoint.

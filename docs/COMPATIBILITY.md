@@ -99,3 +99,15 @@ To report a result without editing the page, open a **Test report** issue.
 [#14]: https://github.com/TeamGDB/Yakumo/issues/14
 [#33]: https://github.com/TeamGDB/Yakumo/issues/33
 [#127]: https://github.com/TeamGDB/Yakumo/issues/127
+
+### Vector metric integration (offline only)
+
+Apple Silicon macOS, implementation `399754a`: four metrics passed full-state
+runtime dispatch and one-call observation checks, including a real bounded
+same-unit caller. The rebuilt 12,060-case metric gate, both roles' 1,280-call
+legacy AOT gate, four CTests, 101 Python tests and 33 paired preflight checks
+passed. The original first-pair user packages still validate under legacy
+five-mode metadata. This does not change any gameplay row above: live vector
+triggers, user acceptance and performance remain unverified. Native defaults
+off and is currently admitted only on Apple Silicon; see
+[VECTOR_METRICS_OBSERVATION.md](VECTOR_METRICS_OBSERVATION.md).

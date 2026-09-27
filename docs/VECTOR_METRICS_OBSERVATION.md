@@ -106,3 +106,18 @@ No new gameplay acceptance, performance improvement, physical PSP arithmetic,
 or non-Apple native behavior is claimed. Do not create required user actions
 from static call-site counts. Finish the current native-data user batch and
 retain its evidence independently of this observation integration.
+
+## Published build checkpoint
+
+Implementation `399754a` is published in draft PR
+[#18](https://github.com/etsusei/Yakumo/pull/18). Both the candidate and independently
+prepared B0 build passed 33 real-binary preflight checks, including rejection of
+Verify/Native/invalid for all nine Baseline switches. The observation revision is
+`source-sha256:00f4fc9833674ae01024e378d5c4c4b11e364c9cdb1517771e124d117b145551`.
+Their generated metric-unit object hashes are identical. The B0 AOT gate also
+passed its 1,280 bounded original calls. Archived build manifests are under
+`out/testing/observed-builds/vector-observation-399754a/`; the consolidated local
+report is `out/testing/vector-observation-validation.json`.
+
+VEC-003 remains in progress because live trigger discovery and its finite user
+case are not yet complete. These builds are not a new delivered application pair.
