@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 70,
+  "revision": 73,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T06:06:25Z",
+  "updated_at": "2026-09-27T06:26:19Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -386,6 +386,14 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/vector_discovery_report",
+      "type": "agent",
+      "role": "Optional profile observation reporting without invented coverage",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -427,11 +435,12 @@
   "execution_state": {
     "current_task_id": "VEC-003",
     "next_task_id": "NAT-004",
-    "next_action": "VEC-003 integration is verified and both builds archived at 399754a. Retain this checkpoint while NAT-003 awaits the user; analyze actual native-data packages in NAT-004 when supplied. Plan a separate bounded observation handoff to discover metric gameplay triggers before creating required vector acceptance steps. No static caller count is live coverage. Keep analysis offline and preserve the existing native-data apps; the user operates related gameplay cases.",
+    "next_action": "Both current batches are ready: user completes native-data first, then the separate vector-discovery pair. Analyze actual native-data packages in NAT-004 and vector discovery packages with the explicit v2 profile when they arrive. Zero metric calls remain not covered and do not require user retries. Keep VEC-003 unfinished until real triggers support finite required-coverage cases. No game navigation or delivered-app replacement.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": [
-      "NAT-003"
+      "NAT-003",
+      "VEC-003"
     ]
   },
   "references": {
@@ -465,7 +474,9 @@
     "vector_metrics_module": "docs/VECTOR_METRICS_MODULE.md",
     "vector_metrics_module_pr": "https://github.com/etsusei/Yakumo/pull/17",
     "vector_metrics_observation": "docs/VECTOR_METRICS_OBSERVATION.md",
-    "vector_metric_observations_pr": "https://github.com/etsusei/Yakumo/pull/18"
+    "vector_metric_observations_pr": "https://github.com/etsusei/Yakumo/pull/18",
+    "vector_discovery_case": "docs/VECTOR_DISCOVERY_CASE.md",
+    "vector_discovery_pr": "https://github.com/etsusei/Yakumo/pull/19"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -5062,17 +5073,18 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "in_progress",
+      "status": "awaiting_user_test",
       "owner_agent_id": "/root",
-      "responsible_actor_id": null,
+      "responsible_actor_id": "project-owner",
       "contributor_agent_ids": [
         "/root",
         "/root/vector_probe_integration",
         "/root/vector_mode_policy",
-        "/root/vector_observed_runtime_tests"
+        "/root/vector_observed_runtime_tests",
+        "/root/vector_discovery_report"
       ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T06:06:25Z",
+      "updated_at": "2026-09-27T06:26:19Z",
       "started_at": "2026-09-27T05:43:06Z",
       "completed_at": null,
       "timestamp_note": null,
@@ -5081,7 +5093,7 @@
         "VEC-002",
         "NAT-001"
       ],
-      "work_summary": "Integration and paired-build gates passed at 399754a: nine probes, scoped original-call suppression, owned registration including actual same-unit calls, and explicit backward-compatible v2 modes/profiles. Runtime, 12,060 metric comparisons, both 1,280-call legacy AOT gates, four CTests, 101 Python tests and 33 real-binary paired preflights passed. B0 and candidate share identical generated metric object and observer revision. Immutable binaries/build manifests are archived. VEC-003 remains in progress pending real gameplay triggers and finite related user cases; current apps unchanged.",
+      "work_summary": "Delivered a separate signed vector-discovery pair at a223ed3 with one localized finite village case and four Verify modes, no required helper calls/native targets. 56 targeted Python tests, four CTests, 33 paired preflights, real native launcher preparation for both roles, and 43/43 font samples from both prepared settings passed. Optional report windows distinguish calls from verification and incomplete/zero coverage. No game run or live metric trigger claimed. Current native-data pair stays first; VEC-003 awaits discovery input before formal metric cases.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/testing/cases/vector_metrics_batch.json",
@@ -5190,6 +5202,90 @@
           "kind": "source_audit",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/testing/cases/vector_metrics_discovery.json",
+          "kind": "case_catalog",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/testing/profiles/vector_discovery_v1.json",
+          "kind": "execution_profile",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_vector_discovery_case.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/VECTOR_DISCOVERY_CASE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/dist/vector-discovery/Yakumo Baseline.app",
+          "kind": "application",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/vector-discovery/Yakumo Candidate.app",
+          "kind": "application",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/vector-discovery/START_HERE.md",
+          "kind": "user_guide",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/vector-discovery/pair-manifest.json",
+          "kind": "pair_manifest",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-discovery-readiness.json",
+          "kind": "readiness_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-discovery-preflight.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-discovery-baseline-font.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-discovery-candidate-font.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/vector-discovery-a223ed3/baseline.json",
+          "kind": "build_manifest",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/vector-discovery-a223ed3/candidate.json",
+          "kind": "build_manifest",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -5221,16 +5317,28 @@
             "status": "passed",
             "evidence_path": "out/testing/vector-observation-paired-preflight.json",
             "details": "33 real-binary checks; B0 rejects verify/native/invalid for all9switches. Source audit matches candidate observer revision; both role generated0028objects SHA256 26d4dedc53f46a80a972982d1595e635eebaee3919336c3f9369cf96a18a7a9c. Baseline 1280original AOT calls passed; archived manifests validate."
+          },
+          {
+            "name": "Signed finite discovery pair readiness",
+            "status": "passed",
+            "evidence_path": "out/testing/vector-discovery-readiness.json",
+            "details": "Both actual native app launchers ran headless prepare-only. C++/Python catalog hash 2ed3ef1dfea164b7a3b9b0aae18e33a8ef5568256d086e4ed01a60bae5c400e1 matches; source saves unchanged and separate writable copies verified. All nine modes explicit; candidate onlyfourVerify. Bothactual preparedsettings pass43/43 productionfontglyphs; no game/recording started."
+          },
+          {
+            "name": "Discovery catalog and optional report regression",
+            "status": "passed",
+            "details": "56 targeted Python tests and four CTests; optional zero/fallback/one-role/reset/mode/schema/config cases remain explicit, native targets empty cannot claim native execution."
           }
         ],
         "limitations": [
-          "No live gameplay metric triggers or performance measurements.",
-          "VEC-003 remains in progress until finite related user cases can be supported by trigger evidence.",
-          "New metrics remain off by default; current native-data apps are unchanged."
+          "Discovery pair is ready, not yet played. No live metric trigger or gameplay/performance result.",
+          "Formal vector required-coverage cases remain planned until real calls are observed.",
+          "User completes native-data first, then vector-discovery; existing apps/records preserved."
         ]
       },
       "implementation_commits": [
-        "399754aed8c6b8d7a20e783f0b99566ff7e0c880"
+        "399754aed8c6b8d7a20e783f0b99566ff7e0c880",
+        "a223ed3e65eb2deb6558ad16d6a107ef13ddafed"
       ],
       "pause_reason": null,
       "blockers": [],
@@ -5257,6 +5365,29 @@
           "actor_id": "/root",
           "action": "published_integration_checkpoint",
           "description": "Integration and paired-build gates passed at 399754a: nine probes, scoped original-call suppression, owned registration including actual same-unit calls, and explicit backward-compatible v2 modes/profiles. Runtime, 12,060 metric comparisons, both 1,280-call legacy AOT gates, four CTests, 101 Python tests and 33 real-binary paired preflights passed. B0 and candidate share identical generated metric object and observer revision. Immutable binaries/build manifests are archived. VEC-003 remains in progress pending real gameplay triggers and finite related user cases; current apps unchanged. Published draft PR #18 stacked on #17; no merge."
+        },
+        {
+          "recorded_at": "2026-09-27T06:12:00Z",
+          "occurred_at": "2026-09-27T06:12:00Z",
+          "actor_id": "/root",
+          "action": "discovery_preparation",
+          "description": "Preparing a separate finite discovery pair, with four metrics Verify and no required metric calls. Added a localized bounded village observation catalog and explicit v2 profile; zero calls are evidence to retain, not a player error. Optional profile observation reporting and signed preparation-only delivery are in progress. Current native-data apps remain unchanged."
+        },
+        {
+          "recorded_at": "2026-09-27T06:18:24Z",
+          "occurred_at": "2026-09-27T06:18:24Z",
+          "actor_id": "/root",
+          "action": "discovery_source_ready",
+          "description": "Authored one localized eight-step discovery case, no required metric calls, explicit four-Verify v2 profile; optional profile observations now distinguish observed calls, verification, fallback-only hits, missing/incompatible/reset evidence. Root ran 56 targeted Python tests and four CTests successfully. Signed pair assembly is next; no live trigger or manual acceptance claimed."
+        },
+        {
+          "recorded_at": "2026-09-27T06:26:19Z",
+          "occurred_at": "2026-09-27T06:26:19Z",
+          "actor_id": "/root",
+          "action": "discovery_ready_for_user",
+          "from_status": "in_progress",
+          "to_status": "awaiting_user_test",
+          "description": "Delivered a separate signed vector-discovery pair at a223ed3 with one localized finite village case and four Verify modes, no required helper calls/native targets. 56 targeted Python tests, four CTests, 33 paired preflights, real native launcher preparation for both roles, and 43/43 font samples from both prepared settings passed. Optional report windows distinguish calls from verification and incomplete/zero coverage. No game run or live metric trigger claimed. Current native-data pair stays first; VEC-003 awaits discovery input before formal metric cases. Source published in draft PR #19."
         }
       ],
       "updated_by_agent_id": "/root"

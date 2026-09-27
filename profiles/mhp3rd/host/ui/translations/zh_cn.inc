@@ -751,4 +751,8 @@
 {"Begin this case in Test session. Stay still for three seconds and inspect the hunter, equipment and Chinese text.", "在“测试会话”中开始本案例。静止三秒，观察角色、装备和游戏中文字。"},
 {"Open Test session and record Native path observed. Reopen it to mark your outcome, then close the game normally.", "打开“测试会话”记录“本次观察完成”，再次打开并标记结果，然后正常关闭游戏。"},
 {"Native path observed", "本次观察完成"},
+{"Vector call discovery in the village", "村庄向量调用观察"},
+{"This case discovers vector calls. Missing calls are not a player error; do not repeat the route to force coverage.", "本案例用于收集向量函数的调用。未触发不代表操作错误，不用反复尝试。"},
+{"Open Test session and record Vector observation complete. Reopen it to mark your outcome, then close the game normally.", "打开“测试会话”记录“向量观察完成”，再次打开并标记画面与操作是否正常，然后正常关闭游戏。"},
+{"Vector observation complete", "向量观察完成"},
 {"Settings changed during this case. Close this test run; restoring a setting does not restore its validity.", "本案例中设置发生变化，请结束本次测试。改回原值也不能恢复本案例的有效性。"},

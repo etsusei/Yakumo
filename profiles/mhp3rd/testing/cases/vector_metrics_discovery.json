@@ -1,0 +1,28 @@
+{
+  "schema": "yakumo-case-catalog-v1",
+  "cases": [
+    {
+      "id": "VECTOR-DISCOVERY-01",
+      "version": 1,
+      "title": "Vector call discovery in the village",
+      "steps": [
+        "Before this case, load the first occupied hunter from the supplied save copy and wait for the village.",
+        "Use that same hunter slot and the same input device in both roles.",
+        "This case discovers vector calls. Missing calls are not a player error; do not repeat the route to force coverage.",
+        "Begin this case in Test session. Stay still for three seconds and inspect the hunter, equipment and Chinese text.",
+        "Hold W or left stick up for two seconds, then release for two.",
+        "Hold D or left stick right for one second, release, then wait three seconds. Stop early at a wall or door; do not retry or enter it.",
+        "Hold J or right stick left for one second, then release. Observe the camera.",
+        "Open Test session and record Vector observation complete. Reopen it to mark your outcome, then close the game normally."
+      ],
+      "checkpoints": [
+        "vector_observation_complete"
+      ],
+      "required_probes": [],
+      "required_state_fields": [
+        "character_loaded"
+      ],
+      "human_acceptance": true
+    }
+  ]
+}
