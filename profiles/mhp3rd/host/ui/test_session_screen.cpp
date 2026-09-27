@@ -35,6 +35,11 @@ Selection &selection() {
 // Only enumerated case strings are translated. Catalog text outside
 // this list is displayed verbatim and never used as a format string.
 std::string_view case_text(const std::string &value) {
+    if (value == "Native data paths in the village") return tr("Native data paths in the village");
+    if (value == "Begin this case in Test session. Stay still for three seconds and inspect the hunter, equipment and Chinese text.")
+        return tr("Begin this case in Test session. Stay still for three seconds and inspect the hunter, equipment and Chinese text.");
+    if (value == "Open Test session and record Native path observed. Reopen it to mark your outcome, then close the game normally.")
+        return tr("Open Test session and record Native path observed. Reopen it to mark your outcome, then close the game normally.");
     if (value == "Load the agreed character") return tr("Load the agreed character");
     if (value == "Movement and camera") return tr("Movement and camera");
     if (value == "Native helper observations") return tr("Native helper observations");
@@ -106,6 +111,7 @@ std::string_view case_text(const std::string &value) {
 }
 
 std::string_view checkpoint_text(const std::string &value) {
+    if (value == "native_path_observed") return tr("Native path observed");
     if (value == "village_ready") return tr("Village ready");
     if (value == "route_complete") return tr("Route finished");
     if (value == "ready_to_close") return tr("Ready to close");

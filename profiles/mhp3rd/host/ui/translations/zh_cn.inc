@@ -747,4 +747,8 @@
 {"Test launcher could not start", "测试启动器无法启动"},
 {"The test could not start. Check the local installation and diagnostics.", "测试无法启动。请检查本地安装和诊断信息。"},
 {"Details: ", "详细信息："},
+{"Native data paths in the village", "村庄原生执行对照"},
+{"Begin this case in Test session. Stay still for three seconds and inspect the hunter, equipment and Chinese text.", "在“测试会话”中开始本案例。静止三秒，观察角色、装备和游戏中文字。"},
+{"Open Test session and record Native path observed. Reopen it to mark your outcome, then close the game normally.", "打开“测试会话”记录“本次观察完成”，再次打开并标记结果，然后正常关闭游戏。"},
+{"Native path observed", "本次观察完成"},
 {"Settings changed during this case. Close this test run; restoring a setting does not restore its validity.", "本案例中设置发生变化，请结束本次测试。改回原值也不能恢复本案例的有效性。"},

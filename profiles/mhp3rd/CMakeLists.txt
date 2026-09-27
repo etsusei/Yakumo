@@ -428,7 +428,7 @@ if(PSPRECOMP_BUILD_TESTS)
                 ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
         endforeach()
         if(NOT MHP3RD_BASELINE_B0)
-            foreach(suite observed_baseline package_test_pair test_launcher pair_readiness initial_case_pack native_batch)
+            foreach(suite observed_baseline package_test_pair test_launcher pair_readiness initial_case_pack native_batch native_data_case)
                 add_test(NAME mhp3rd_${suite}_tests
                     COMMAND "${Python3_EXECUTABLE}" -m unittest discover
                         -s "${MHP3RD_PROFILE_DIR}/tests" -p "test_${suite}.py" -v)
@@ -644,6 +644,9 @@ if(PSPRECOMP_BUILD_TESTS)
         add_test(NAME mhp3rd_initial_case_screen_tests COMMAND mhp3rd_test_session_screen_tests
             "${MHP3RD_PROFILE_DIR}/testing/cases/initial_batch.json")
         set_tests_properties(mhp3rd_initial_case_screen_tests PROPERTIES TIMEOUT 30)
+        add_test(NAME mhp3rd_native_data_screen_tests COMMAND mhp3rd_test_session_screen_tests
+            "${MHP3RD_PROFILE_DIR}/testing/cases/native_data_batch.json")
+        set_tests_properties(mhp3rd_native_data_screen_tests PROPERTIES TIMEOUT 30)
     endif()
 endif()
 if(MHP3RD_PROBE_INSTRUMENTED_SOURCES)

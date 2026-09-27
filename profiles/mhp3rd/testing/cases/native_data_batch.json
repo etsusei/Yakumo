@@ -1,0 +1,36 @@
+{
+  "schema": "yakumo-case-catalog-v1",
+  "cases": [
+    {
+      "id": "NATIVE-DATA-01",
+      "version": 1,
+      "title": "Native data paths in the village",
+      "steps": [
+        "Before this case, load the first occupied hunter from the supplied save copy and wait for the village.",
+        "Use that same hunter slot and the same input device in both roles.",
+        "Begin this case in Test session. Stay still for three seconds and inspect the hunter, equipment and Chinese text.",
+        "Hold W or left stick up for two seconds, then release for two.",
+        "Hold D or left stick right for one second, release, then wait three seconds. Stop early at a wall or door; do not retry or enter it.",
+        "Hold J or right stick left for one second, then release. Observe the camera.",
+        "Open Test session and record Native path observed. Reopen it to mark your outcome, then close the game normally."
+      ],
+      "checkpoints": [
+        "native_path_observed"
+      ],
+      "required_probes": [
+        {
+          "entry": 143100712,
+          "min_calls": 1
+        },
+        {
+          "entry": 143105288,
+          "min_calls": 1
+        }
+      ],
+      "required_state_fields": [
+        "character_loaded"
+      ],
+      "human_acceptance": true
+    }
+  ]
+}
