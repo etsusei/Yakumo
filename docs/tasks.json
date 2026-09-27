@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 92,
+  "revision": 95,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T08:40:29Z",
+  "updated_at": "2026-09-27T09:20:10Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -506,6 +506,30 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/renderer_evidence_policy",
+      "type": "agent",
+      "role": "Renderer profile and cumulative evidence analysis",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/renderer_pair_delivery",
+      "type": "agent",
+      "role": "Renderer policy-aware signed pair packaging/readiness",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/renderer_vector_case",
+      "type": "agent",
+      "role": "Finite combined vector/texture discovery catalog and Chinese UI strings",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -546,8 +570,8 @@
   },
   "execution_state": {
     "current_task_id": null,
-    "next_task_id": "ASSET-008",
-    "next_action": "Prepare explicit renderer comparison policy and related paired case; consider combining pending vector discovery. NAT-004 waits onlyfor Baseline rerunwith in-app Auto beforeCaseBegin, preserving existingCandidate run. Noautomaticgame/appreplacement.",
+    "next_task_id": "ASSET-009",
+    "next_action": "Certify the original texture-state command builder offline using the existing resource contracts. NAT-004 awaits only the Baseline rerun with Auto selected in-app before CaseBegin. After that, RENDER-001 can use the ready combined pair to also advance VEC-003. Do not request a separate vector-only replay or boot the game automatically.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": [
@@ -5277,7 +5301,7 @@
         "/root/vector_discovery_report"
       ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T06:26:19Z",
+      "updated_at": "2026-09-27T09:20:10Z",
       "started_at": "2026-09-27T05:43:06Z",
       "completed_at": null,
       "timestamp_note": null,
@@ -5286,7 +5310,7 @@
         "VEC-002",
         "NAT-001"
       ],
-      "work_summary": "Delivered a separate signed vector-discovery pair at a223ed3 with one localized finite village case and four Verify modes, no required helper calls/native targets. 56 targeted Python tests, four CTests, 33 paired preflights, real native launcher preparation for both roles, and 43/43 font samples from both prepared settings passed. Optional report windows distinguish calls from verification and incomplete/zero coverage. No game run or live metric trigger claimed. Current native-data pair stays first; VEC-003 awaits discovery input before formal metric cases.",
+      "work_summary": "Delivered a separate signed vector-discovery pair at a223ed3 with one localized finite village case and four Verify modes, no required helper calls/native targets. 56 targeted Python tests, four CTests, 33 paired preflights, real native launcher preparation for both roles, and 43/43 font samples from both prepared settings passed. Optional report windows distinguish calls from verification and incomplete/zero coverage. No game run or live metric trigger claimed. Current native-data pair stays first; VEC-003 awaits discovery input before formal metric cases. Combined render-discovery pair atf61ae34 isnowready tocollect thesamevectorobservations alongside textureVerify, aftercurrentnative-data rerun; oldvector-only pair preserved.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/testing/cases/vector_metrics_batch.json",
@@ -5479,6 +5503,18 @@
           "kind": "build_manifest",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "docs/RENDER_DISCOVERY_CASE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/dist/render-discovery/START_HERE.md",
+          "kind": "user_guide",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -5581,6 +5617,13 @@
           "from_status": "in_progress",
           "to_status": "awaiting_user_test",
           "description": "Delivered a separate signed vector-discovery pair at a223ed3 with one localized finite village case and four Verify modes, no required helper calls/native targets. 56 targeted Python tests, four CTests, 33 paired preflights, real native launcher preparation for both roles, and 43/43 font samples from both prepared settings passed. Optional report windows distinguish calls from verification and incomplete/zero coverage. No game run or live metric trigger claimed. Current native-data pair stays first; VEC-003 awaits discovery input before formal metric cases. Source published in draft PR #19."
+        },
+        {
+          "recorded_at": "2026-09-27T09:20:10Z",
+          "occurred_at": "2026-09-27T09:20:10Z",
+          "actor_id": "/root",
+          "action": "combined_route_ready",
+          "description": "A signedcombined render-discovery pair atf61ae34 nowprovides thesame optionalfour-vectorVerify observation inone relatedvillage route. Existingvector-only apps preserved; usecombinedbatch aftercurrentnative-data Baseline rerun ratherthanrequestbothroutes. Actualvector calls remainunobserved."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -6737,27 +6780,156 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
-        "/root"
+        "/root",
+        "/root/renderer_evidence_policy",
+        "/root/renderer_pair_delivery",
+        "/root/renderer_vector_case"
       ],
       "created_at": "2026-09-27T08:40:29Z",
-      "updated_at": "2026-09-27T08:40:29Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-27T09:20:10Z",
+      "started_at": "2026-09-27T08:45:51Z",
+      "completed_at": "2026-09-27T09:20:10Z",
       "scope": "Bind explicit supplemental renderer mode policy to case/record comparisons and prepare a finite related user-led paired batch. Account for cumulative asynchronous counters/finalization and reject absent/incomplete coverage; evaluate consolidating pending vector discovery without changing previous artifacts.",
       "depends_on": [
         "ASSET-007"
       ],
-      "work_summary": "Dependency-ready. Existing helper-only comparisons intentionally rejectactive texturemodes; a dedicated policy/case and signed delivery are required before user acceptance.",
+      "work_summary": "Prepared the signed combined render/vector pair at f61ae34: one nine-step Chinese village case, four vector Verify modes and a separate texture Verify policy covering the whole run. Both roles use Auto resolution and the restored game font. Catalog/profile hashes bind configs, preflight, RunBegin and reports. Both final builds, 50 actual preflights, 123 Python tests, three CTests, 758 translation checks, the C++ catalog hash, actual native launcher preparation and 43/43 font samples per role passed. Existing apps and records are unchanged. Actual user execution remains pending; the native-data Baseline rerun comes first.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
           "kind": "contract",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "docs/RENDER_DISCOVERY_CASE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/testing/cases/render_discovery.json",
+          "kind": "case_catalog",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/testing/profiles/render_discovery_vectors_v1.json",
+          "kind": "execution_profile",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/testing/profiles/render_discovery_texture_v1.json",
+          "kind": "renderer_profile",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/renderer_batch.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_renderer_batch.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_renderer_comparison.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_render_discovery_case.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/render-discovery-python.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/render-discovery-ctest.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/render-discovery-localization.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/render-discovery/Yakumo Baseline.app",
+          "kind": "application",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/render-discovery/Yakumo Candidate.app",
+          "kind": "application",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/render-discovery/START_HERE.md",
+          "kind": "user_guide",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/render-discovery/pair-manifest.json",
+          "kind": "pair_manifest",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/render-discovery-preflight.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/render-discovery-readiness.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/render-discovery-baseline-font.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/render-discovery-candidate-font.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/render-discovery-f61ae34/baseline.json",
+          "kind": "build_identity",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/render-discovery-f61ae34/candidate.json",
+          "kind": "build_identity",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -6767,10 +6939,205 @@
         "No automatic gameplay; next userbatch requested only after currentnative-data rerun."
       ],
       "validation": {
-        "checks": [],
+        "checks": [
+          {
+            "name": "Policy, package and comparison regressions",
+            "status": "passed",
+            "evidence_path": "out/testing/render-discovery-python.log",
+            "details": "123targeted checks, includingactual framedpackage integration, zerooptionalvectorcoverage, mode/profilehash mismatch,missingfinal andpixelmismatch; oldschemasretained."
+          },
+          {
+            "name": "Compiled candidate, UI and catalog",
+            "status": "passed",
+            "evidence_path": "out/testing/render-discovery-ctest.log",
+            "details": "Candidate/launcher/catalogfixture built;3relatedCTests,758translations,actualC++cataloghash6245ba37... passed."
+          },
+          {
+            "name": "Source-bound paired startup checks",
+            "status": "passed",
+            "evidence_path": "out/testing/render-discovery-preflight.json",
+            "details": "50actualbinary preflights atf61ae34, includingcanonicalrendererprofilehash echo andinvalidhashrejection."
+          },
+          {
+            "name": "Signed pair preparation-only readiness",
+            "status": "passed",
+            "evidence_path": "out/testing/render-discovery-readiness.json",
+            "details": "Bothactual native launchers preparedindependent writable saves; sourceinputsunchanged, no recording/game started. Profilehash9be309b0... bothroles, baselineoff/candidateverify; sameseededAutoresolution/font."
+          },
+          {
+            "name": "Actual prepared game-font coverage",
+            "status": "passed",
+            "evidence_path": "out/testing/render-discovery-candidate-font.json",
+            "details": "Bothprepared role settings passed43/43 samples, including23/23 formerlymissingglyphs; baseline reportstoredseparately."
+          }
+        ],
         "limitations": [
-          "No live renderer case accepted yet."
+          "Preparation isnot actualgameplay, vectortrigger, texturepresentation orperformanceacceptance.",
+          "Renderer totalsinclude startup beforecase; no exactvisibleobject/format/source-ID attribution.",
+          "Combinedusercase waits until currentnative-data Baseline rerun; existingCandidate native-data recordretained.",
+          "Partialrenderer evidence cannotpass andnative-only countsnever implysame-input referenceverification."
         ]
+      },
+      "implementation_commits": [
+        "f61ae346fc21f20539d965fd1b4d7052a5ccc9bd"
+      ],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T08:45:51Z",
+          "occurred_at": "2026-09-27T08:45:51Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Preparing one combined finite village observation case with existing four vector Verify modes and separate portable texture Verify policy. Renderer counters are explicitly run-total including startup; helper windows stay case-specific. Root integrates runtime profile hash and comparison, subagents implement bounded evidence policy, packaging and localized case. Existing apps/records remain unchanged; no user handoff before current native-data rerun."
+        },
+        {
+          "recorded_at": "2026-09-27T09:02:55Z",
+          "occurred_at": "2026-09-27T09:02:55Z",
+          "actor_id": "/root",
+          "action": "source_ready",
+          "description": "Authored one nine-step Chinese combined render/vector village case, two catalog-bound profiles, renderer run-total policy/evidence classification, runtime/preflight profile-hash binding and signed-pair tooling. Root ran123targetedPython tests,3CTests,758translation checks andcompiled C++cataloghash check; Candidate/launcher/fixture build. Final source-bound paired builds and signed preparation-only readiness remain pending. Newrenderer pairs seedAutoresolution inbothroles; oldapps remainunchanged."
+        },
+        {
+          "recorded_at": "2026-09-27T09:20:10Z",
+          "occurred_at": "2026-09-27T09:20:10Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Prepared the signed combined render/vector pair at f61ae34: one nine-step Chinese village case, four vector Verify modes and a separate texture Verify policy covering the whole run. Both roles use Auto resolution and the restored game font. Catalog/profile hashes bind configs, preflight, RunBegin and reports. Both final builds, 50 actual preflights, 123 Python tests, three CTests, 758 translation checks, the C++ catalog hash, actual native launcher preparation and 43/43 font samples per role passed. Existing apps and records are unchanged. Actual user execution remains pending; the native-data Baseline rerun comes first."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "RENDER-001",
+      "title": "Execute combined render and vector discovery",
+      "phase": "milestone_4",
+      "kind": "manual",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": "project-owner",
+      "contributor_agent_ids": [
+        "/root"
+      ],
+      "created_at": "2026-09-27T09:20:10Z",
+      "updated_at": "2026-09-27T09:20:10Z",
+      "started_at": null,
+      "completed_at": null,
+      "scope": "The user runs the combined case in both roles after the current native-data rerun. Preparation-only outputs do not count as gameplay.",
+      "depends_on": [
+        "ASSET-008",
+        "NAT-004"
+      ],
+      "work_summary": "Planned from verified prior evidence; execution has not started.",
+      "deliverables": [
+        {
+          "path": "docs/NEXT_NATIVE_BATCHES.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Actual complete packages for both roles retain the expected profile, source and configuration identities.",
+        "User observations and checkpoint outcomes are retained; zero optional helper calls remain explicit."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "RENDER-002",
+      "title": "Analyze combined renderer and vector evidence",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root"
+      ],
+      "created_at": "2026-09-27T09:20:10Z",
+      "updated_at": "2026-09-27T09:20:10Z",
+      "started_at": null,
+      "completed_at": null,
+      "scope": "Analyze profile-bound actual records, diagnose mismatches, fallback or incomplete coverage, update VEC-003, and retain scoped results without whole-game claims.",
+      "depends_on": [
+        "RENDER-001"
+      ],
+      "work_summary": "Planned from verified prior evidence; execution has not started.",
+      "deliverables": [
+        {
+          "path": "docs/NEXT_NATIVE_BATCHES.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Keep renderer run-total evidence separate from vector case-window evidence.",
+        "Do not accept missing finalization, policy/configuration mismatch, anomalies or zero required decode coverage."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ASSET-009",
+      "title": "Certify original texture-state command builder boundary",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-001",
+      "status": "not_started",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root"
+      ],
+      "created_at": "2026-09-27T09:20:10Z",
+      "updated_at": "2026-09-27T09:20:10Z",
+      "started_at": null,
+      "completed_at": null,
+      "scope": "Recover the original texture-state builder at 0x0889E5C0: its ABI, CPU/memory footprint, table and dependency assumptions, and command output. Use bounded offline original execution to define a concrete portable resource-consumer boundary.",
+      "depends_on": [
+        "ASSET-004",
+        "ASSET-005",
+        "ASSET-007"
+      ],
+      "work_summary": "Planned from verified prior evidence; execution has not started.",
+      "deliverables": [
+        {
+          "path": "docs/NEXT_NATIVE_BATCHES.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Check the full original code span and input table identities.",
+        "Use synthetic inputs and available TMH descriptors to exercise bounded original AOT/interpreter behavior and CPU/memory canaries.",
+        "Retain unknown variants and dependencies; do not install a guessed native hook or claim rendered fidelity."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
       },
       "implementation_commits": [],
       "pause_reason": null,

@@ -68,6 +68,13 @@ void check_policy() {
                 rejects([] { (void)parse_texture_decode_mode("1"); }) &&
                 rejects([] { (void)parse_texture_decode_mode("Native"); }),
             "texture policy accepted an unknown mode");
+    require(mhp3rd::gpu::renderer_profile_hash(nullptr).empty() &&
+                mhp3rd::gpu::renderer_profile_hash(std::string(64, 'a').c_str()) == std::string(64, 'a'),
+            "renderer profile hash rejected absence or canonical identity");
+    require(rejects([] { (void)mhp3rd::gpu::renderer_profile_hash(""); }) &&
+                rejects([] { (void)mhp3rd::gpu::renderer_profile_hash("not-a-hash"); }) &&
+                rejects([] { (void)mhp3rd::gpu::renderer_profile_hash(std::string(64, 'A').c_str()); }),
+            "renderer profile hash accepted malformed identity");
     require_texture_decode_policy(TextureDecodeMode::Off, true, false);
     require_texture_decode_policy(TextureDecodeMode::Verify, false, true);
     require_texture_decode_policy(TextureDecodeMode::Native, false, true);

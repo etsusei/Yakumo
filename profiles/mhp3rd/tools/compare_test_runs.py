@@ -15,13 +15,14 @@ import statistics
 import sys
 
 if __package__:
-    from . import native_modes, texture_decode_policy
+    from . import native_modes, texture_decode_policy, renderer_batch
     from .native_batch import load_profile, validate_profile, profile_sha256
     from .run_cases import collect_cases, load_case_catalog, validate_case_catalog
     from .run_package import load_package
 else:
     import native_modes
     import texture_decode_policy
+    import renderer_batch
     from native_batch import load_profile, validate_profile, profile_sha256
     from run_cases import collect_cases, load_case_catalog, validate_case_catalog
     from run_package import load_package
@@ -50,7 +51,7 @@ def canonical_hash(value: object) -> str:
 def comparison_revision() -> str:
     directory = Path(__file__).resolve().parent
     files = ("compare_test_runs.py", "run_package.py", "run_cases.py", "native_batch.py",
-             "native_modes.py", "texture_decode_policy.py")
+             "native_modes.py", "texture_decode_policy.py", "renderer_batch.py")
     return "source-sha256:" + canonical_hash({name: hashlib.sha256((directory / name).read_bytes()).hexdigest()
                                               for name in files})
 
@@ -59,7 +60,8 @@ def unsigned(value: object) -> bool:
     return type(value) is int and 0 <= value < (1 << 64)
 
 
-def compatibility(baseline: dict, candidate: dict, catalog: dict) -> list[str]:
+def compatibility(baseline: dict, candidate: dict, catalog: dict,
+                  renderer_profile: dict | None = None) -> list[str]:
     issues = []
     for role, package in (("baseline", baseline), ("candidate", candidate)):
         validation = package["validation"]
@@ -77,10 +79,18 @@ def compatibility(baseline: dict, candidate: dict, catalog: dict) -> list[str]:
     for role, manifest in (("baseline", b), ("candidate", c)):
         try:
             texture_mode = texture_decode_policy.mode(manifest.get("identity", {}))
-            if texture_mode != "off":
+            if renderer_profile is None and texture_mode != "off":
                 # These catalogs and execution profiles certify PSP helper
                 # paths. A renderer experiment requires its own case policy.
                 issues.append(role + ":texture_decode_requires_renderer_case_policy")
+            elif renderer_profile is not None:
+                identity = manifest.get("identity", {})
+                expected_mode = "off" if role == "baseline" else renderer_profile["candidate_mode"]
+                if (identity.get("texture_decode_schema") != texture_decode_policy.SCHEMA or
+                        texture_mode != expected_mode):
+                    issues.append(role + ":texture_decode_mode_differs_from_profile")
+                if identity.get("renderer_profile_sha256") != renderer_batch.profile_sha256(renderer_profile):
+                    issues.append(role + ":renderer_profile_sha256_differs")
         except ValueError:
             issues.append(role + ":invalid_texture_decode_policy")
     if b.get("identity", {}).get("texture_decode_schema") != c.get("identity", {}).get("texture_decode_schema"):
@@ -565,11 +575,14 @@ def profile_observations(report: dict, profile: dict, indexed: dict,
     return result
 
 
-def compare_loaded(baseline: dict, candidate: dict, catalog: dict, execution_profile: dict | None = None) -> dict:
+def compare_loaded(baseline: dict, candidate: dict, catalog: dict, execution_profile: dict | None = None,
+                   renderer_profile: dict | None = None) -> dict:
     catalog = validate_case_catalog(catalog)
     if execution_profile is not None:
         execution_profile = validate_profile(execution_profile, catalog)
-    issues = compatibility(baseline, candidate, catalog)
+    if renderer_profile is not None:
+        renderer_profile = renderer_batch.validate_profile(renderer_profile, catalog)
+    issues = compatibility(baseline, candidate, catalog, renderer_profile)
     baseline_schema = baseline["manifest"].get("identity", {}).get("native_mode_schema")
     candidate_schema = candidate["manifest"].get("identity", {}).get("native_mode_schema")
     try:
@@ -638,11 +651,22 @@ def compare_loaded(baseline: dict, candidate: dict, catalog: dict, execution_pro
         if execution_profile["schema"] == "yakumo-native-batch-v2":
             report["profile_observations"] = profile_observations(report, execution_profile, indexed, catalog)
             report["limitations"].append("Optional profile observations report scoped calls and instrumented durations only; they do not establish a speedup or human acceptance.")
+    if renderer_profile is not None:
+        result = renderer_batch.analyze_renderer(report, baseline, candidate, renderer_profile)
+        report["renderer_observation"] = result
+        report["limitations"].append("Renderer totals include startup before the case; they do not identify visible textures, every format, or paired frame equality.")
+        renderer_outcome = result["outcome"]
+        mapped = {"incomplete": "incomplete", "incomparable": "incomparable",
+                  "confirmed_mismatch": "confirmed_mismatch", "not_covered": "not_covered",
+                  "needs_review": "inconclusive"}.get(renderer_outcome)
+        if mapped is not None and precedence.index(mapped) < precedence.index(report["outcome"]):
+            report["outcome"] = mapped
     return report
 
 
-def compare_runs(baseline: Path, candidate: Path, catalog: dict, execution_profile: dict | None = None) -> dict:
-    return compare_loaded(load_package(baseline), load_package(candidate), catalog, execution_profile)
+def compare_runs(baseline: Path, candidate: Path, catalog: dict, execution_profile: dict | None = None,
+                 renderer_profile: dict | None = None) -> dict:
+    return compare_loaded(load_package(baseline), load_package(candidate), catalog, execution_profile, renderer_profile)
 
 
 def render_html(report: dict) -> str:
@@ -728,6 +752,15 @@ def render_html(report: dict) -> str:
             '</tr></thead><tbody>' + table_rows + '</tbody></table>' +
             (f'<p>{omitted} additional helper windows are in report.json.</p>' if omitted else '') +
             ('<p>No case attempts were recorded.</p>' if not observations["cases"] else '') + '</section>')
+    renderer_html = ""
+    if "renderer_observation" in report:
+        renderer = report["renderer_observation"]
+        renderer_html = ('<section><h2>Texture decoding observations</h2><p class="status">' +
+                         escape(renderer["outcome"]) +
+                         '</p><p>These cumulative totals cover the whole run, including loading before the case. '
+                         'They do not identify visible textures, prove every format was exercised, or measure a speedup.</p>' +
+                         '<details><summary>Mode, finalization and decode evidence</summary><pre>' +
+                         escape(json.dumps(renderer, indent=2)) + '</pre></details></section>')
     warnings = "".join("<li>" + escape(x) + "</li>" for x in report["limitations"])
     compatibility_text = escape(json.dumps(report["compatibility_issues"], indent=2))
     health = escape(json.dumps(report["recording_validation"], indent=2))
@@ -749,7 +782,7 @@ def render_html(report: dict) -> str:
             f'<section><h2>Recording and starting conditions</h2><p>{"Review is required before relying on the comparison." if report["compatibility_issues"] else "No starting-condition differences were found in the supplied identities."}</p>'
             f'<details><summary>Identity details</summary><pre>{compatibility_text}</pre></details><details><summary>Recording health</summary><pre>{health}</pre></details>'
             f'<details><summary>Run diagnostics and unmatched cases</summary><pre>{run_findings}</pre></details></section>'
-            + execution_html + observation_html + "".join(sections) + '</main></html>')
+            + execution_html + observation_html + renderer_html + "".join(sections) + '</main></html>')
 
 
 def write_report(report: dict, output: Path) -> None:
@@ -780,6 +813,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cases", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--execution-profile", type=Path)
+    parser.add_argument("--renderer-profile", type=Path)
     args = parser.parse_args(argv)
     try:
         if args.cases.is_symlink() or not args.cases.is_file():
@@ -790,7 +824,8 @@ def main(argv: list[str] | None = None) -> int:
             if destination == source or source in destination.parents:
                 raise ValueError("report output must be outside source packages")
         profile = load_profile(args.execution_profile, catalog) if args.execution_profile is not None else None
-        report = compare_runs(args.baseline, args.candidate, catalog, profile)
+        renderer_profile = renderer_batch.load_profile(args.renderer_profile, catalog) if args.renderer_profile is not None else None
+        report = compare_runs(args.baseline, args.candidate, catalog, profile, renderer_profile)
         write_report(report, args.output)
         print(json.dumps({"outcome": report["outcome"], "counts": report["counts"]}))
         return 0  # Finding a mismatch is a successful analysis, not an I/O error.

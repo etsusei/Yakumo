@@ -1,0 +1,8 @@
+{
+  "schema": "yakumo-renderer-batch-v1",
+  "id": "render-discovery-texture-v1",
+  "case_catalog_sha256": "6245ba37859dbfa3634db50d4cf7b3adf84d085bfcf759065a5ac8d2424834a4",
+  "candidate_mode": "verify",
+  "minimum_decodes": 1,
+  "coverage_scope": "run_total"
+}

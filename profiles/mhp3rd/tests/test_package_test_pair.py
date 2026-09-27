@@ -18,6 +18,7 @@ sys.path.insert(0, str(TOOLS))
 import launch_test_run  # noqa: E402
 import native_batch  # noqa: E402
 import native_modes  # noqa: E402
+import renderer_batch  # noqa: E402
 import texture_decode_policy  # noqa: E402
 import package_test_pair as pair  # noqa: E402
 import register_baseline  # noqa: E402
@@ -64,6 +65,45 @@ class FakeMachO:
 
 
 class PairPackagingTests(unittest.TestCase):
+    def test_renderer_profile_requires_paired_supplemental_preflight(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            overlays = root / "overlays"
+            overlays.mkdir()
+            for index in range(355):
+                (overlays / f"{index:03d}.dylib").write_bytes(b"")
+            cases = catalog(root / "cases.json")
+            catalog_value = pair.run_cases.load_case_catalog(cases)
+            catalog_hash = sha(json.dumps(catalog_value, sort_keys=True, ensure_ascii=False,
+                                          separators=(",", ":")).encode())
+            renderer_profile = {
+                "schema": renderer_batch.SCHEMA, "id": "renderer-test",
+                "case_catalog_sha256": catalog_hash, "candidate_mode": "verify",
+                "minimum_decodes": 1, "coverage_scope": "run_total",
+            }
+            profile_path = put(root / "renderer.json", json.dumps(renderer_profile).encode())
+            game_font = put(root / "game-font.ttc", b"font")
+            inputs = pair.PairInputs(
+                baseline_build=root / "baseline.json", candidate_build=root / "candidate.json",
+                registration=root / "registration.json", overlays=overlays, cases=cases,
+                launcher=root / "launcher", python=root / "python", output=root / "dist",
+                repo=root, game_font=game_font, renderer_profile=profile_path)
+            builds = {
+                role: {"role": role, "observer_commit": "a" * 40,
+                       "recorder_revision": "source-sha256:" + "b" * 64,
+                       "build_config_sha256": "c" * 64}
+                for role in ("baseline", "candidate")}
+            preflight = {"configuration_sha256": "d" * 64}
+            with (mock.patch.object(pair, "_registration", return_value=({"identity": {}}, {})),
+                  mock.patch.object(pair, "_build", side_effect=lambda _path, role, _registration: builds[role]),
+                  mock.patch.object(pair, "_preflight", return_value=preflight)):
+                with self.assertRaisesRegex(pair.PairError, "supplemental texture preflights"):
+                    pair.package_pair(inputs, enforce_local_output=False)
+                renderer_profile["case_catalog_sha256"] = "0" * 64
+                profile_path.write_text(json.dumps(renderer_profile))
+                with self.assertRaisesRegex(renderer_batch.RendererBatchError, "catalog hash differs"):
+                    pair.package_pair(inputs, enforce_local_output=False)
+
     def test_baseline_build_binds_the_observer_checkout(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -328,6 +368,34 @@ class PairPackagingTests(unittest.TestCase):
                     work_root=root / "runs", output=published, batch_id="test-pair", runner=signed,
                     execution_profile=vector_profile, mode_schema=native_modes.V2_SCHEMA,
                     texture_schema=texture_decode_policy.SCHEMA)
+                renderer_profile = renderer_batch.validate_profile({
+                    "schema": renderer_batch.SCHEMA, "id": "renderer-test",
+                    "case_catalog_sha256": catalog_hash, "candidate_mode": "verify",
+                    "minimum_decodes": 1, "coverage_scope": "run_total",
+                }, pair.run_cases.load_case_catalog(cases))
+                renderer_args = dict(
+                    launcher=launcher, scripts=[TOOLS / name for name in (
+                        "run_package.py", "run_cases.py", "native_batch.py", "native_modes.py",
+                        "renderer_batch.py", "texture_decode_policy.py", "compare_test_runs.py",
+                        "launch_test_run.py")], cases=cases, python=python, overlays=overlays,
+                    libraries={"libMoltenVK.dylib": moltenvk}, font=font,
+                    settings_hash="e" * 64,
+                    settings={"ui.language": "zh-CN", "text.font": str(font)},
+                    registration=registration,
+                    sources={"iso": str(iso), "elf": str(elf), "snapshot": str(snapshot_files.parent)},
+                    overlay_tree=overlay_tree, overlay_id=register_baseline._tree_id(overlay_tree),
+                    work_root=root / "runs", output=published, batch_id="renderer-test", runner=signed,
+                    execution_profile=vector_profile, renderer_profile=renderer_profile,
+                    mode_schema=native_modes.V2_SCHEMA, texture_schema=texture_decode_policy.SCHEMA)
+                renderer_baseline = pair._bundle_app(
+                    stage / "Yakumo Renderer Baseline.app", role="baseline", build=build,
+                    **renderer_args)
+                renderer_candidate = pair._bundle_app(
+                    stage / "Yakumo Renderer Candidate.app", role="candidate",
+                    build={**build, "baseline_source_content_sha256": ""}, **renderer_args)
+                with self.assertRaisesRegex(pair.PairError, "requires the supplemental"):
+                    pair._bundle_app(stage / "Yakumo Invalid Renderer.app", role="candidate",
+                                     build=build, **{**renderer_args, "texture_schema": None})
             stage.rename(published)
             app = published / "Yakumo Baseline.app"
             self.assertEqual(config["binary"]["sha256"], pair._hash(app / "Contents/MacOS/YakumoGame"))
@@ -426,6 +494,59 @@ class PairPackagingTests(unittest.TestCase):
             self.assertEqual(vector_candidate[texture_decode_policy.MODE_FIELD], "off")
             self.assertTrue((published / "Yakumo Candidate V2.app/Contents/Resources/testing/native_modes.py").is_file())
             self.assertTrue((published / "Yakumo Candidate V2.app/Contents/Resources/testing/texture_decode_policy.py").is_file())
+            profile_hash = renderer_batch.profile_sha256(renderer_profile)
+            self.assertEqual(renderer_baseline["renderer_profile_sha256"], profile_hash)
+            self.assertEqual(renderer_candidate["renderer_profile_sha256"], profile_hash)
+            self.assertEqual(renderer_baseline[texture_decode_policy.MODE_FIELD], "off")
+            self.assertEqual(renderer_candidate[texture_decode_policy.MODE_FIELD], "verify")
+            self.assertEqual(renderer_candidate["native_modes"], vector_profile["candidate_modes"])
+            for role in ("Baseline", "Candidate"):
+                testing = published / f"Yakumo Renderer {role}.app/Contents/Resources/testing"
+                self.assertEqual(json.loads((testing / "renderer-profile.json").read_text()),
+                                 renderer_profile)
+                self.assertTrue((testing / "renderer_batch.py").is_file())
+            with mock.patch.object(launch_test_run.run_package, "SUPPORTED_ELF_SHA256", sha(b"ELF")):
+                loaded_renderer = launch_test_run._load_config(
+                    published / "Yakumo Renderer Candidate.app/Contents/Resources/testing/launch-config.json")
+            renderer_preflight = dict(preflight, **{
+                "native_mode_schema": native_modes.V2_SCHEMA,
+                texture_decode_policy.SCHEMA_FIELD: texture_decode_policy.SCHEMA,
+                texture_decode_policy.MODE_FIELD: "verify",
+                "renderer_profile_sha256": renderer_batch.profile_sha256(renderer_profile)})
+            preflight_path.write_text(json.dumps(renderer_preflight))
+            self.assertEqual(launch_test_run._read_preflight(preflight_path, 0, False, loaded_renderer),
+                             renderer_preflight)
+            renderer_preflight["renderer_profile_sha256"] = "0" * 64
+            preflight_path.write_text(json.dumps(renderer_preflight))
+            with self.assertRaisesRegex(launch_test_run.LaunchError, "renderer profile digest differs"):
+                launch_test_run._read_preflight(preflight_path, 0, False, loaded_renderer)
+            del renderer_preflight["renderer_profile_sha256"]
+            preflight_path.write_text(json.dumps(renderer_preflight))
+            with self.assertRaisesRegex(launch_test_run.LaunchError, "preflight schema or fields differ"):
+                launch_test_run._read_preflight(preflight_path, 0, False, loaded_renderer)
+            renderer_preflight["renderer_profile_sha256"] = renderer_batch.profile_sha256(renderer_profile)
+            renderer_preflight[texture_decode_policy.MODE_FIELD] = "off"
+            preflight_path.write_text(json.dumps(renderer_preflight))
+            with self.assertRaisesRegex(launch_test_run.LaunchError, "texture decode policy differs"):
+                launch_test_run._read_preflight(preflight_path, 0, False, loaded_renderer)
+            with mock.patch.dict("os.environ", {
+                    launch_test_run.RENDERER_PROFILE_ENVIRONMENT: "f" * 64,
+                    texture_decode_policy.ENVIRONMENT: "native"}):
+                renderer_env = launch_test_run._environment(loaded_renderer, root, "run-renderer")
+                legacy_env = launch_test_run._environment(loaded, root, "run-legacy")
+            self.assertEqual(renderer_env[launch_test_run.RENDERER_PROFILE_ENVIRONMENT], profile_hash)
+            self.assertEqual(renderer_env[texture_decode_policy.ENVIRONMENT], "verify")
+            self.assertNotIn(launch_test_run.RENDERER_PROFILE_ENVIRONMENT, legacy_env)
+            self.assertEqual(legacy_env[texture_decode_policy.ENVIRONMENT], "off")
+            self.assertNotIn("renderer_profile_sha256", launch_test_run._context(loaded_renderer, "run-renderer"))
+            for wrong in (dict(renderer_candidate, renderer_profile_sha256="ABC"),
+                          dict(renderer_candidate, texture_decode_mode="off"),
+                          {key: value for key, value in renderer_candidate.items()
+                           if key != texture_decode_policy.MODE_FIELD},
+                          {key: value for key, value in renderer_candidate.items()
+                           if key not in texture_decode_policy.FIELDS}):
+                with self.assertRaises(launch_test_run.LaunchError):
+                    load_v2(wrong)
 
 
 if __name__ == "__main__":
