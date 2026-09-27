@@ -2,7 +2,7 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-27T05:09:24Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-27T07:33:43Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -147,7 +147,9 @@ Finite work beneath these ongoing workstreams:
 - [ ] **VEC-003** — Add bounded observations and evidence-based user cases for that module.
 - [x] **ASSET-001** — Certify nested indexed resource-bundle boundaries from original consumers.
 - [x] **ASSET-002** — Implement a portable bundle view and provenance-preserving offline validation.
-- [ ] **ASSET-003** — Certify the internal layout of TMH-marked children using original consumers.
+- [x] **ASSET-003** — Certify the internal layout of TMH-marked children using original consumers.
+- [x] **ASSET-004** — Implement owned encoded TMH views and the original descriptor/corpus gate.
+- [ ] **ASSET-005** — Establish explicit texture layout, stride/extent and pixel-decoder inputs.
 
 The initial inventory is [NATIVE_MODULES.md](NATIVE_MODULES.md); finite requirements are in [NEXT_NATIVE_BATCHES.md](NEXT_NATIVE_BATCHES.md). ITER-001/002 stay in progress as workstreams. Finite tasks depend on INV-001 or other finite prerequisites, not on treating an ongoing workstream as already finished.
 
@@ -240,7 +242,7 @@ For each finite implementation task:
 
 Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 through OBS-004 and PAIR-001 are completed. PAIR-002 and PAIR-003 are completed; CASE-001 and CASE-002 are completed; FONT-001 is completed after user visual confirmation; INV-001 and NAT-001 are completed; NAT-002 and VEC-001 are completed; VEC-002 is completed; NAT-003 awaits user execution while VEC-003 awaits the separate discovery pair.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
 
-Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. ASSET-001 completed a static consumer and retained-pointer lifetime contract. ASSET-002 completed the portable shared-storage view and original-consumer/corpus gate; ASSET-003 is the next independent child-format contract. Both delivered user pairs remain unchanged. Continue with VEC-003, certified vector observations and startup/mode integration, while NAT-003 awaits the user. The first inventory and mode-aware offline gate are complete. The first user pair has been received and analyzed with explicit limits. PAIR-002 now supplies independent signed applications and a verified preparation-only launcher flow. PAIR-001 panel/controller integration passed offline tests; its contracts and limitations are in docs/TEST_SESSION_PANEL.md. Use the marker, counter-boundary, context and comparison contracts in docs/RUN_COMPARISON.md. OBS-004 packaging and comparison passed offline tests, including actual C++ writer integration; its local validation report and visual-preview limitation are recorded in the ledger. OBS-003 production-object probes, guarded state/performance readers and lifecycle checks passed offline; exact evidence and limitations are in docs/CERTIFIED_PROBES.md and the ledger. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
+Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. ASSET-001 through ASSET-004 are completed: indexed resource views and encoded TMH descriptors have original-code/corpus evidence. ASSET-005 is the next independent texture-layout and pixel-decoder contract. Both delivered user pairs remain unchanged. Continue with ASSET-005 while NAT-003 and VEC-003 await their already delivered user cases. Analyze incoming user packages without altering those apps. The first inventory and mode-aware offline gate are complete. The first user pair has been received and analyzed with explicit limits. PAIR-002 now supplies independent signed applications and a verified preparation-only launcher flow. PAIR-001 panel/controller integration passed offline tests; its contracts and limitations are in docs/TEST_SESSION_PANEL.md. Use the marker, counter-boundary, context and comparison contracts in docs/RUN_COMPARISON.md. OBS-004 packaging and comparison passed offline tests, including actual C++ writer integration; its local validation report and visual-preview limitation are recorded in the ledger. OBS-003 production-object probes, guarded state/performance readers and lifecycle checks passed offline; exact evidence and limitations are in docs/CERTIFIED_PROBES.md and the ledger. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
 
 #### Paired delivery checkpoint and next action
 
@@ -311,3 +313,22 @@ Signatures remain annotations: 11 candidate nodes have only bounds evidence,
 and no child semantics or live loader replacement is claimed. Implementation `903b0f3` is published in draft PR [#20](https://github.com/etsusei/Yakumo/pull/20). See
 [INDEXED_RESOURCE_VIEWS.md](INDEXED_RESOURCE_VIEWS.md). Continue ASSET-003 while
 NAT-003/VEC-003 await user operation; preserve all delivered apps and raw assets.
+
+
+### Encoded TMH checkpoint
+
+ASSET-003/004 completed the static TMH consumer contract and portable owned
+encoded views. Discovery includes 2,244 indexed children and 12 standalone
+entries; all 8,866 descriptors match the production AOT and bounded interpreter.
+The 27 core checks, five structural checks, two CTests and sanitizers pass.
+Padding, standalone tails and unknown words remain intact. No pixels or game
+were rendered. During review, the GE C2 branch was corrected before publication:
+this builder selects swizzle1 for indexed4/5 and0 for DXT formats. A8 keeps the
+raw width while B8 uses a verified ceil(log2) table. ASSET-005 must preserve the
+stride/extent distinction and explicit context instead of guessing file layout.
+See [OWNED_TMH_VIEWS.md](OWNED_TMH_VIEWS.md). Both user test pairs stay unchanged.
+
+
+The encoded TMH implementation `ccdb564` is published in draft PR
+[#21](https://github.com/etsusei/Yakumo/pull/21). See
+`out/testing/tmh-native-validation.json` for source/executable identities.

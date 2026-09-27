@@ -142,8 +142,10 @@ gate; signatures remain annotations, not semantic or live-coverage proof.
 See [RESOURCE_BUNDLE_CONTRACT.md](RESOURCE_BUNDLE_CONTRACT.md) and
 [INDEXED_RESOURCE_VIEWS.md](INDEXED_RESOURCE_VIEWS.md).
 
-The next boundary is a separately validated child format, beginning with the
-repeated TMH-marked children. It must establish internal offsets, image format,
-lengths, transforms and ownership before reusing the existing native texture
-decoder or claiming render compatibility. Do not count the bundle index as a
-model, skeleton, animation or collision decoder.
+ASSET-003/004 subsequently recovered TMH record and descriptor semantics and
+implemented owned encoded image/palette views. All 2,256 discovered TMH inputs
+and 8,866 descriptors pass the bounded original-code gate. See
+[OWNED_TMH_VIEWS.md](OWNED_TMH_VIEWS.md). Pixel layout/swizzle remains contextual;
+the next boundary must use explicit layout evidence before reusing the native
+texture decoder or claiming render compatibility. Neither reader is a model,
+skeleton, animation or collision decoder.
