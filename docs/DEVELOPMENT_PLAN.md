@@ -2,7 +2,7 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-27T04:43:43Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-27T05:09:24Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -139,10 +139,10 @@ Finite work beneath these ongoing workstreams:
 
 - [x] **INV-001** — Complete the initial source-based module inventory and finite batch contracts.
 - [x] **NAT-001** — Implement explicit scale/copy native execution profiles, gates and production chained-call checks.
-- [ ] **NAT-002** — Deliver the matched one-case native execution pair.
+- [x] **NAT-002** — Deliver the matched one-case native execution pair.
 - [ ] **NAT-003** — User executes the paired native data case.
 - [ ] **NAT-004** — Analyze actual native execution and retain scoped acceptance or off defaults.
-- [ ] **VEC-001** — Certify the four vector-metric contracts and numerical/state behavior offline.
+- [x] **VEC-001** — Certify the four vector-metric contracts and numerical/state behavior offline.
 - [ ] **VEC-002** — Implement a portable vector-metric core, adapters and differential tests.
 - [ ] **VEC-003** — Add bounded observations and evidence-based user cases for that module.
 
@@ -235,9 +235,9 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 through OBS-004 and PAIR-001 are completed. PAIR-002 and PAIR-003 are completed; CASE-001 and CASE-002 are completed; FONT-001 is completed after user visual confirmation; INV-001 and NAT-001 are completed; NAT-002 is next.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
+Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 through OBS-004 and PAIR-001 are completed. PAIR-002 and PAIR-003 are completed; CASE-001 and CASE-002 are completed; FONT-001 is completed after user visual confirmation; INV-001 and NAT-001 are completed; NAT-002 and VEC-001 are completed; NAT-003 awaits user execution while VEC-002 is ready.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
 
-Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with NAT-002, the matched native-mode pair and one fresh village case. The first inventory and mode-aware offline gate are complete. The first user pair has been received and analyzed with explicit limits. PAIR-002 now supplies independent signed applications and a verified preparation-only launcher flow. PAIR-001 panel/controller integration passed offline tests; its contracts and limitations are in docs/TEST_SESSION_PANEL.md. Use the marker, counter-boundary, context and comparison contracts in docs/RUN_COMPARISON.md. OBS-004 packaging and comparison passed offline tests, including actual C++ writer integration; its local validation report and visual-preview limitation are recorded in the ledger. OBS-003 production-object probes, guarded state/performance readers and lifecycle checks passed offline; exact evidence and limitations are in docs/CERTIFIED_PROBES.md and the ledger. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
+Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with VEC-002, the vector-metric implementation and generated-AOT oracle gate, while NAT-003 awaits the user. The first inventory and mode-aware offline gate are complete. The first user pair has been received and analyzed with explicit limits. PAIR-002 now supplies independent signed applications and a verified preparation-only launcher flow. PAIR-001 panel/controller integration passed offline tests; its contracts and limitations are in docs/TEST_SESSION_PANEL.md. Use the marker, counter-boundary, context and comparison contracts in docs/RUN_COMPARISON.md. OBS-004 packaging and comparison passed offline tests, including actual C++ writer integration; its local validation report and visual-preview limitation are recorded in the ledger. OBS-003 production-object probes, guarded state/performance readers and lifecycle checks passed offline; exact evidence and limitations are in docs/CERTIFIED_PROBES.md and the ledger. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
 
 #### Paired delivery checkpoint and next action
 
@@ -255,9 +255,11 @@ The delivered apps remain under `out/testing/dist/initial-batch/`, built from ob
 
 INV-001 now maps 15 source-anchored architecture areas and records static callers for the three untriggered leaves. Their 17/1/2 base JAL references and overlay references do not establish live coverage. Four vector-metric spans were independently fingerprinted as the next coherent module candidate; VEC-001 still needs the exact numerical/state contract before implementation.
 
-**Resume NAT-002.** NAT-001 added the explicit scale/copy-native profile, separate native_execution gate and production AOT chained-call checks. Nine integrated CTests and the original-code harness passed. Create a fresh one-case catalog requiring both scale and copy, matched B0/candidate observations and font configuration, and a signed preparation-only pair. Existing all-verify apps stay historical references. Do not treat native-only execution as same-input verification, do not enable new defaults, and do not claim support for runtime code patches.
+**NAT-003 awaits the user.** The matched native-data applications are ready in `out/testing/dist/native-data/`, with Chinese `START_HERE.md`. The one-case catalog hash is `a1f1aa5cabf652fc2bd150ec205483c3d39d61e4dfd455bb288263ee41d94b76`; both profiles and actual prepared settings passed signed readiness and the 43-glyph game-font check. Candidate uses native scale/copy; Baseline keeps all replacements off. Other replacements stay off and probes stay all. The previous apps/records remain unchanged. Use [NATIVE_DATA_CASE.md](NATIVE_DATA_CASE.md); the user does not repeat the four-case initial batch. Analyze actual native-data records under the explicit execution profile in NAT-004; no same-input or performance conclusion is inferred from native-only execution.
 
-VEC-001 is independently ready for offline contract work; preserve the full broader migration scope. The inventory and native pilot do not establish migrated animation, AI, collision, quests or networking.
+**Resume VEC-002 independently.** VEC-001 recorded exact vector inputs, 16-byte loads, stack scratch, VFPU state and prefixes from 11,604 bounded interpreter calls. Primary reruns reproduced the report. FMA-based finite calculations match that interpreter object; ordinary scalar multiply-add does not. This is not yet proof about generated AOT or physical PSP arithmetic. Before accepting a native implementation, run the actual production AOT differential gate described in [VECTOR_METRICS_CONTRACT.md](VECTOR_METRICS_CONTRACT.md). Preserve whole-state, alias, canary and numerical edge coverage; keep new modes off by default.
+
+The delivered NAT-002 source is `73abb64`; its B0 snapshot is `out/testing/observed-sources/B0-native-data-73abb64` with build at its `out/mhp3rd`. The current checkout may advance independently. Do not replace the delivered apps while the user tests. The inventory and native pilot do not establish migrated animation, AI, collision, quests or networking.
 
 The pair pins an installed Python interpreter and local resource paths; it is not a portable standalone distribution. A successful preparation or complete record is not gameplay acceptance. The first user-led cases are recorded, and broader animation, AI, collision and combat claims remain pending relevant cases.
 

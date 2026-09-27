@@ -62,7 +62,7 @@ The next coherent new-module candidate is **three-dimensional vector metrics**:
 | three lane distance | `0x08877280` | 40 bytes | `977da7d41ecfd722f43c497c0f4627bb4faa7d57126d1cefa8f92138115b02a1` |
 | three lane distance squared | `0x088772A8` | 36 bytes | `05771b861950457e9e065384220c69cc255874d63fe09e62face44defea00d36` |
 
-These four local spans use three-lane VFPU operations, optional subtraction/square root, stack scratch and FPR0 output, with no nested call/HLE site in the inspected spans. The primary agent independently recomputed all four span hashes from the ELF program headers. Prefix consumption, rounding, signed zero/NaNs/infinities, scratch writes, source aliases and full final CPU state still need a formal contract and differential audit. Do not substitute host `sqrt` or a generic dot-product library on name alone. No implementation or live coverage is claimed for this family yet.
+These four local spans use three-lane VFPU operations, optional subtraction/square root, stack scratch and FPR0 output, with no nested call/HLE site in the inspected spans. The primary agent independently recomputed all four span hashes from the ELF program headers. The bounded software-interpreter contract is now recorded in [VECTOR_METRICS_CONTRACT.md](VECTOR_METRICS_CONTRACT.md), with 11,604 original-instruction runs and explicit prefix, scratch, alias and numeric evidence. Actual generated-AOT and native-implementation differential gates remain VEC-002. Do not substitute host `sqrt` or a generic dot-product library on name alone. No implementation or live coverage is claimed for this family yet.
 
 ## Finite next batches
 

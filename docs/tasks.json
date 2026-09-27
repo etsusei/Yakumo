@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 60,
+  "revision": 61,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T04:57:00Z",
+  "updated_at": "2026-09-27T05:09:24Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -377,12 +377,13 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "NAT-002",
-    "next_task_id": "NAT-003",
-    "next_action": "Prepare the one-case scale/copy native pilot with an explicit execution profile, both-role matched observer builds, pinned game font and distinct app identities. Exercise signed preparation-only readiness before user handoff; do not launch or navigate the game automatically. VEC-001 remains a ready independent offline contract audit for the new vector-metric module.",
+    "current_task_id": "VEC-002",
+    "next_task_id": "VEC-003",
+    "next_action": "While NAT-003 awaits the one-case user pair, implement the vector metric module under VEC-002. First cross-check the actual generated AOT leaves against the bounded interpreter and resolve FMA/numerical contract evidence; do not assume scalar multiply-add equivalence. Keep defaults off and existing delivered native-data apps unchanged. Analyze actual native-data packages in NAT-004 when the user finishes; preparation records are not acceptance.",
     "implementation_after_documentation_started": true,
-    "parallel_task_ids": [
-      "VEC-001"
+    "parallel_task_ids": [],
+    "awaiting_user_task_ids": [
+      "NAT-003"
     ]
   },
   "references": {
@@ -409,7 +410,9 @@
     "first_acceptance_pr": "https://github.com/etsusei/Yakumo/pull/13",
     "game_font_regression_report": "docs/GAME_FONT_REGRESSION.md",
     "game_font_fix_pr": "https://github.com/etsusei/Yakumo/pull/14",
-    "native_inventory_and_execution_pr": "https://github.com/etsusei/Yakumo/pull/15"
+    "native_inventory_and_execution_pr": "https://github.com/etsusei/Yakumo/pull/15",
+    "native_data_pilot_guide": "docs/NATIVE_DATA_CASE.md",
+    "vector_metrics_contract": "docs/VECTOR_METRICS_CONTRACT.md"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -4048,7 +4051,7 @@
         "/root/native_rollout_audit"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-27T04:32:05Z",
+      "updated_at": "2026-09-27T05:09:24Z",
       "started_at": "2026-09-27T04:19:28Z",
       "completed_at": null,
       "timestamp_note": null,
@@ -4057,7 +4060,7 @@
         "CASE-002",
         "FONT-001"
       ],
-      "work_summary": "Initial finite inventory INV-001 is complete; the workstream continues as contracts and modules are researched. Next new-module audit is VEC-001.",
+      "work_summary": "Initial inventory INV-001 and bounded vector contract VEC-001 are complete. The workstream continues tracking remaining guest dependencies and future module contracts.",
       "deliverables": [
         {
           "path": "docs/NATIVE_MODULES.md",
@@ -4126,7 +4129,7 @@
         "/root"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-27T04:32:05Z",
+      "updated_at": "2026-09-27T05:09:24Z",
       "started_at": "2026-09-27T04:32:05Z",
       "completed_at": null,
       "timestamp_note": null,
@@ -4134,7 +4137,7 @@
       "depends_on": [
         "INV-001"
       ],
-      "work_summary": "Finite scale/copy native execution tasks NAT-001 through NAT-004 and vector-module tasks VEC-002/003 are defined. Implementation begins with NAT-001; no user game launch requested yet.",
+      "work_summary": "NAT-001 policy and NAT-002 matched delivery are complete; NAT-003 awaits user native-mode execution. VEC-002 is ready for independent implementation beginning with the generated-AOT numerical gate.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/testing/cases",
@@ -4414,22 +4417,22 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
         "/root"
       ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T04:57:00Z",
+      "updated_at": "2026-09-27T05:09:24Z",
       "started_at": "2026-09-27T04:48:42Z",
-      "completed_at": null,
+      "completed_at": "2026-09-27T05:09:24Z",
       "timestamp_note": null,
       "scope": "Assemble versioned B0/candidate apps with matched observers, verified game font and one finite village case requiring scale and copy.",
       "depends_on": [
         "NAT-001"
       ],
-      "work_summary": "Authored one finite native-data village case with both scale/copy required, an exact mode profile and four Chinese strings. Host/launcher/fixture builds and nine relevant CTests passed. Final matched B0/candidate source identities, signed assembly and preparation-only readiness remain pending.",
+      "work_summary": "Delivered signed source-bound native-data pair with one Chinese NATIVE-DATA-01 case and explicit profile: candidate scale/copy native, other three off; Baseline all off, all probes selected. Both final builds, 21 preflight checks, 9 relevant CTests, production AOT harnesses,actual native preparation-only readiness and 43-glyph checks per prepared role passed. Distinct batch app identities,verified font and immutable prior apps retained. No game launched; NAT-003 awaits user execution.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/testing/cases/native_data_batch.json",
@@ -4440,7 +4443,7 @@
         {
           "path": "out/testing/dist/native-data",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         },
         {
@@ -4460,6 +4463,78 @@
           "kind": "documentation",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "out/testing/native-data-readiness.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/native-data-preflight.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/native-data-ctest.log",
+          "kind": "log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/native-data-baseline-aot.log",
+          "kind": "log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/native-data-candidate-aot.log",
+          "kind": "log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/native-data-baseline-font.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/native-data-candidate-font.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/native-data/START_HERE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-sources/B0-native-data-73abb64/observed_baseline_manifest.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/native-data-73abb64/baseline.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/native-data-73abb64/candidate.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/native-data-73abb64/Yakumo-Candidate-73abb64",
+          "kind": "binary",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -4468,10 +4543,26 @@
         "Original apps/records preserved; no automatic gameplay."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Native-data source/build/catalog and signed preparation",
+            "status": "passed",
+            "evidence": "out/testing/native-data-readiness.json",
+            "ctests": 9,
+            "preflight_checks": 21,
+            "font_glyphs_per_role": 43,
+            "game_launched": false
+          }
+        ],
+        "limitations": [
+          "Actual native-mode gameplay and normal user outcomes are pending NAT-003/004.",
+          "5\u201310-minute combined time remains an estimate.",
+          "Controlled original-code/no-mod scope; no post-install patch compatibility or native-default activation."
+        ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "73abb64"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -4492,6 +4583,15 @@
           "from_status": "in_progress",
           "to_status": "in_progress",
           "description": "Authored one finite native-data village case with both scale/copy required, an exact mode profile and four Chinese strings. Host/launcher/fixture builds and nine relevant CTests passed. Final matched B0/candidate source identities, signed assembly and preparation-only readiness remain pending."
+        },
+        {
+          "recorded_at": "2026-09-27T05:09:24Z",
+          "occurred_at": "2026-09-27T05:09:24Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Delivered signed source-bound native-data pair with one Chinese NATIVE-DATA-01 case and explicit profile: candidate scale/copy native, other three off; Baseline all off, all probes selected. Both final builds, 21 preflight checks, 9 relevant CTests, production AOT harnesses,actual native preparation-only readiness and 43-glyph checks per prepared role passed. Distinct batch app identities,verified font and immutable prior apps retained. No game launched; NAT-003 awaits user execution."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -4502,12 +4602,12 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "awaiting_user_test",
       "owner_agent_id": null,
       "responsible_actor_id": "project-owner",
       "contributor_agent_ids": [],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T04:32:05Z",
+      "updated_at": "2026-09-27T05:09:24Z",
       "started_at": null,
       "completed_at": null,
       "timestamp_note": null,
@@ -4515,12 +4615,12 @@
       "depends_on": [
         "NAT-002"
       ],
-      "work_summary": "Planned finite task; no execution claimed.",
+      "work_summary": "One-case native-data apps and Chinese guide are ready under out/testing/dist/native-data. User runs Baseline then Candidate and completes NATIVE-DATA-01; preparation-only runs do not count as gameplay evidence.",
       "deliverables": [
         {
           "path": "out/testing/runs",
           "kind": "directory",
-          "state": "planned",
+          "state": "existing",
           "local_only": true
         }
       ],
@@ -4535,7 +4635,17 @@
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T05:09:24Z",
+          "occurred_at": "2026-09-27T05:09:24Z",
+          "actor_id": "/root",
+          "action": "ready_for_user",
+          "from_status": "not_started",
+          "to_status": "awaiting_user_test",
+          "description": "One-case native-data apps and Chinese guide are ready under out/testing/dist/native-data. User runs Baseline then Candidate and completes NATIVE-DATA-01; preparation-only runs do not count as gameplay evidence."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
@@ -4587,33 +4697,58 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-001",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root/vector_metrics_contract",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
-        "/root/vector_metrics_contract"
+        "/root/vector_metrics_contract",
+        "/root"
       ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T04:48:42Z",
+      "updated_at": "2026-09-27T05:09:24Z",
       "started_at": "2026-09-27T04:48:42Z",
-      "completed_at": null,
+      "completed_at": "2026-09-27T05:09:24Z",
       "timestamp_note": null,
       "scope": "Audit three-lane norm/norm-squared/distance/distance-squared spans and oracle feasibility before portable implementation.",
       "depends_on": [
         "INV-001"
       ],
-      "work_summary": "Auditing exact vector metric inputs, scratch writes, prefixes and numerical semantics through bounded original-code probes in parallel with native-data delivery.",
+      "work_summary": "Recorded exact four-leaf inputs, 16-byte loads, stack scratch, VFPU/control state and prefix/numeric behavior from 11,604 bounded interpreter runs. Primary reran both agent and CMake-built probes with identical results. Fused model matches 8,192 finite comparisons on this Apple Silicon interpreter object; unfused models differ. No native adapter or actual generated-AOT equivalence is claimed; VEC-002 must resolve that gate.",
       "deliverables": [
         {
           "path": "docs/VECTOR_METRICS_CONTRACT.md",
           "kind": "documentation",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "out/testing/vector-metrics-contract.json",
           "kind": "report",
-          "state": "planned",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/tests/vector_metrics_contract_probe.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/vector-metrics-contract-primary.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-metrics-contract-cmake.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-metrics-contract-build.log",
+          "kind": "log",
+          "state": "existing",
           "local_only": true
         }
       ],
@@ -4623,8 +4758,26 @@
         "Supported/unsupported edge cases and independent-oracle limits are explicit."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Bounded interpreter contract audit and independent reruns",
+            "status": "passed",
+            "evidence": [
+              "out/testing/vector-metrics-contract.json",
+              "out/testing/vector-metrics-contract-primary.json",
+              "out/testing/vector-metrics-contract-cmake.json"
+            ],
+            "runs": 11604,
+            "finite_model_comparisons": 8192,
+            "generated_aot_executed": false,
+            "game_launched": false
+          }
+        ],
+        "limitations": [
+          "Generated AOT must be cross-checked before VEC-002 support claims.",
+          "FMA observation is compiler/object/sample-specific, not physical PSP arithmetic or cross-platform proof.",
+          "No native adapter, actual fallback or live caller coverage has been implemented."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
@@ -4638,6 +4791,15 @@
           "from_status": "not_started",
           "to_status": "in_progress",
           "description": "Auditing exact vector metric inputs, scratch writes, prefixes and numerical semantics through bounded original-code probes in parallel with native-data delivery."
+        },
+        {
+          "recorded_at": "2026-09-27T05:09:24Z",
+          "occurred_at": "2026-09-27T05:09:24Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Recorded exact four-leaf inputs, 16-byte loads, stack scratch, VFPU/control state and prefix/numeric behavior from 11,604 bounded interpreter runs. Primary reran both agent and CMake-built probes with identical results. Fused model matches 8,192 finite comparisons on this Apple Silicon interpreter object; unfused models differ. No native adapter or actual generated-AOT equivalence is claimed; VEC-002 must resolve that gate."
         }
       ],
       "updated_by_agent_id": "/root"

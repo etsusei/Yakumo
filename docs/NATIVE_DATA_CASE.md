@@ -53,3 +53,14 @@ or zero calls cannot pass this strict pilot. The other three helpers remain
 explicitly uncovered unless separately observed; this case does not accept
 them. Runtime patches/mods and new default-native enablement are outside this
 controlled batch.
+
+## Recorded delivery
+
+The local signed pair built from `73abb64` is ready under
+`out/testing/dist/native-data/`, with its Chinese `START_HERE.md`. Nine relevant
+CTests, 21 real-binary preflight checks, both production AOT harnesses and the
+actual native launchers' preparation-only flow passed. Both prepared settings
+also passed all 43 game-font glyph checks. `out/testing/native-data-readiness.json`
+binds the declared execution profile and delivered catalog. No game was
+launched; actual native-mode case execution remains NAT-003, and analysis must
+retain the mode-specific evidence limits above.
