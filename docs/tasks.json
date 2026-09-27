@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 118,
+  "revision": 120,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T12:57:08Z",
+  "updated_at": "2026-09-27T13:21:54Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -658,6 +658,22 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_command_plan",
+      "type": "agent",
+      "role": "Owned texture-command prepare, compare and one-shot commit API",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_observation_seams",
+      "type": "agent",
+      "role": "Original AOT observation checkpoint audit and build-local instrumentation prototype",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -697,9 +713,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "ASSET-013",
+    "current_task_id": "ASSET-014",
     "next_task_id": "ASSET-014",
-    "next_action": "Integrate certified original resource lifecycle/transfer observations with source authority and a prepare/verify/commit texture-command path. Keep default Off and Baseline original. Prove hook completeness and actual AOT dispatch offline before building new paired apps; any delivery must set the current gameplay source commit explicitly. No manual test is requested yet.",
+    "next_action": "Implement and validate actual AOT entry/return callbacks and lifecycle observation producers from TEXTURE_OBSERVATION_INTEGRATION.md. The prepared-plan core has passed its full corpus and sanitizer gates; do not rerun those unchanged merely to resume. Injector output is not compiled or wired. Keep ASSET-014 in progress, default Off and Baseline original; no manual test requested before a related delivery.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": []
@@ -1132,7 +1148,7 @@
       "depends_on": [
         "FOUND-004"
       ],
-      "work_summary": "Root consolidated two read-only subagent audits and user choices: Mac first, expanded offline migration, current Chinese baseline with experiments off, Chinese case panel, 15\u201330-minute paired batches, and full raw extraction first.",
+      "work_summary": "Root consolidated two read-only subagent audits and user choices: Mac first, expanded offline migration, current Chinese baseline with experiments off, Chinese case panel, 15–30-minute paired batches, and full raw extraction first.",
       "deliverables": [
         {
           "path": "docs/DEVELOPMENT_PLAN.md",
@@ -1166,7 +1182,7 @@
           "action": "historical_completion_registered",
           "from_status": null,
           "to_status": "completed",
-          "description": "Root consolidated two read-only subagent audits and user choices: Mac first, expanded offline migration, current Chinese baseline with experiments off, Chinese case panel, 15\u201330-minute paired batches, and full raw extraction first.",
+          "description": "Root consolidated two read-only subagent audits and user choices: Mac first, expanded offline migration, current Chinese baseline with experiments off, Chinese case panel, 15–30-minute paired batches, and full raw extraction first.",
           "evidence_note": "Retrospective entry based on repository artifacts and prior conversation; not a new execution."
         }
       ],
@@ -3881,7 +3897,7 @@
       ],
       "acceptance_criteria": [
         "REC-01/02/03 and NATIVE-01 instructions in the Chinese panel.",
-        "Both builds together fit 15\u201330-minute target.",
+        "Both builds together fit 15–30-minute target.",
         "Readiness does not claim live or subjective acceptance."
       ],
       "validation": {
@@ -3927,7 +3943,7 @@
         ],
         "limitations": [
           "No physical controls, full game, native dialogs or subjective gameplay were exercised.",
-          "The combined 15\u201330-minute duration is a planning estimate; the user session has not been timed.",
+          "The combined 15–30-minute duration is a planning estimate; the user session has not been timed.",
           "NATIVE-01 requires real scale calls in both roles; other helpers remain discovery observations and zero calls is not_covered.",
           "Local applications depend on the pinned Python interpreter and registered resource paths on this Mac."
         ]
@@ -4903,7 +4919,7 @@
         ],
         "limitations": [
           "Actual native-mode gameplay and normal user outcomes are pending NAT-003/004.",
-          "5\u201310-minute combined time remains an estimate.",
+          "5–10-minute combined time remains an estimate.",
           "Controlled original-code/no-mod scope; no post-install patch compatibility or native-default activation."
         ]
       },
@@ -8384,28 +8400,114 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "in_progress",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
-        "/root"
+        "/root",
+        "/root/texture_command_plan",
+        "/root/texture_observation_seams"
       ],
       "created_at": "2026-09-27T12:54:25Z",
-      "updated_at": "2026-09-27T12:54:25Z",
-      "started_at": null,
+      "updated_at": "2026-09-27T13:21:54Z",
+      "started_at": "2026-09-27T13:16:30Z",
       "completed_at": null,
       "scope": "Connect certified original owner/command allocation, descriptor, transfer and invalidation observations to the source authority. Prepare a non-mutating guest command plan for verification and guarded commit, with explicit off/verify/native behavior, original fallback and scoped recording. Prove actual production call paths offline before a new user delivery.",
       "depends_on": [
         "ASSET-013",
         "ASSET-011"
       ],
-      "work_summary": "Planned integration after the portable authority passed its offline contract matrix. Existing applications and user records remain unchanged.",
+      "work_summary": "Prepared-plan API implemented and offline-validated: preparation and comparison do not mutate guest state; commit rejects stale input and consumes one-shot ownership. Complete original AOT/interpreter corpus agrees for 2256 inputs/4512 calls. Audited original observation checkpoints and added a fixture-tested, unwired AOT injector. Actual lifecycle producers, callback controller and production dispatch remain unfinished.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
           "kind": "contract",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/texture_commands_bridge.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/texture_commands_bridge.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_commands_bridge_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_command_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_texture_commands.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_command_runner.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/instrument_texture_commands.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_command_instrumentation.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_COMMAND_ADAPTER.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_OBSERVATION_INTEGRATION.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-observation-seams.json",
+          "kind": "analysis",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-plan-original-gate.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-plan-tests.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-plan-sanitizers.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -8417,8 +8519,36 @@
         "Retain no-command, alternate-file, multi-fragment live and broader gameplay gaps explicitly; create a related paired case only after integration/build/recording prerequisites pass."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Prepared-plan original differential gate",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-command-plan-original-gate.json",
+            "sha256": "8fbd60e01186e998d12af96f4f12c0e639c09606ac78f788940790ee377c3295",
+            "details": "2256 inputs,8866 descriptors,4512 original calls and11122 command slots; an additional36 synthetic calls/52 slots. Preparation precedes one original AOT and one interpreter execution in separate memories; both compare with the owned plan before its separate commit. Runner enforces exact plan_calls and binds source/binary identities."
+          },
+          {
+            "name": "Atomic rejection and plan ownership tests",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-command-plan-tests.log",
+              "out/testing/texture-command-plan-sanitizers.log"
+            ],
+            "details": "Apple Silicon macOS:10 modeled successes,68 atomic rejections,24 new plan checks. Strict C++20 conversion/sign warnings as errors passed for bridge and harness; AddressSanitizer/UndefinedBehaviorSanitizer passed with runtime sources. Full RAM/VRAM/CPU checks on preparation/rejection; region comparison, cross-instance refusal, stale inputs, move ownership and one-shot consumption."
+          },
+          {
+            "name": "Report validation and injector fixtures",
+            "status": "passed",
+            "details": "12 Python tests:5 report checks and7 injector tests. Local original generated unit shape accepted with one entry and both original returns. Injector output is not compiled or connected to CMake; no production-hook coverage is claimed."
+          }
+        ],
+        "limitations": [
+          "ASSET-014 remains in progress: actual owner/descriptor/worker lifecycle producers, authority serialization, callback header/controller, mode/probe recording and production dispatch are not installed.",
+          "The build-local injector is an unwired prototype; only generated-text shape and synthetic filesystem/anchor behavior are tested. No compiled callback or intra-unit execution claim.",
+          "Byte snapshots do not establish allocation lifetime, detect change-and-restore, or exclude concurrent mutation; production requires current source authority and exclusive execution context.",
+          "No-command adapter effects are covered offline, but source authority remains positive-only. Alternate-file, live multi-fragment, real scheduling and broader gameplay remain unverified.",
+          "No app build/replacement or game run. Existing accepted user recordings and native-data resolution waiver are preserved."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
@@ -8430,6 +8560,22 @@
           "actor_id": "/root",
           "action": "planned",
           "description": "Connect verified state/ABI components to actual original observations and guarded dispatch before preparing a related user batch."
+        },
+        {
+          "recorded_at": "2026-09-27T13:16:30Z",
+          "occurred_at": "2026-09-27T13:16:30Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Implementing a non-mutating texture-command plan and auditing actual AOT observation seams. Production authority event capture and guarded dispatch remain unfinished; existing delivered applications are unchanged."
+        },
+        {
+          "recorded_at": "2026-09-27T13:21:54Z",
+          "occurred_at": "2026-09-27T13:21:54Z",
+          "actor_id": "/root",
+          "action": "prepared_plan_gate_passed",
+          "description": "Prepared-plan API implemented and offline-validated: preparation and comparison do not mutate guest state; commit rejects stale input and consumes one-shot ownership. Complete original AOT/interpreter corpus agrees for 2256 inputs/4512 calls. Audited original observation checkpoints and added a fixture-tested, unwired AOT injector. Actual lifecycle producers, callback controller and production dispatch remain unfinished."
         }
       ],
       "updated_by_agent_id": "/root"

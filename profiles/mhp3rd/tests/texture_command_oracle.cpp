@@ -180,6 +180,17 @@ public:
                 expected.gpr[9] = words[1]; expected.gpr[10] = words[2];
             }
         }
+        auto adapted = initial;
+        auto plan = mhp3rd::native::prepare_texture_commands(adapted_.memory(), adapted,
+            {bytes.size(), request.destination_slots, 4096u});
+        require(plan.ok() && plan.blocks() == iterations, "Command preparation rejected a certified input");
+        require(mhp3rd::native::same_context(adapted, initial), "Preparation changed CPU");
+        check_region(kObject, object_before, "Preparation object");
+        check_region(kCommands, commands_before, "Preparation commands");
+        check_region(kStack, stack_before, "Preparation stack");
+        check_region(kSource, bytes, "Preparation source");
+        check_region(kTable, table_, "Preparation table");
+        check_region(kGlobal, global, "Preparation global");
         auto compiled = initial, interpreted = initial;
         require(aot_.invoke_isolated_aot(kEntry, compiled) && !aot_.stopped() && compiled.pc == kReturn,
                 "Original compiled builder did not return");
@@ -200,9 +211,11 @@ public:
                     std::cerr << "GPR " << i << " got " << std::hex << compiled.gpr[i] << " want " << expected.gpr[i] << std::dec << '\n';
             throw std::runtime_error("Original CPU differs from independently modeled footprint");
         }
-        auto adapted = initial;
-        const auto bridge = mhp3rd::native::apply_texture_commands(adapted_.memory(), adapted,
-            {bytes.size(), request.destination_slots, 4096u});
+        require(mhp3rd::native::compare_texture_commands(plan, aot_.memory(), compiled).ok(),
+                "Prepared plan differs from actual original AOT effects");
+        require(mhp3rd::native::compare_texture_commands(plan, interpreted_.memory(), interpreted).ok(),
+                "Prepared plan differs from original interpreter effects");
+        const auto bridge = mhp3rd::native::commit_texture_commands(adapted_.memory(), adapted, plan);
         require(bridge.ok() && bridge.blocks == iterations,
                 "Guest adapter rejected a certified input: " + std::to_string(static_cast<int>(bridge.error)));
         require(mhp3rd::native::same_context(adapted, compiled),
@@ -373,6 +386,7 @@ int main(int argc, char **argv) {
                << ",\"builder_calls\":" << oracle.calls << ",\"emitted_command_slots\":" << oracle.slots
                << ",\"portable_core_compared\":true,\"portable_calls\":" << oracle.calls
                << ",\"guest_adapter_compared\":true,\"adapter_calls\":" << oracle.calls
+               << ",\"prepared_plan_compared\":true,\"plan_calls\":" << oracle.calls
                << ",\"max_interpreter_slices\":" << oracle.max_slices
                << ",\"synthetic_cases\":" << (synthetic_only ? oracle.calls : 0u) << ",\"success\":true}\n";
         std::ofstream output(output_path); require(bool(output), "Cannot create report"); output << report.str(); output.close();

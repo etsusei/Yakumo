@@ -227,7 +227,8 @@ def run_oracle(arguments: list[str], report_path: Path) -> tuple[bytes, dict]:
 def validate_common_report(report: dict) -> None:
     if (report.get("schema_version") != 1 or report.get("scope") != ORACLE_SCOPE or
             report.get("success") is not True or report.get("portable_core_compared") is not True or
-            report.get("guest_adapter_compared") is not True):
+            report.get("guest_adapter_compared") is not True or
+            report.get("prepared_plan_compared") is not True):
         raise ValueError("Texture-command oracle did not report a successful supported scope")
 
 
@@ -241,6 +242,8 @@ def checked_count(report: dict, name: str) -> int:
 def validate_synthetic(report: dict) -> None:
     validate_common_report(report)
     cases = checked_count(report, "synthetic_cases")
+    if checked_count(report, "plan_calls") != checked_count(report, "builder_calls"):
+        raise ValueError("Synthetic report omitted prepared plan comparisons")
     if checked_count(report, "adapter_calls") != checked_count(report, "builder_calls"):
         raise ValueError("Synthetic report did not compare the actual guest adapter")
     if checked_count(report, "portable_calls") != checked_count(report, "builder_calls"):
@@ -270,6 +273,8 @@ def validate_shard(report: dict, shard: list[tuple[dict, str]]) -> dict[str, int
                            ("emitted_command_slots", slots)):
         if checked_count(report, name) != expected:
             raise ValueError(f"Texture-command shard {name} differs from input inventory")
+    if checked_count(report, "plan_calls") != calls:
+        raise ValueError("Texture-command shard omitted prepared plan comparisons")
     if checked_count(report, "adapter_calls") != calls:
         raise ValueError("Texture-command shard omitted guest adapter calls")
     if checked_count(report, "portable_calls") != calls:
@@ -297,7 +302,7 @@ def validate_shard(report: dict, shard: list[tuple[dict, str]]) -> dict[str, int
     if not 0 < slices <= MAX_INTERPRETER_SLICES:
         raise ValueError("Texture-command shard exceeded the interpreter slice budget")
     return {"input_count": len(shard), "descriptor_records": records,
-            "builder_calls": calls, "portable_calls": calls, "adapter_calls": calls, "emitted_command_slots": slots,
+            "builder_calls": calls, "portable_calls": calls, "adapter_calls": calls, "plan_calls": calls, "emitted_command_slots": slots,
             "max_interpreter_slices": slices}
 
 
@@ -344,7 +349,7 @@ def check(workspace: Path, layout_report: Path, elf: Path, oracle: Path, output:
         all_inputs: list[dict] = []
         call_reports: list[dict] = []
         totals = {"input_count": 0, "descriptor_records": 0,
-                  "builder_calls": 0, "portable_calls": 0, "adapter_calls": 0, "emitted_command_slots": 0,
+                  "builder_calls": 0, "portable_calls": 0, "adapter_calls": 0, "plan_calls": 0, "emitted_command_slots": 0,
                   "max_interpreter_slices": 0}
         for number, shard in enumerate(shard_rows(rows)):
             index_path = stage / f"index-{number:04d}.tsv"
@@ -354,7 +359,7 @@ def check(workspace: Path, layout_report: Path, elf: Path, oracle: Path, output:
                 [str(oracle), str(elf), str(raw_entries), str(index_path), str(report_path)],
                 report_path)
             counts = validate_shard(shard_report, shard)
-            for name in ("input_count", "descriptor_records", "builder_calls", "portable_calls", "adapter_calls",
+            for name in ("input_count", "descriptor_records", "builder_calls", "portable_calls", "adapter_calls", "plan_calls",
                          "emitted_command_slots"):
                 totals[name] += counts[name]
             totals["max_interpreter_slices"] = max(totals["max_interpreter_slices"],
@@ -370,6 +375,7 @@ def check(workspace: Path, layout_report: Path, elf: Path, oracle: Path, output:
                 totals["builder_calls"] != expected_calls or
                 totals["portable_calls"] != expected_calls or
                 totals["adapter_calls"] != expected_calls or
+                totals["plan_calls"] != expected_calls or
                 totals["emitted_command_slots"] != expected_slots or
                 len(all_inputs) != len(rows)):
             raise ValueError("Combined texture-command coverage is incomplete")
@@ -386,6 +392,7 @@ def check(workspace: Path, layout_report: Path, elf: Path, oracle: Path, output:
             "success": True,
             "portable_core_compared": True,
             "guest_adapter_compared": True,
+            "prepared_plan_compared": True,
             **totals,
             "synthetic_result": synthetic,
             "synthetic_report_sha256": digest(synthetic_bytes),
