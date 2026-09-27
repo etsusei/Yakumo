@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 62,
+  "revision": 65,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T05:14:19Z",
+  "updated_at": "2026-09-27T05:39:25Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -338,6 +338,30 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/vector_aot_oracle",
+      "type": "agent",
+      "role": "Production AOT vector-metric differential oracle audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/vector_metric_core",
+      "type": "agent",
+      "role": "Portable vector metric arithmetic core",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/vector_bridge_tests",
+      "type": "agent",
+      "role": "Independent production AOT and owned adapter differential tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -377,9 +401,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "VEC-002",
-    "next_task_id": "VEC-003",
-    "next_action": "While NAT-003 awaits the one-case user pair, implement the vector metric module under VEC-002. First cross-check the actual generated AOT leaves against the bounded interpreter and resolve FMA/numerical contract evidence; do not assume scalar multiply-add equivalence. Keep defaults off and existing delivered native-data apps unchanged. Analyze actual native-data packages in NAT-004 when the user finishes; preparation records are not acceptance.",
+    "current_task_id": "VEC-003",
+    "next_task_id": "NAT-004",
+    "next_action": "Begin VEC-003 certified vector observations and startup/mode integration using the completed VEC-002 core and owned adapter. Do not silently extend the five-entry recording policy or infer live coverage from static callers. Delivered native-data apps stay unchanged; analyze NAT-004 only after actual NAT-003 user packages arrive.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": [
@@ -413,7 +437,8 @@
     "native_inventory_and_execution_pr": "https://github.com/etsusei/Yakumo/pull/15",
     "native_data_pilot_guide": "docs/NATIVE_DATA_CASE.md",
     "vector_metrics_contract": "docs/VECTOR_METRICS_CONTRACT.md",
-    "native_data_and_vector_contract_pr": "https://github.com/etsusei/Yakumo/pull/16"
+    "native_data_and_vector_contract_pr": "https://github.com/etsusei/Yakumo/pull/16",
+    "vector_metrics_module": "docs/VECTOR_METRICS_MODULE.md"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -4831,38 +4856,97 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "completed",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/vector_aot_oracle",
+        "/root/vector_metric_core",
+        "/root/vector_bridge_tests"
+      ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T04:32:05Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-27T05:39:25Z",
+      "started_at": "2026-09-27T05:16:57Z",
+      "completed_at": "2026-09-27T05:39:25Z",
       "timestamp_note": null,
       "scope": "Implement four related portable data operations with separate guest adapters and original-code differential tests.",
       "depends_on": [
         "VEC-001"
       ],
-      "work_summary": "Planned finite task; no execution claimed.",
+      "work_summary": "Implemented the four-operation portable core and owned guest adapter. Production AOT rounding differs from the interpreter; the core follows the measured AOT order. All 12,060 Off/Verify/Native full-state and 512-byte comparisons passed, with 3,720 native commits and 3,720 verified calls. A separate 5,516-case oracle audit and asset-free CTest passed. Fingerprint refusal, alias/overlap, prefixes, numerical edges, no speculative writes, original failures and mismatch persistence across reconfiguration passed. No game registration or delivered-app changes; VEC-003 owns observations and startup integration.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/host/native/vector_metrics.hpp",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "profiles/mhp3rd/host/native/vector_metrics.cpp",
           "kind": "source",
-          "state": "planned",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/vector_metrics_bridge.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/vector_metrics_bridge.cpp",
+          "kind": "source",
+          "state": "existing",
           "local_only": false
         },
         {
           "path": "profiles/mhp3rd/tests/native_vector_metrics_tests.cpp",
           "kind": "test",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/vector_metrics_core_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/vector_metrics_aot_probe.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/VECTOR_METRICS_MODULE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/vector-metrics-module.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-metrics-aot-final.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-metrics-aot-final.hashes.json",
+          "kind": "build_identity",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-metrics-adapter-final.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -4871,13 +4955,69 @@
         "Defaults off; unknown fingerprints refused; unsupported conditions explicit."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Production AOT versus bounded interpreter audit",
+            "status": "passed",
+            "evidence_path": "out/testing/vector-metrics-aot-final.json",
+            "details": "5,516 bounded calls; direct-wrapper RA sentinel and canary invariants pass. 519 AOT/interpreter numerical differences preserved. Reversed-first-pair model matches all 4,496 standard-prefix results."
+          },
+          {
+            "name": "Native adapter and original-code differential gate",
+            "status": "passed",
+            "evidence_path": "out/testing/vector-metrics-adapter-final.log",
+            "details": "12,060 full CPU and 512-byte comparisons. 3,720 native and 3,720 verify calls; 300 fallbacks in each non-off mode. Zero unexpected mismatches/errors. Core matches 3,756 AOT samples. Reconfiguration latch, unknown/changed fingerprints, invalid pointers, invalid return and thrown original checks passed."
+          },
+          {
+            "name": "Asset-free core regression CTest",
+            "status": "passed",
+            "evidence_path": "out/testing/vector-metrics-module.json",
+            "details": "Exact geometry and four synthetic original AOT rounding witnesses passed; no ELF/runtime dependency."
+          },
+          {
+            "name": "Independent adapter code review",
+            "status": "passed",
+            "details": "/root/vector_metric_core identified mismatch reset on reconfiguration. Root fixed a separate persistent latch and /root/vector_bridge_tests added the regression. Remaining exclusion-map and host-platform contracts documented."
+          }
+        ],
+        "limitations": [
+          "Apple Silicon macOS Release only; no physical PSP or other host platform validation.",
+          "No SDL/game loop/live caller coverage, gameplay acceptance or performance result.",
+          "Adapter is not registered in game; VEC-003 must integrate certified observations and mode metadata before enabling it.",
+          "Caller must provide complete current executable-section and overlay exclusion ranges.",
+          "Delivered native-data apps remain unchanged; NAT-003 awaits user execution."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T05:16:57Z",
+          "occurred_at": "2026-09-27T05:16:57Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Establishing the production AOT numerical oracle before implementing the portable metric core and guest adapters. Delivered native-data apps stay unchanged; NAT-003 remains pending user execution."
+        },
+        {
+          "recorded_at": "2026-09-27T05:29:41Z",
+          "occurred_at": "2026-09-27T05:29:41Z",
+          "actor_id": "/root",
+          "action": "progress",
+          "description": "Production-object oracle demonstrates AOT/interpreter rounding and NaN payload differences. AOT is authoritative for the replacement. Implemented a pure core with explicit observed arithmetic and an owned, default-off adapter using the original AOT wrapper for verify/fallback; independent full-state tests are in progress. Delivered apps remain unchanged."
+        },
+        {
+          "recorded_at": "2026-09-27T05:39:25Z",
+          "occurred_at": "2026-09-27T05:39:25Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented the four-operation portable core and owned guest adapter. Production AOT rounding differs from the interpreter; the core follows the measured AOT order. All 12,060 Off/Verify/Native full-state and 512-byte comparisons passed, with 3,720 native commits and 3,720 verified calls. A separate 5,516-case oracle audit and asset-free CTest passed. Fingerprint refusal, alias/overlap, prefixes, numerical edges, no speculative writes, original failures and mismatch persistence across reconfiguration passed. No game registration or delivered-app changes; VEC-003 owns observations and startup integration."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
