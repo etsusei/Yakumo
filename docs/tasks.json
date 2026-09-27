@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 65,
+  "revision": 66,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T05:39:25Z",
+  "updated_at": "2026-09-27T05:41:04Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -438,7 +438,8 @@
     "native_data_pilot_guide": "docs/NATIVE_DATA_CASE.md",
     "vector_metrics_contract": "docs/VECTOR_METRICS_CONTRACT.md",
     "native_data_and_vector_contract_pr": "https://github.com/etsusei/Yakumo/pull/16",
-    "vector_metrics_module": "docs/VECTOR_METRICS_MODULE.md"
+    "vector_metrics_module": "docs/VECTOR_METRICS_MODULE.md",
+    "vector_metrics_module_pr": "https://github.com/etsusei/Yakumo/pull/17"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -4866,7 +4867,7 @@
         "/root/vector_bridge_tests"
       ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T05:39:25Z",
+      "updated_at": "2026-09-27T05:41:04Z",
       "started_at": "2026-09-27T05:16:57Z",
       "completed_at": "2026-09-27T05:39:25Z",
       "timestamp_note": null,
@@ -4988,7 +4989,9 @@
           "Delivered native-data apps remain unchanged; NAT-003 awaits user execution."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "1e17ef0e60543c3cef1a4e0fcaaa5491e274f2c3"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -5016,6 +5019,13 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Implemented the four-operation portable core and owned guest adapter. Production AOT rounding differs from the interpreter; the core follows the measured AOT order. All 12,060 Off/Verify/Native full-state and 512-byte comparisons passed, with 3,720 native commits and 3,720 verified calls. A separate 5,516-case oracle audit and asset-free CTest passed. Fingerprint refusal, alias/overlap, prefixes, numerical edges, no speculative writes, original failures and mismatch persistence across reconfiguration passed. No game registration or delivered-app changes; VEC-003 owns observations and startup integration."
+        },
+        {
+          "recorded_at": "2026-09-27T05:41:04Z",
+          "occurred_at": "2026-09-27T05:41:04Z",
+          "actor_id": "/root",
+          "action": "published",
+          "description": "Committed the tested module as 1e17ef0 and published draft PR #17 against codex/native-data-pilot. Attached the PR to the task; no merge or user-app replacement."
         }
       ],
       "updated_by_agent_id": "/root"
