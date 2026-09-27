@@ -63,10 +63,12 @@ public:
         set_environment(names_[index], value);
     }
 private:
-    static constexpr std::array<const char *, 7> names_{
+    static constexpr std::array<const char *, 10> names_{
         "MHP3RD_RECORD_DIR", "MHP3RD_RECORD_ROLE", "MHP3RD_RECORD_RUN_ID",
         "MHP3RD_RECORD_BATCH_ID", "MHP3RD_RECORD_BASELINE_ID",
-        "MHP3RD_RECORD_BASELINE_COMMIT", "MHP3RD_RECORD_CONTEXT_SHA256"};
+        "MHP3RD_RECORD_BASELINE_COMMIT", "MHP3RD_RECORD_CONTEXT_SHA256",
+        "MHP3RD_RECORD_CASE_CATALOG", "MHP3RD_RECORD_CASE_CATALOG_SHA256",
+        "MHP3RD_RECORD_PREREQUISITES_SHA256"};
     std::array<std::optional<std::string>, names_.size()> old_{};
 };
 
@@ -162,9 +164,15 @@ void test_disabled_and_environment() {
     env.set(6, std::string(64, 'A'));
     check_throws([&] { (void)recording_options_from_environment(); }, "noncanonical context digest rejected");
     env.set(6, std::string(64, 'a'));
+    env.set(7, (root.path / "cases.json").string());
+    check_throws([&] { (void)recording_options_from_environment(); }, "partial case configuration rejected");
+    env.set(8, std::string(64, 'b'));
+    env.set(9, std::string(64, 'c'));
     const auto parsed = recording_options_from_environment();
     check(parsed && parsed->role == "baseline" && parsed->baseline_commit == "abcdef0" &&
-          parsed->directory == run && parsed->context_sha256 == std::string(64, 'a'),
+          parsed->directory == run && parsed->context_sha256 == std::string(64, 'a') &&
+          parsed->case_catalog_sha256 == std::string(64, 'b') &&
+          parsed->prerequisite_basis_sha256 == std::string(64, 'c'),
           "valid environment produces expected bound options");
     check(!fs::exists(run), "environment parsing never creates the run directory");
     auto recording = start_runtime_recording(Fields{{"test_context", std::string("synthetic")}});

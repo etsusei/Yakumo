@@ -15,10 +15,18 @@ Recording is opt-in. With `MHP3RD_RECORD_DIR` unset or empty, no recorder is cre
 | `MHP3RD_RECORD_BASELINE_ID` | Reference identity, default `B0` |
 | `MHP3RD_RECORD_BASELINE_COMMIT` | Reference source commit, default `4292eb6` |
 | `MHP3RD_RECORD_CONTEXT_SHA256` | Optional canonical launch-context digest; required for bound paired comparison |
+| `MHP3RD_RECORD_CASE_CATALOG` | Optional bound case catalog for the in-game test panel |
+| `MHP3RD_RECORD_CASE_CATALOG_SHA256` | Canonical catalog hash; required with the catalog path |
+| `MHP3RD_RECORD_PREREQUISITES_SHA256` | Common paired input basis; required with the catalog path |
 
 Start/stop belong to the application main thread. A new process needs a fresh run directory; restarting into an existing recording directory is not a valid new run. The application rejects an enabled Baseline recording if any native replacement is requested. The configured role is intent, not proof of binary provenance; paired packaging must verify source/build/binary identities independently.
 
 `RunBegin` carries role/run/batch/reference identities, build version, binary hash, native mode requests, compiled renderer availability, relevant diagnostic-environment presence and an observer-source revision. CMake computes the revision from the journal/observer sources, the observed control-delivery adapter and the probe instrumenter. It describes the recording implementation, not equality of the two gameplay builds. The observer stream schema remains `observers-v1`.
+
+Case-enabled runs additionally bind their catalog and prerequisite basis. The
+recording revision includes the case controller, settings fingerprint and panel
+sources/translations. [TEST_SESSION_PANEL.md](TEST_SESSION_PANEL.md) defines the
+Chinese panel flow and offline verification boundaries.
 
 Recording starts before locating assets so setup UI events can be observed. A later `runtime.inputs` event records the actual ELF hash and supported-executable result. Complete ISO/starting-save/package identity validation is still a paired-delivery requirement; current metadata explicitly leaves those identities pending. These development logs are not yet a ready manual acceptance package.
 

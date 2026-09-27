@@ -53,7 +53,8 @@ IDENTITY_FIELDS = (
     "role", "run_id", "batch_id", "baseline_id", "baseline_commit",
     "recorder_revision", "observer_schema", "recording_mode", "binary_sha256",
 )
-OPTIONAL_IDENTITY_FIELDS = ("source_commit", "build_config", "build_config_sha256")
+OPTIONAL_IDENTITY_FIELDS = ("source_commit", "build_config", "build_config_sha256",
+                            "case_catalog_sha256", "prerequisite_basis_sha256")
 CONTEXT_FIELDS = (
     "run_id", "game_sha256", "elf_sha256", "overlay_sha256", "starting_save_sha256",
     "config_sha256", "build_config_sha256", "case_catalog_sha256",
@@ -83,6 +84,24 @@ def _canonical_json(value: Any) -> bytes:
 
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def prerequisite_basis_sha256(context: Dict[str, Any], baseline_id: str, baseline_commit: str) -> str:
+    """Common launch conditions; role/run/source/binary identities are excluded."""
+    keys = ("game_sha256", "elf_sha256", "overlay_sha256", "starting_save_sha256", "config_sha256",
+            "build_config_sha256", "case_catalog_sha256", "platform_os", "platform_arch")
+    if not _valid_id(baseline_id) or type(baseline_commit) is not str or not _COMMIT.fullmatch(baseline_commit):
+        raise PackageError("invalid prerequisite baseline identity")
+    basis = {"schema": "yakumo-case-basis-v1", "baseline_id": baseline_id, "baseline_commit": baseline_commit.lower()}
+    for key in keys:
+        value = context.get(key)
+        if key.endswith("_sha256"):
+            if not _valid_hash(value): raise PackageError("missing prerequisite identity: " + key)
+            value = value.lower()
+        elif type(value) is not str or not value:
+            raise PackageError("missing prerequisite platform: " + key)
+        basis[key] = value
+    return _sha256(_canonical_json(basis))
 
 
 def _unique_object(pairs: List[Tuple[str, Any]]) -> Dict[str, Any]:
@@ -325,7 +344,11 @@ def _load_supervisor(path: Path) -> Dict[str, Any]:
 
 
 def _identity(begin: Dict[str, Any]) -> Dict[str, Any]:
-    identity = {name: begin.get(name) for name in IDENTITY_FIELDS + OPTIONAL_IDENTITY_FIELDS}
+    # New optional panel bindings do not invalidate packages made before the
+    # panel existed. Their absence is different from a declared invalid value.
+    panel_fields = {"case_catalog_sha256", "prerequisite_basis_sha256"}
+    identity = {name: begin.get(name) for name in IDENTITY_FIELDS + OPTIONAL_IDENTITY_FIELDS
+                if name not in panel_fields or name in begin}
     identity["native_modes"] = _native_modes(begin)
     return identity
 
@@ -385,6 +408,18 @@ def _validate(journal: Dict[str, Any], context: Dict[str, Any],
             issues.append("missing_native_mode:" + name)
         elif begin[name] not in ("off", "0", "verify", "native"):
             issues.append("invalid_native_mode:" + name)
+
+    if "case_catalog_sha256" in begin or "prerequisite_basis_sha256" in begin:
+        catalog_hash = begin.get("case_catalog_sha256")
+        basis_hash = begin.get("prerequisite_basis_sha256")
+        if not _valid_hash(catalog_hash) or catalog_hash.lower() != str(context.get("case_catalog_sha256", "")).lower():
+            issues.append("invalid_optional_identity:case_catalog_sha256")
+        try:
+            expected_basis = prerequisite_basis_sha256(context, begin.get("baseline_id"), begin.get("baseline_commit"))
+        except PackageError:
+            expected_basis = None
+        if not _valid_hash(basis_hash) or basis_hash.lower() != expected_basis:
+            issues.append("invalid_optional_identity:prerequisite_basis_sha256")
 
     for name in CONTEXT_FIELDS:
         if context.get(name) is None:

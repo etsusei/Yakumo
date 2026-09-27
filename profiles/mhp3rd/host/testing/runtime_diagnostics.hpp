@@ -25,11 +25,16 @@ public:
     RuntimeDiagnostics(const RuntimeDiagnostics &) = delete;
     RuntimeDiagnostics &operator=(const RuntimeDiagnostics &) = delete;
     void tick(const perf::Summary &performance) noexcept;
+    // Case actions are synchronous on the emulation/UI thread. They never
+    // change native replacement modes or guest state.
+    void select_case_probes(std::uint32_t mask);
+    void capture_state();
     void close() noexcept;
 private:
     std::shared_ptr<GameObserver> observer_;
     const psprecomp::GuestMemory *memory_{};
     bool supported_executable_{};
+    std::uint32_t run_probe_mask_{};
     bool closed_{};
     bool sampled_{};
     std::chrono::steady_clock::time_point previous_{};

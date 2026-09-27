@@ -28,7 +28,8 @@ std::uint32_t parse_probe_selection(std::string_view names) {
 
 RuntimeDiagnostics::RuntimeDiagnostics(std::shared_ptr<GameObserver> observer,
         const psprecomp::GuestMemory &memory, bool supported_executable, std::uint32_t probe_mask)
-    : observer_(std::move(observer)), memory_(&memory), supported_executable_(supported_executable) {
+    : observer_(std::move(observer)), memory_(&memory), supported_executable_(supported_executable),
+      run_probe_mask_(probe_mask) {
     if (!observer_) throw std::invalid_argument("Runtime diagnostics require a recorder");
     if (probe_mask & ~kProbeAll) throw std::invalid_argument("Unknown native probe bits");
     configure_native_probes(observer_, supported_executable_ ? probe_mask : 0);
@@ -42,6 +43,23 @@ RuntimeDiagnostics::RuntimeDiagnostics(std::shared_ptr<GameObserver> observer,
 }
 
 RuntimeDiagnostics::~RuntimeDiagnostics() { close(); }
+
+void RuntimeDiagnostics::select_case_probes(std::uint32_t mask) {
+    if (closed_ || !supported_executable_ || (mask & ~kProbeAll))
+        throw std::runtime_error("Case observations require an active supported runtime");
+    // Keep the launcher's batch-wide diagnostic selection, including changed
+    // helpers whose real trigger coverage is still being discovered.
+    const auto effective_mask = mask | run_probe_mask_;
+    configure_native_probes(observer_, effective_mask);
+    if (selected_native_probes() != effective_mask)
+        throw std::runtime_error("Case probes could not be configured");
+}
+
+void RuntimeDiagnostics::capture_state() {
+    if (closed_ || !memory_ || !supported_executable_)
+        throw std::runtime_error("Case observations require an active supported runtime");
+    observe_game_state(*memory_, *observer_, supported_executable_);
+}
 
 void RuntimeDiagnostics::tick(const perf::Summary &performance) noexcept {
     if (closed_) return;
