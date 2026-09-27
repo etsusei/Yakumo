@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 73,
+  "revision": 76,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T06:26:19Z",
+  "updated_at": "2026-09-27T06:53:56Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -394,6 +394,22 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/bundle_consumer_audit",
+      "type": "agent",
+      "role": "Independent resource bundle consumer contract audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/indexed_bundle_core",
+      "type": "agent",
+      "role": "Portable shared-storage indexed resource API and synthetic checks",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -433,9 +449,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "VEC-003",
+    "current_task_id": "ASSET-003",
     "next_task_id": "NAT-004",
-    "next_action": "Both current batches are ready: user completes native-data first, then the separate vector-discovery pair. Analyze actual native-data packages in NAT-004 and vector discovery packages with the explicit v2 profile when they arrive. Zero metric calls remain not covered and do not require user retries. Keep VEC-003 unfinished until real triggers support finite required-coverage cases. No game navigation or delivered-app replacement.",
+    "next_action": "Recover the repeated TMH-marked child layout using owned parent-relative views and original consumer evidence. Do not assume semantics from magic or drop unknown tails. Analyze NAT-004/vector user records if they arrive; both user pairs remain unchanged.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": [
@@ -476,7 +492,9 @@
     "vector_metrics_observation": "docs/VECTOR_METRICS_OBSERVATION.md",
     "vector_metric_observations_pr": "https://github.com/etsusei/Yakumo/pull/18",
     "vector_discovery_case": "docs/VECTOR_DISCOVERY_CASE.md",
-    "vector_discovery_pr": "https://github.com/etsusei/Yakumo/pull/19"
+    "vector_discovery_pr": "https://github.com/etsusei/Yakumo/pull/19",
+    "resource_bundle_contract": "docs/RESOURCE_BUNDLE_CONTRACT.md",
+    "indexed_resource_views": "docs/INDEXED_RESOURCE_VIEWS.md"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -5471,6 +5489,275 @@
         "All required cases have explicit evidence and user sign-off where needed.",
         "Unsupported platforms/scenarios remain labeled until verified.",
         "No fixed full-rewrite deadline is assumed."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ASSET-001",
+      "title": "Certify indexed resource bundle boundaries",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-001",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root",
+        "/root/bundle_consumer_audit"
+      ],
+      "created_at": "2026-09-27T06:31:22Z",
+      "updated_at": "2026-09-27T06:38:48Z",
+      "started_at": "2026-09-27T06:31:22Z",
+      "completed_at": "2026-09-27T06:38:48Z",
+      "scope": "Recover nested count/offset/length bundle semantics from local asset spans and original consumers; do not infer model/animation meaning from signatures.",
+      "depends_on": [
+        "RES-003"
+      ],
+      "work_summary": "Static original consumers establish LE32 count and eight-byte relative-offset/advertised-length records, zero-offset absence and unsafe signed-index behavior. Caller pointer retention proves children require parent lifetime. Root independently verified full ELF/three function spans and sample131/1489 hashes. Candidate corpus identification remains separate from semantic/runtime validation.",
+      "deliverables": [
+        {
+          "path": "docs/RESOURCE_BUNDLE_CONTRACT.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/resource-bundle-consumer.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Original inputs unchanged; all offset coordinate spaces and uncertainty explicit.",
+        "Independent consumer or equivalent byte-level evidence for each claimed field.",
+        "No full game, extracted payload or generated-code redistribution."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "Original consumer and lifetime contract",
+            "status": "passed",
+            "evidence_path": "out/testing/resource-bundle-consumer.json",
+            "details": "Count088661BC(12B), pointer088661C8(108B), length08866234(88B); root recomputed all fullspan hashes and two sampleparent hashes. Caller088D150C retains child references downstream."
+          }
+        ],
+        "limitations": [
+          "Static contract only; child resource semantics and IDs reaching real callers remain unknown.",
+          "Structural candidates include possible false positives; padding is not required zero.",
+          "Exact original deallocation ownership not recovered; host views must retain storage."
+        ]
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T06:31:22Z",
+          "occurred_at": "2026-09-27T06:31:22Z",
+          "actor_id": "/root",
+          "action": "started",
+          "description": "Recover nested count/offset/length bundle semantics from local asset spans and original consumers; do not infer model/animation meaning from signatures."
+        },
+        {
+          "recorded_at": "2026-09-27T06:38:48Z",
+          "occurred_at": "2026-09-27T06:38:48Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Static original consumers establish LE32 count and eight-byte relative-offset/advertised-length records, zero-offset absence and unsafe signed-index behavior. Caller pointer retention proves children require parent lifetime. Root independently verified full ELF/three function spans and sample131/1489 hashes. Candidate corpus identification remains separate from semantic/runtime validation."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ASSET-002",
+      "title": "Implement a portable resource bundle view",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root",
+        "/root/indexed_bundle_core"
+      ],
+      "created_at": "2026-09-27T06:31:22Z",
+      "updated_at": "2026-09-27T06:53:56Z",
+      "started_at": "2026-09-27T06:38:48Z",
+      "completed_at": "2026-09-27T06:53:56Z",
+      "scope": "Create a bounds-checked host-owned or caller-owned byte-view API with no guest state, provenance-preserving local indexing and original-consumer differential checks.",
+      "depends_on": [
+        "ASSET-001"
+      ],
+      "work_summary": "Implemented a portable shared immutable byte-slice and checked indexed-bundle API with no guest state. Core24 synthetic checks pass strict compiler and ASan/UBSan; six manifest checks/two CTests pass. All6043 rawentryhashes verified;2168root+28nested structural candidates/9622slots including555absent compared with25832 AOT and25832 bounded interpreter calls. Full CPU, saved-stack/canary and unchanged-table checks pass. Weak/signature annotations remain distinct from resource semantics; no game-loader replacement.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/resources/indexed_bundle.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/resources/indexed_bundle.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/indexed_bundle_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/indexed_bundle_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/inspect_resource_bundles.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_resource_bundle_inspection.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/INDEXED_RESOURCE_VIEWS.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/indexed-resource-bundle-audit-final.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/indexed-resource-validation.json",
+          "kind": "build_identity",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/indexed-bundle-sanitizers.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "No Runtime/GuestMemory/CPU dependency in portable parser.",
+        "Bounded counts/spans and synthetic malformed/alias fixtures.",
+        "Local corpus plus original-consumer differential evidence; runtime gameplay remains separate."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "Portable API and lifetime tests",
+            "status": "passed",
+            "evidence_path": "out/testing/indexed-bundle-sanitizers.log",
+            "details": "24 authored synthetic checks, strict Clang and AddressSanitizer/UndefinedBehaviorSanitizer; nestedchild lifetimeafterparent destruction, alias/overlap and malformedbounds. Root repeated sanitizer run."
+          },
+          {
+            "name": "Manifest and CMake gates",
+            "status": "passed",
+            "details": "Six manifest identity/path/size/hash checks and two CTests."
+          },
+          {
+            "name": "Corpus and independent original consumer gate",
+            "status": "passed",
+            "evidence_path": "out/testing/indexed-resource-bundle-audit-final.json",
+            "details": "All6043 filehashes,2168root+28nested candidates,9622slots,555absent. Original compiled and interpreted count/pointer/length accessors each executed25832 times; nativeextents/fullCPU/indexbytes/stackcanaries agree."
+          }
+        ],
+        "limitations": [
+          "No original payload decoder or game loader ran; original accessors only consumed index bytes and returned scalar metadata.",
+          "2185signature-supported candidate nodes and11bounds-only nodes are not semantic or live-resource identifications.",
+          "Decoded-parent coordinate spaces preserved; precise original object owner/free edge remains unknown.",
+          "Runtime game consumers and both delivered user pairs are unchanged."
+        ]
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T06:31:22Z",
+          "occurred_at": "2026-09-27T06:31:22Z",
+          "actor_id": "/root",
+          "action": "planned",
+          "description": "Create a bounds-checked host-owned or caller-owned byte-view API with no guest state, provenance-preserving local indexing and original-consumer differential checks."
+        },
+        {
+          "recorded_at": "2026-09-27T06:38:48Z",
+          "occurred_at": "2026-09-27T06:38:48Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Implementing shared immutable byte slices and checked indexed views, plus whole-corpus classification and bounded original-code differential proof. No guest-state dependency in the API; no game-loader switch or semantic type claim."
+        },
+        {
+          "recorded_at": "2026-09-27T06:53:56Z",
+          "occurred_at": "2026-09-27T06:53:56Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented a portable shared immutable byte-slice and checked indexed-bundle API with no guest state. Core24 synthetic checks pass strict compiler and ASan/UBSan; six manifest checks/two CTests pass. All6043 rawentryhashes verified;2168root+28nested structural candidates/9622slots including555absent compared with25832 AOT and25832 bounded interpreter calls. Full CPU, saved-stack/canary and unchanged-table checks pass. Weak/signature annotations remain distinct from resource semantics; no game-loader replacement."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ASSET-003",
+      "title": "Certify TMH-marked child layout",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-001",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-27T06:53:56Z",
+      "updated_at": "2026-09-27T06:53:56Z",
+      "started_at": null,
+      "completed_at": null,
+      "scope": "Recover one repeated child-format layout from decoded-parent views and original consumers; identify internal record spans, references, transformations and image semantics only where supported.",
+      "depends_on": [
+        "ASSET-002"
+      ],
+      "work_summary": "Planned next resource boundary; no child decoder or semantic interpretation claimed.",
+      "deliverables": [
+        {
+          "path": "docs/TMH_RESOURCE_CONTRACT.md",
+          "kind": "documentation",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Input parent/child identities and coordinate spaces retained.",
+        "Independent consumer evidence for each claimed layout/type field; unknowns and variants retained.",
+        "No full game or derived payload committed; contract establishes a bounded next native decoder scope."
       ],
       "validation": {
         "checks": [],

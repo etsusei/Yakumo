@@ -8,9 +8,9 @@ This inventory distinguishes existing host implementations from migrated game be
 
 | Area and source anchor | Current implementation | Residual dependency and next useful boundary |
 | --- | --- | --- |
-| Five math/data leaves: `host/native/` | Portable arithmetic/word operations with separately registered adapters | Adapters still consume GPR/FPR/VFPU state, guest addresses and return PC. Unsupported inputs retain an original-code reference. Group related operations into a bounded module, then migrate callers; do not count hooks as an entire transform engine. |
+| Nine math/data operations: `host/native/` | Portable arithmetic/word operations with separately registered adapters | Adapters still consume GPR/FPR/VFPU state, guest addresses and return PC. Unsupported inputs retain an original-code reference. Group related operations into a bounded module, then migrate callers; do not count hooks as an entire transform engine. |
 | ISO and archive directory: `host/kernel/iso_image.*`, `host/mods/mhp3rd_data_bin.*` | Native file/range reader, archive directory, deobfuscation and mod view | File HLE still presents PSP handles and writes guest buffers. Raw extraction is complete; typed model/animation/quest semantics are not supplied by the archive parser. Reuse these codecs rather than rewriting them. |
-| Asset consumers: `host/hle/hle_io.cpp`, `generated/`, `host/overlays.cpp` | Native delivery of bytes to original compiled consumers | The original consumers own resource interpretation and lifetimes in guest memory. A future typed loader needs a verified format, sample mapping and ownership contract before replacing that consumer. |
+| Asset consumers: `host/hle/hle_io.cpp`, `generated/`, `host/overlays.cpp` | Native byte delivery plus a separately validated shared-storage indexed-bundle API in `host/resources/` | The original consumers own resource interpretation and lifetimes in guest memory. The new bundle view validates relative index spans and retains parent storage; child types and the source-ID-to-consumer edge still need recovery before replacing game consumers. See [INDEXED_RESOURCE_VIEWS.md](INDEXED_RESOURCE_VIEWS.md). |
 | Texture data: `host/gpu/texture_decode.*`, `texture_pack*`, `replacement_textures.*` | Native format decoding, cache/replacement infrastructure | Original game/GE state supplies PSP addresses, palette formats, layouts and texture commands. Test decoded samples offline; material/scene correctness requires the corresponding live case. |
 | Geometry and rendering: `host/gpu/ge_state.*`, `vulkan_renderer.*` | Native GE command interpretation and Vulkan backend | GE and render targets still reference guest memory and PSP command semantics. Vulkan through MoltenVK is not removal of the GE dependency. A future scene renderer requires native draw/scene ownership and geometry/resource interpretation. |
 | Sound: `host/audio/sas_core.*`, `atrac_decoder.*`, `audio_sink.*` | Native mixing, envelope/decoder state and host output | `SasCore::render` and its source decoders still take GuestMemory and guest voice addresses; HLE and game scheduling drive them. A source-buffer interface can isolate that dependency, but reworking this host service is not migration of original combat/animation logic. |
@@ -53,7 +53,7 @@ The supported ELF and all 355 manifest-bounded overlay code spans were inspected
 
 For example, the translation caller chain includes a data pointer to `0x089219A0`, a call at `0x08921BBC`, and an unresolved indirect call at `0x08921BF8`. A vector path runs through `0x0882C674` and `0x0882C3B4` to the call at `0x0882C52C`. These are evidence for follow-up analysis, not labels such as monster AI or animation inferred from location. Zero live calls remains uncovered; it does not justify deleting these functions.
 
-The next coherent new-module candidate is **three-dimensional vector metrics**:
+The implemented **three-dimensional vector metric module** has these original boundaries:
 
 | Candidate operation | Entry | Full span including return delay | Original-code SHA-256 |
 | --- | --- | ---: | --- |
@@ -62,7 +62,7 @@ The next coherent new-module candidate is **three-dimensional vector metrics**:
 | three lane distance | `0x08877280` | 40 bytes | `977da7d41ecfd722f43c497c0f4627bb4faa7d57126d1cefa8f92138115b02a1` |
 | three lane distance squared | `0x088772A8` | 36 bytes | `05771b861950457e9e065384220c69cc255874d63fe09e62face44defea00d36` |
 
-These four local spans use three-lane VFPU operations, optional subtraction/square root, stack scratch and FPR0 output, with no nested call/HLE site in the inspected spans. The primary agent independently recomputed all four span hashes from the ELF program headers. The bounded software-interpreter contract is now recorded in [VECTOR_METRICS_CONTRACT.md](VECTOR_METRICS_CONTRACT.md), with 11,604 original-instruction runs and explicit prefix, scratch, alias and numeric evidence. Actual generated-AOT and native-implementation differential gates remain VEC-002. Do not substitute host `sqrt` or a generic dot-product library on name alone. No implementation or live coverage is claimed for this family yet.
+These four local spans use three-lane VFPU operations, optional subtraction/square root, stack scratch and FPR0 output, with no nested call/HLE site in the inspected spans. The primary agent independently recomputed all four span hashes from the ELF program headers. The bounded software-interpreter contract is now recorded in [VECTOR_METRICS_CONTRACT.md](VECTOR_METRICS_CONTRACT.md), with 11,604 original-instruction runs and explicit prefix, scratch, alias and numeric evidence. VEC-002 subsequently passed production-AOT/native differential gates, and VEC-003 connected all four metrics to owned dispatch and recording. A separate signed discovery pair awaits user operation. The interpreter and AOT differ in floating-point order; the native core follows the measured AOT. See [VECTOR_METRICS_MODULE.md](VECTOR_METRICS_MODULE.md) and [VECTOR_DISCOVERY_CASE.md](VECTOR_DISCOVERY_CASE.md). Live coverage remains unclaimed.
 
 ## Finite next batches
 
@@ -89,7 +89,7 @@ The shared evidence counters have these meanings:
 
 Errors may overlap fallback counts, and installation errors may exist with zero calls. These counters describe helper boundaries; they are not counts or timings for arbitrary gameplay functions. The observational recorder attaches stable probe identities and explicit coverage domains; cumulative counters must be interpreted per epoch and case boundary.
 
-## Leaf inventory
+## Original five-leaf inventory
 
 All code fingerprints below were recomputed from the locally registered supported ELF. Source instructions and generated code remain local.
 
@@ -130,3 +130,20 @@ Animation, AI, collision, quests, networking, rendering and full resource semant
 OFF-005 adds 18 synthetic ISO-reader assertions and 33 synthetic PSMF-demuxer assertions. Tests exposed narrow bounds defects: malformed ISO records/extents could be read beyond their declared boundaries, and incomplete PES packets or absent timestamp fields could be consumed as valid payload. The fixes passed the integrated CMake targets on Apple Silicon macOS, plus an independent AddressSanitizer/UndefinedBehaviorSanitizer build. A read-only check matched all 14 supported-image file spans with the validated extraction manifest.
 
 These existing native components are infrastructure assurance, not newly migrated game logic. Synthetic demuxing does not validate video decoding, audio output or movie fidelity; no full game was started.
+
+## Indexed resource boundary
+
+ASSET-001 recovered the count, relative offset, advertised length and null-slot
+behavior of three original accessors, plus evidence that downstream objects
+retain child pointers. ASSET-002 implements shared immutable parent/child slices
+and bounds-checked indexed views without guest CPU/memory dependencies. The
+whole local resource manifest and bounded original accessors are the offline
+gate; signatures remain annotations, not semantic or live-coverage proof.
+See [RESOURCE_BUNDLE_CONTRACT.md](RESOURCE_BUNDLE_CONTRACT.md) and
+[INDEXED_RESOURCE_VIEWS.md](INDEXED_RESOURCE_VIEWS.md).
+
+The next boundary is a separately validated child format, beginning with the
+repeated TMH-marked children. It must establish internal offsets, image format,
+lengths, transforms and ownership before reusing the existing native texture
+decoder or claiming render compatibility. Do not count the bundle index as a
+model, skeleton, animation or collision decoder.
