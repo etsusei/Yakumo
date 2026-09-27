@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 125,
+  "revision": 127,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T13:44:35Z",
+  "updated_at": "2026-09-27T14:13:40Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -690,6 +690,22 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_lifetime_injector",
+      "type": "agent",
+      "role": "Composed build-local original allocation/factory/caller lifetime checkpoints",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_lifetime_tracker",
+      "type": "agent",
+      "role": "Bounded original observation to lease and one-call ticket adapter",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -731,7 +747,7 @@
   "execution_state": {
     "current_task_id": "ASSET-014",
     "next_task_id": "ASSET-014",
-    "next_action": "Implement actual original lifecycle/caller ticket producers and authority-backed mode control from TEXTURE_OBSERVATION_INTEGRATION.md and TEXTURE_COMMAND_ADMISSION.md. Entry/return routing is now compiled and passed32 boundary cases plus18 real selected caller-tail chains; callback ownership and unowned full corpus passed. Do not repeat these unchanged gates merely to resume. No application callback owner or manual test yet.",
+    "next_action": "PAUSED at explicit user request. Do not continue until the user resumes. Then rerun normal and sanitized lifecycle gates for the final exact-NotReady assertion and refresh bound reports; continue descriptor/read/copy/transform/terminal/cancellation receipts and epoch/writer integration before authority-backed mode control. Existing delivered apps and user records remain unchanged.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": []
@@ -4421,7 +4437,7 @@
       "title": "Maintain migration inventory and finite batch specifications",
       "phase": "milestone_4",
       "kind": "workstream",
-      "status": "in_progress",
+      "status": "paused",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -4430,7 +4446,7 @@
         "/root/native_rollout_audit"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-27T05:09:24Z",
+      "updated_at": "2026-09-27T14:13:40Z",
       "started_at": "2026-09-27T04:19:28Z",
       "completed_at": null,
       "timestamp_note": null,
@@ -4463,7 +4479,7 @@
         "limitations": []
       },
       "implementation_commits": [],
-      "pause_reason": null,
+      "pause_reason": "Explicit user request to checkpoint progress and stop running.",
       "blockers": [],
       "history": [
         {
@@ -4492,6 +4508,15 @@
           "from_status": "in_progress",
           "to_status": "in_progress",
           "description": "Initial finite inventory INV-001 is complete; the workstream continues as contracts and modules are researched. Next new-module audit is VEC-001."
+        },
+        {
+          "recorded_at": "2026-09-27T14:13:40Z",
+          "occurred_at": "2026-09-27T14:13:40Z",
+          "actor_id": "/root",
+          "action": "paused_by_user",
+          "from_status": "in_progress",
+          "to_status": "paused",
+          "description": "User requested a stage checkpoint, completed/remaining-work report and cessation of execution. Known build/test handles finished and all subagents are completed. No new tests or development started after this request."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -4501,14 +4526,14 @@
       "title": "User-led gameplay and resource migration batches",
       "phase": "milestone_4",
       "kind": "workstream",
-      "status": "in_progress",
+      "status": "paused",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
         "/root"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-27T05:09:24Z",
+      "updated_at": "2026-09-27T14:13:40Z",
       "started_at": "2026-09-27T04:32:05Z",
       "completed_at": null,
       "timestamp_note": null,
@@ -4547,7 +4572,7 @@
         "limitations": []
       },
       "implementation_commits": [],
-      "pause_reason": null,
+      "pause_reason": "Explicit user request to checkpoint progress and stop running.",
       "blockers": [],
       "history": [
         {
@@ -4558,6 +4583,15 @@
           "from_status": "not_started",
           "to_status": "in_progress",
           "description": "Finite scale/copy native execution tasks NAT-001 through NAT-004 and vector-module tasks VEC-002/003 are defined. Implementation begins with NAT-001; no user game launch requested yet."
+        },
+        {
+          "recorded_at": "2026-09-27T14:13:40Z",
+          "occurred_at": "2026-09-27T14:13:40Z",
+          "actor_id": "/root",
+          "action": "paused_by_user",
+          "from_status": "in_progress",
+          "to_status": "paused",
+          "description": "User requested a stage checkpoint, completed/remaining-work report and cessation of execution. Known build/test handles finished and all subagents are completed. No new tests or development started after this request."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -8416,7 +8450,7 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "in_progress",
+      "status": "paused",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -8424,10 +8458,12 @@
         "/root/texture_command_plan",
         "/root/texture_observation_seams",
         "/root/texture_controller_admission",
-        "/root/texture_dispatch_registry_tests"
+        "/root/texture_dispatch_registry_tests",
+        "/root/texture_lifetime_injector",
+        "/root/texture_lifetime_tracker"
       ],
       "created_at": "2026-09-27T12:54:25Z",
-      "updated_at": "2026-09-27T13:44:35Z",
+      "updated_at": "2026-09-27T14:13:40Z",
       "started_at": "2026-09-27T13:16:30Z",
       "completed_at": null,
       "scope": "Connect certified original owner/command allocation, descriptor, transfer and invalidation observations to the source authority. Prepare a non-mutating guest command plan for verification and guarded commit, with explicit off/verify/native behavior, original fallback and scoped recording. Prove actual production call paths offline before a new user delivery.",
@@ -8435,7 +8471,7 @@
         "ASSET-013",
         "ASSET-011"
       ],
-      "work_summary": "Prepared-plan bridge and runtime-scoped callback routing now execute through the production instrumented AOT unit.32 entry/return and18 selected original caller-tail chains match full RAM/VRAM/CPU against interpretation; the unowned4512-call corpus still matches. Callback ownership passed6 asset-free tests and sanitizers. Actual lifecycle event producers and an authority-backed mode controller remain unfinished; no application installs a callback owner.",
+      "work_summary": "Implemented14 actual original allocation/factory/caller/reset/free checkpoints and a bounded owner/command lease and caller-receipt tracker. The last executed gate passed34 AOT/interpreter calls,8 factory branches,7 owner leases,4 issued receipts, reuse/reset and3 loss cases; no source readiness is created. Sanitized new metadata components and unowned4512-call regression passed. A final stricter NotReady assertion and receipt documentation were compiled but not rerun before the user requested a pause.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
@@ -8616,6 +8652,90 @@
           "kind": "test",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/texture_lifetime_tracker.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/texture_lifetime_tracker.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/cmake/TextureLifetimeInstrumentation.cmake",
+          "kind": "build_configuration",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/instrument_texture_lifetime.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_lifetime_instrumentation.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_lifetime_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_texture_lifetime.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_lifetime_runner.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_LIFETIME_TRACKER.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/PAUSE_CHECKPOINT.md",
+          "kind": "handoff",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-lifetime-observation-gate.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-sanitized.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-sanitizers.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-unowned-corpus-gate.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -8674,23 +8794,51 @@
             "status": "passed",
             "evidence_path": "out/testing/texture-boundaries-no-probes-configure.log",
             "details": "Read-only reviewer /root/texture_controller_admission found a configuration gap: the dedicated oracle was accidentally nested under certified probes. Root moved it under its own boundary/bridge condition and confirmed a fresh probes-OFF/boundaries-ON configure contains the target. Default-profile final gate passed afterward. Root added shared B0 staging files and matched recording revision inputs;8 baseline-preparer tests passed. No new B0 application build or delivery."
+          },
+          {
+            "name": "Original lifetime gate before final assertion refinement",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-lifetime-observation-gate.json",
+            "sha256": "8474acfd024b65fc871781c767c4318d482cff454662d699e64d8c2c71543da0",
+            "details": "34 calls per AOT/interpreter path;8 factory branches,7 observed owner leases,7 caller tails,4 receipts issued once,2 owner/command address reuses,2 owner resets,2 heap resets and3 loss cases. Includes missing phase, code change, injected switch-away/back and zero-command refusal. Full CPU/RAM/VRAM equality; max193515 slices. Source readiness is absent. Last executed source hashes precede final stronger NotReady assertion and ticket comment."
+          },
+          {
+            "name": "Unowned lifetime-instrumented command regression",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-lifetime-unowned-corpus-gate.json",
+            "sha256": "7982953d5b17ad614ba7525b5bd3cbffbe39c12c71a8d7c1d4b6b0b8d4af8af5",
+            "details": "2256 inputs,8866 descriptors,4512 original calls,11122 command slots plus36 synthetic calls/52 slots. All agree after four lifetime AOT units were instrumented; no callback owner installed in this gate."
+          },
+          {
+            "name": "Tracker sanitizers, review and current build",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-lifetime-sanitizers.log",
+              "out/testing/texture-lifetime-sanitized.json"
+            ],
+            "details": "Last executed34-call gate passed ASan/UBSan on tracker,SourceAuthority,routing and harness; original runtime/AOT/DSO retain production flags.7 registry cases passed CTest;8 lifetime Python tests,14 command Python tests and8 B0 staging tests passed. Independent read-only review found no blocking lease/ticket defect, retaining raw-alias refusal and copyable-receipt limits. Both current normal and sanitized oracle builds finished after assertion refinement; those latest binaries were not rerun."
+          },
+          {
+            "name": "Final strengthened readiness assertion",
+            "status": "not_run",
+            "details": "Changed the positive caller check from any denied permit to exact AuthorityError::NotReady with healthy authority; compiled both targets, then paused at explicit user request before rerunning. Refresh source-bound normal and sanitized reports first on explicit resume."
           }
         ],
         "limitations": [
-          "ASSET-014 remains in progress: actual owner/descriptor/worker lifecycle producers, authority serialization and an authority-backed mode/probe controller are not installed. The application registers no texture command callback owner.",
-          "Actual selected caller-tail tests start at088B0398 with constructed owner/root inputs and supplied bounds. They execute the original provider/accessor/allocator chain but do not prove live constructor/transfer observation or full caller entry.",
-          "Same-unit entry uses the actual preceding nop fallthrough; local-return tests use controlled harness termination. No claim of an observed gameplay route follows.",
-          "The callback registry serializes callbacks, not all guest writers. Callback owners require quiescent setup/destruction; callbacks may not recurse into dispatch/registration or throw.",
-          "Byte snapshots do not establish allocation lifetime or prevent concurrent mutation. Production needs current source authority, caller tickets, stable code/thread identity and exclusive writer context.",
-          "No-command bridge comparison is an offline fixture; source authority stays positive-only. Alternate-file, live multi-fragment, real scheduling and broader gameplay remain unverified.",
-          "No app build/replacement or game run. Existing accepted user recordings and native-data resolution waiver remain preserved."
+          "Application does not install tracker or callback owner; no new native mode or paired app delivery.",
+          "Source transfer/descriptor/worker/cancellation receipts, late writer observation and exclusive mutation guards remain unfinished.",
+          "Configured current-code validator must supply coherent epochs, including same-byte reload; production epoch integration is pending.",
+          "Returned caller receipt is copyable metadata issued once per frame, not a one-use execution capability; future controller must scope it to current entry and revalidate authority.",
+          "Factory/caller entry frames and source payloads are constructed; actual original tails/DSO constructor/allocator/free/reset execute. Thread switching is a host fault injection, not a real scheduler.",
+          "The final stricter NotReady assertion compiled but has not been rerun; last passing lifecycle reports bind the preceding source revision.",
+          "Existing delivered apps and user records unchanged; original game data remain local. Untracked .c2cignore untouched."
         ]
       },
       "implementation_commits": [
         "d6680718167df04d0361dbe14f38b0613308ec44",
         "9f79b3112e7a80dede8f73eca2231d6130fbeedf"
       ],
-      "pause_reason": null,
+      "pause_reason": "Explicit user request to checkpoint progress and stop running.",
       "blockers": [],
       "history": [
         {
@@ -8750,6 +8898,22 @@
           "actor_id": "/root",
           "action": "published_compiled_aot_observations",
           "description": "Published runtime-scoped callback routing, production AOT entry/return wiring,50 bounded original-path fixtures and shared B0 source closure in draft PR #33 at9f79b31. ASSET-014 remains in progress for actual lifecycle/caller receipts and authority-backed mode control. Existing apps/user records remain unchanged."
+        },
+        {
+          "recorded_at": "2026-09-27T13:55:57Z",
+          "occurred_at": "2026-09-27T13:55:57Z",
+          "actor_id": "/root",
+          "action": "lifecycle_observation_started",
+          "description": "Implementing actual original allocation/factory/caller/reset/free checkpoints and a bounded lease/ticket adapter. Root is executing the original factory-to-lobby-DSO chain and selected caller/free/reuse paths in a bounded differential oracle. No transfer receipts, source permits or native activation are inferred from these events. Untracked .c2cignore was present at turn start and remains untouched."
+        },
+        {
+          "recorded_at": "2026-09-27T14:13:40Z",
+          "occurred_at": "2026-09-27T14:13:40Z",
+          "actor_id": "/root",
+          "action": "paused_by_user",
+          "from_status": "in_progress",
+          "to_status": "paused",
+          "description": "User requested a stage checkpoint, completed/remaining-work report and cessation of execution. Known build/test handles finished and all subagents are completed. No new tests or development started after this request."
         }
       ],
       "updated_by_agent_id": "/root"

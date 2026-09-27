@@ -16,7 +16,8 @@ std::array<Slot, TextureCommandDispatch::kMaxRuntimes> slots{};
 
 TextureCommandDispatch::TextureCommandDispatch(psprecomp::Runtime &runtime,
         TextureCommandCallbacks callbacks) : runtime_(&runtime) {
-    if (!callbacks.entry || !callbacks.returned) return;
+    if ((callbacks.entry == nullptr) != (callbacks.returned == nullptr)) return;
+    if (!callbacks.entry && !callbacks.lifetime) return;
     std::lock_guard lock(mutex);
     Slot *vacant = nullptr;
     for (auto &slot : slots) {
@@ -43,7 +44,7 @@ bool texture_command_entry(psprecomp::Runtime &runtime,
         psprecomp::AllegrexContext &context) {
     std::lock_guard lock(mutex);
     for (const auto &slot : slots)
-        if (slot.runtime == &runtime)
+        if (slot.runtime == &runtime && slot.callbacks.entry)
             return slot.callbacks.entry(slot.callbacks.user, runtime, context);
     return false;
 }
@@ -52,8 +53,18 @@ void texture_command_return(psprecomp::Runtime &runtime,
         psprecomp::AllegrexContext &context, std::uint32_t return_pc) {
     std::lock_guard lock(mutex);
     for (const auto &slot : slots) {
-        if (slot.runtime == &runtime) {
+        if (slot.runtime == &runtime && slot.callbacks.returned) {
             slot.callbacks.returned(slot.callbacks.user, runtime, context, return_pc);
+            return;
+        }
+    }
+}
+void texture_lifetime_checkpoint(psprecomp::Runtime &runtime,
+        const psprecomp::AllegrexContext &context, TextureLifetimeCheckpoint checkpoint) {
+    std::lock_guard lock(mutex);
+    for (const auto &slot : slots) {
+        if (slot.runtime == &runtime && slot.callbacks.lifetime) {
+            slot.callbacks.lifetime(slot.callbacks.user, runtime, context, checkpoint);
             return;
         }
     }

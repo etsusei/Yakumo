@@ -108,10 +108,14 @@ registration and destruction. No application installs a binding yet, so the
 ordinary game and Baseline keep original execution. Callbacks cannot dispatch
 guest code, reenter the registry or throw. Owners must outlive all their guest
 calls and be destroyed before their runtime while execution is quiescent.
-The production mode controller and lifecycle producers remain pending.
-The remaining lifecycle/worker checkpoints require a separate fixed-address,
-shape-checked extension for units 0023, 0024, 0029, 0039, 0040, 0043,
-0045 and 0046. An outer `Runtime::register_function` wrapper or pre/post
+The selected allocation/factory/caller/reset/free producer is now implemented
+by [TextureLifetimeTracker](TEXTURE_LIFETIME_TRACKER.md) and exercised through
+actual original factory/overlay/caller paths. Transfer/worker producers,
+writer exclusion and the production mode controller remain pending.
+The lifetime transformer now covers 14 shape-checked points in units 0029,
+0040, 0043 and 0046. Generic free/reset observations also cover selected release
+paths in units 0039/0045. Remaining transfer and worker checkpoints need units
+0023/0024 and coherent code-epoch integration. An outer `Runtime::register_function` wrapper or pre/post
 dispatch hook misses same-unit `goto` transfers and cannot claim complete
 observation. Production callback signatures should take
 `(Runtime&, const AllegrexContext&, checkpoint_id)` for observations and
@@ -141,8 +145,9 @@ certified probes OFF and texture boundaries ON. A new B0 application has not
 been built or delivered. The
 unowned instrumented path also retained the complete 2,256-input/4,512-call
 original corpus result. Source/binary-bound evidence is in ASSET-014's ledger.
-No game, app delivery, owner-constructor/transfer callback integration or live
-source authority is established by this checkpoint.
+That earlier checkpoint did not establish owner-constructor or transfer
+callbacks. The subsequent lifetime gate adds the former; no game, app delivery,
+transfer readiness or live native activation is established by either gate.
 
 For `Verify`, prepare the existing nonmutating `TextureCommandPlan` at builder
 entry, let original AOT run **once**, then compare at the matched return

@@ -19,6 +19,8 @@ using mhp3rd::native::TextureCommandCallbacks;
 using mhp3rd::native::TextureCommandDispatch;
 using mhp3rd::native::texture_command_entry;
 using mhp3rd::native::texture_command_return;
+using mhp3rd::native::texture_lifetime_checkpoint;
+using mhp3rd::native::TextureLifetimeCheckpoint;
 using psprecomp::AllegrexContext;
 using psprecomp::GuestMemory;
 using psprecomp::Runtime;
@@ -230,6 +232,32 @@ void destruction_detaches_and_allows_rebinding() {
     }
 }
 
+void lifetime_only_observer_preserves_state() {
+    Runtime runtime(kRamSize);
+    struct Seen { unsigned calls{}; const Runtime *runtime{}; AllegrexContext cpu{};
+                  TextureLifetimeCheckpoint checkpoint{}; } seen;
+    TextureCommandCallbacks hooks;
+    hooks.user = &seen;
+    hooks.lifetime = [](void *user, const Runtime &target, const AllegrexContext &ctx,
+                        TextureLifetimeCheckpoint point) noexcept {
+        auto &value = *static_cast<Seen *>(user);
+        ++value.calls; value.runtime = &target; value.cpu = ctx; value.checkpoint = point;
+    };
+    TextureCommandDispatch binding(runtime, hooks);
+    require(binding.installed(), "A complete lifetime-only observer did not install");
+    auto ctx = context_fixture(0x12349876u);
+    const auto before = ctx;
+    const auto ram = runtime.memory().bytes(), vram = runtime.memory().vram_bytes();
+    require(!texture_command_entry(runtime, ctx), "Lifetime-only observer replaced a builder");
+    texture_command_return(runtime, ctx, 0x08123456u);
+    texture_lifetime_checkpoint(runtime, ctx, TextureLifetimeCheckpoint::FactoryAllocationResult);
+    require(seen.calls == 1u && seen.runtime == &runtime && same_context(seen.cpu, before) &&
+            seen.checkpoint == TextureLifetimeCheckpoint::FactoryAllocationResult,
+            "Lifetime observer substituted PC or context");
+    require(same_context(ctx, before) && runtime.memory().bytes() == ram && runtime.memory().vram_bytes() == vram,
+            "Lifetime-only observer mutated guest state");
+}
+
 void capacity_exhaustion_and_refill() {
     constexpr std::size_t capacity = TextureCommandDispatch::kMaxRuntimes;
     std::array<std::unique_ptr<Runtime>, capacity + 1u> runtimes;
@@ -272,6 +300,7 @@ int main() {
         TestCase{"runtime isolation and duplicate rejection", runtime_isolation_and_duplicate_rejection},
         TestCase{"invalid callbacks", invalid_callbacks_do_not_install},
         TestCase{"destruction and rebinding", destruction_detaches_and_allows_rebinding},
+        TestCase{"lifetime-only observation", lifetime_only_observer_preserves_state},
         TestCase{"capacity exhaustion and refill", capacity_exhaustion_and_refill},
     };
     for (const auto &test : tests) {

@@ -240,6 +240,15 @@ MHP3RD_DATA_DIR=~/yakumo-a MHP3RD_GAME_DIR=~/game-a MHP3RD_WINDOW_TITLE="Yakumo 
 
 ### Vector observation development targets
 
+`MHP3RD_TEXTURE_LIFETIME_BOUNDARIES` independently defaults to ON with a
+generated corpus. Its four build-local copies compose with existing probes;
+OFF omits allocation/factory/caller/reset/free checkpoints. Both roles stage
+the same observational files, but no application installs the tracker yet.
+On macOS, build `mhp3rd_texture_lifetime_oracle` for bounded original-code
+validation and `mhp3rd_texture_lifetime_sanitized` for sanitizer coverage of the
+new metadata boundary. These use local ELF/overlay inputs without launching
+the game. See [TEXTURE_LIFETIME_TRACKER.md](TEXTURE_LIFETIME_TRACKER.md).
+
 The opt-in vector metric module has an asset-free target
 `mhp3rd_vector_metrics_core_tests` and two bounded local-ELF targets:
 `mhp3rd_native_vector_metrics_tests` and `mhp3rd_vector_metrics_runtime_tests`.

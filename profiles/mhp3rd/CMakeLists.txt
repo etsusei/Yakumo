@@ -95,6 +95,7 @@ endif()
 # Resolve the camera helper from the original corpus before substituting copies.
 include("${MHP3RD_PROFILE_DIR}/cmake/ProbeInstrumentation.cmake")
 include("${MHP3RD_PROFILE_DIR}/cmake/TextureCommandInstrumentation.cmake")
+include("${MHP3RD_PROFILE_DIR}/cmake/TextureLifetimeInstrumentation.cmake")
 
 # Renderer: SDL3 for the window and Vulkan for drawing. Both are optional so the
 # profile still builds headless on a machine without them.
@@ -585,6 +586,8 @@ list(APPEND MHP3RD_RECORDING_REVISION_INPUTS
     "${MHP3RD_PROFILE_DIR}/host/native/texture_command_dispatch.cpp"
     "${MHP3RD_PROFILE_DIR}/tools/instrument_texture_commands.py"
     "${MHP3RD_PROFILE_DIR}/cmake/TextureCommandInstrumentation.cmake"
+    "${MHP3RD_PROFILE_DIR}/tools/instrument_texture_lifetime.py"
+    "${MHP3RD_PROFILE_DIR}/cmake/TextureLifetimeInstrumentation.cmake"
     "${MHP3RD_PROFILE_DIR}/host/gpu/texture_decode_policy.hpp"
     "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.hpp"
     "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.cpp"
@@ -611,6 +614,8 @@ if(NOT MHP3RD_BASELINE_B0)
     target_include_directories(mhp3rd_indexed_bundle PUBLIC "${MHP3RD_PROFILE_DIR}/host")
     add_library(mhp3rd_tmh STATIC host/resources/tmh.cpp)
     add_library(mhp3rd_source_authority STATIC host/resources/source_authority.cpp)
+    add_library(mhp3rd_texture_lifetime_tracker STATIC host/native/texture_lifetime_tracker.cpp)
+    target_link_libraries(mhp3rd_texture_lifetime_tracker PUBLIC mhp3rd_source_authority psprecomp_core)
     target_include_directories(mhp3rd_source_authority PUBLIC "${MHP3RD_PROFILE_DIR}/host")
     add_executable(mhp3rd_source_authority_tests tests/source_authority_tests.cpp)
     target_link_libraries(mhp3rd_source_authority_tests PRIVATE mhp3rd_source_authority)
@@ -907,6 +912,32 @@ if(MHP3RD_TEXTURE_COMMAND_INSTRUMENTED_SOURCE AND TARGET mhp3rd_texture_commands
         mhp3rd_texture_commands_bridge mhp3rd_native_probes)
     set_target_properties(mhp3rd_texture_command_dispatch_oracle PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+endif()
+if(APPLE AND MHP3RD_TEXTURE_LIFETIME_INSTRUMENTED_SOURCES AND
+   MHP3RD_TEXTURE_COMMAND_INSTRUMENTED_SOURCE AND TARGET mhp3rd_texture_lifetime_tracker)
+    add_executable(mhp3rd_texture_lifetime_oracle EXCLUDE_FROM_ALL
+        tests/texture_lifetime_oracle.cpp $<TARGET_OBJECTS:mhp3rd_generated>)
+    target_include_directories(mhp3rd_texture_lifetime_oracle PRIVATE "${MHP3RD_PROFILE_DIR}/generated")
+    target_link_libraries(mhp3rd_texture_lifetime_oracle PRIVATE
+        mhp3rd_texture_lifetime_tracker mhp3rd_native_probes ${CMAKE_DL_LIBS})
+    set_target_properties(mhp3rd_texture_lifetime_oracle PROPERTIES
+        ENABLE_EXPORTS TRUE RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        # Instrument the new metadata boundary and harness; retain production
+        # AOT/runtime objects rather than rebuilding the entire game corpus.
+        add_executable(mhp3rd_texture_lifetime_sanitized EXCLUDE_FROM_ALL
+            tests/texture_lifetime_oracle.cpp host/native/texture_lifetime_tracker.cpp
+            host/native/texture_command_dispatch.cpp host/resources/source_authority.cpp
+            $<TARGET_OBJECTS:mhp3rd_generated>)
+        target_include_directories(mhp3rd_texture_lifetime_sanitized PRIVATE
+            "${MHP3RD_PROFILE_DIR}/generated" "${MHP3RD_PROFILE_DIR}/host")
+        target_link_libraries(mhp3rd_texture_lifetime_sanitized PRIVATE mhp3rd_native_probes ${CMAKE_DL_LIBS})
+        target_compile_options(mhp3rd_texture_lifetime_sanitized PRIVATE
+            -fsanitize=address,undefined -fno-omit-frame-pointer)
+        target_link_options(mhp3rd_texture_lifetime_sanitized PRIVATE -fsanitize=address,undefined)
+        set_target_properties(mhp3rd_texture_lifetime_sanitized PROPERTIES
+            ENABLE_EXPORTS TRUE RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    endif()
 endif()
 add_library(mhp3rd_control_delivery STATIC host/hle/control_delivery.cpp)
 target_link_libraries(mhp3rd_control_delivery PUBLIC psprecomp_core mhp3rd_game_observation)
