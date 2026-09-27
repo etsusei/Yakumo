@@ -77,3 +77,11 @@ concurrent mutation and complete interception of invalidation events remain
 unverified. A cleared slot is not a loaded resource. ASSET-012 stays in progress
 until a usable loading/lifetime authority is specified without conflating
 construction, queue state and source bytes.
+
+
+The subsequent [transfer completion gate](TEXTURE_TRANSFER_VALIDATION.md) and
+[source-authority contract](TEXTURE_SOURCE_AUTHORITY.md) resolve the bounded
+DATA.BIN completion/write-extent investigation. ASSET-012 is complete in that
+scope; ASSET-013 implements the authority next. These later results do not
+retroactively claim live loading, actual concurrent scheduling, alternate-file
+coverage or production integration for this audit.

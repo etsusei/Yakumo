@@ -155,3 +155,24 @@ asynchronous manager's worker completion and exact decoded destination extent.
 The observed post-build state4 and queue-idle poll are not successful byte
 completion evidence. Preserve this gap and do not enable the native adapter
 until a usable per-owner source authority is implemented.
+
+
+ASSET-012 is now complete as a finite boundary investigation for the selected
+lobby/DATA.BIN path. The original reader/copy/transform gate passed64 scenarios
+per path, including retries, rounded writes, original group-cancel late writes
+and a hash-bound private sample. Per-request source validity must come from the
+actual phase receipts, not queue retirement or a post-build flag.
+[TEXTURE_SOURCE_AUTHORITY.md](TEXTURE_SOURCE_AUTHORITY.md) defines the complete
+lease, generation, fragment and write-hazard contract, including poisoning
+pending candidates on foreign writes.
+
+**ASSET-013 — Implement bounded source authority.** Implement this contract as
+a value/event module with no Runtime or guest stores, and test receipt and
+invalidation sequences offline. Keep storage bounded; fail closed on missing
+events, counter overflow, stale descriptors and overlapping writers. The first
+fragment must start at0, every next offset must equal the previous end, and
+the last end must equal the requested total. An old writer can invalidate a
+new generation even when its completion is otherwise stale. Model integrity
+generation separately from actual comparison. Production event capture,
+intra-unit AOT coverage, alternate-file paths and live acceptance remain later
+work; no extra manual test is requested for this offline module.

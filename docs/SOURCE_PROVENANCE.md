@@ -110,3 +110,13 @@ facts only. Derived overlay wrappers/disassembly, original module binaries
 and execution reports remain local and ignored. The source-slot lifecycle
 notes distinguish original control-flow observations from successful byte
 loading, which has not yet been validated.
+
+### Resource transfer completion evidence
+
+The transfer oracle uses independently written control fixtures and explicit
+I/O/event models while executing original reader, copy and postprocessing
+code. Its private integrity sample is a hash-bound window from the local ISO
+and the matching extracted entry; neither is tracked. The existing public
+DATA.BIN transform description and locally loaded original table supply the
+independent synthetic expected-byte model. No original instruction bodies or
+payload bytes are added to the repository.
