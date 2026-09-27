@@ -61,6 +61,9 @@ public:
     [[nodiscard]] bool checkpoint() noexcept;
     [[nodiscard]] bool anomaly() noexcept;
     [[nodiscard]] bool finish(CaseOutcome outcome) noexcept;
+    // A settings snapshot interrupts an active case at the first observed
+    // relevant change, even if the setting is restored before the next marker.
+    void configuration_observed() noexcept;
     // An unfinished attempt stays interrupted. No CaseEnd is invented.
     void close(std::string_view reason) noexcept;
 

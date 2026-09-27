@@ -144,5 +144,7 @@ The local report is `out/testing/readiness.json`; the final catalog SHA-256 is
 The ready applications and Chinese companion guide are in
 `out/testing/dist/initial-batch/`. Older applications directly under `dist/`
 contain the provisional catalog and are not the first user handoff. No game
-was launched during delivery checks. CASE-001 now awaits the user's Baseline
-then Candidate runs; preparation-only output does not satisfy it.
+was launched during delivery checks. The user subsequently completed both
+applications; [the first acceptance report](FIRST_PAIRED_ACCEPTANCE.md) retains
+the normal user marks, verified helper results and comparison limits.
+Preparation-only output alone does not satisfy CASE-001.

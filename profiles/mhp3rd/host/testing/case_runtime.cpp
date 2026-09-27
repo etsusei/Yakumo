@@ -37,6 +37,10 @@ std::shared_ptr<CaseController> start_case_session(const RecordingOptions &optio
         {"prerequisite_basis_sha256", options.prerequisite_basis_sha256},
         {"case_count", std::uint64_t(controller->catalog().cases.size())},
     }, true);
+    const std::weak_ptr<CaseController> weak_controller = controller;
+    settings::set_case_configuration_observer([weak_controller]() noexcept {
+        if (auto current = weak_controller.lock()) current->configuration_observed();
+    });
     set_active_case_controller(controller);
     return controller;
 }
@@ -44,6 +48,9 @@ std::shared_ptr<CaseController> start_case_session(const RecordingOptions &optio
 void close_case_session(const std::shared_ptr<CaseController> &controller, std::string_view reason) noexcept {
     if (!controller) return;
     controller->close(reason);
-    if (active_case_controller() == controller) set_active_case_controller({});
+    if (active_case_controller() == controller) {
+        settings::set_case_configuration_observer({});
+        set_active_case_controller({});
+    }
 }
 } // namespace mhp3rd::testing

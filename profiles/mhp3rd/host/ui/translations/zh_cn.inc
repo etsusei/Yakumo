@@ -747,3 +747,4 @@
 {"Test launcher could not start", "测试启动器无法启动"},
 {"The test could not start. Check the local installation and diagnostics.", "测试无法启动。请检查本地安装和诊断信息。"},
 {"Details: ", "详细信息："},
+{"Settings changed during this case. Close this test run; restoring a setting does not restore its validity.", "本案例中设置发生变化，请结束本次测试。改回原值也不能恢复本案例的有效性。"},

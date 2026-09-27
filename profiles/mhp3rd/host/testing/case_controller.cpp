@@ -243,6 +243,10 @@ bool CaseController::same_configuration() noexcept {
     return true;
 }
 
+void CaseController::configuration_observed() noexcept {
+    if (!closed_ && !failed_ && active_case_) (void)same_configuration();
+}
+
 bool CaseController::begin(std::size_t case_index) noexcept {
     if (closed_ || failed_) { set_error("case_controller_unavailable"); return false; }
     if (active_case_) { set_error("case_already_active"); return false; }

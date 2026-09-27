@@ -66,4 +66,6 @@ The subsequent formal handoff at commit `75ca5ff` completed PAIR-003. Its apps
 are under `out/testing/dist/initial-batch/`, with the local Chinese guide
 `START_HERE.md`. The final readiness report is `out/testing/readiness.json`.
 Use [the formal case pack](TEST_CASES.md) for CASE-001; the earlier pair above
-is retained as provisional delivery evidence. Gameplay acceptance is pending.
+is retained as provisional delivery evidence. The first user sessions have now
+been analyzed in [the scoped acceptance report](FIRST_PAIRED_ACCEPTANCE.md);
+broader gameplay acceptance remains pending.

@@ -34,7 +34,9 @@ int main(int argc, char **argv) {
         const bool all_cases = std::string_view(argv[1]) == "--run-all";
         const std::string mode = argv[9];
         require(all_cases ? (mode == "normal" || mode == "interrupt") :
-                (mode == "normal" || mode == "interrupt" || mode == "changed_config" || mode == "skip"),
+                (mode == "normal" || mode == "interrupt" || mode == "changed_config" || mode == "skip" ||
+                 mode == "restored_config_save" || mode == "restored_config_snapshot" ||
+                 mode == "navigation_only"),
                 "unknown fixture mode");
         RecordingOptions options;
         options.directory = argv[2]; options.role = argv[3]; options.run_id = argv[4];
@@ -116,6 +118,37 @@ int main(int argc, char **argv) {
             if (mode == "changed_config") {
                 settings.mute = !settings.mute;
                 require(!controller->checkpoint(), "changed settings did not interrupt the case");
+            } else if (mode == "restored_config_save" || mode == "restored_config_snapshot") {
+                const auto original = settings.mute;
+                const auto original_hash = mhp3rd::settings::case_configuration_sha256();
+                settings.mute = !original;
+                if (mode == "restored_config_save") mhp3rd::settings::save();
+                else mhp3rd::settings::record_snapshot();
+                settings.mute = original;
+                if (mode == "restored_config_save") mhp3rd::settings::save();
+                else mhp3rd::settings::record_snapshot();
+                require(mhp3rd::settings::case_configuration_sha256() == original_hash,
+                        "restored configuration did not match the case start");
+                require(!controller->finish(CaseOutcome::Normal),
+                        "restored settings allowed a normal CaseEnd");
+                require(!controller->active_case() &&
+                        controller->progress()[0].state == CaseProgressState::Interrupted,
+                        "observed configuration change did not interrupt the case");
+            } else if (mode == "navigation_only") {
+                const auto original_hash = mhp3rd::settings::case_configuration_sha256();
+                settings.menu_hint_seen = !settings.menu_hint_seen;
+                settings.last_folder = "another-synthetic-navigation-folder";
+                settings.adhoc_mac = "06:05:04:03:02:01";
+                settings.adhoc_nickname = "another-synthetic-instance-name";
+                settings.adhoc_recent = {"another-synthetic-history"};
+                mhp3rd::settings::save();
+                mhp3rd::settings::record_snapshot();
+                require(mhp3rd::settings::case_configuration_sha256() == original_hash,
+                        "navigation history changed case prerequisites");
+                require(controller->checkpoint(), "navigation history interrupted the checkpoint");
+                require(controller->finish(CaseOutcome::Normal), "navigation history interrupted normal finish");
+                require(controller->progress()[0].state == CaseProgressState::Normal,
+                        "navigation history changed the case outcome");
             } else if (mode == "skip") {
                 require(controller->finish(CaseOutcome::Skipped), "explicit skip failed");
             } else if (mode == "normal") {

@@ -3,6 +3,7 @@
 #include "input/bindings.hpp"
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -156,6 +157,9 @@ void save();
 // Emit changed effective settings for an active test run; sensitive values are
 // fingerprinted rather than copied. No-op when observation is disabled.
 void record_snapshot() noexcept;
+// Called at every snapshot, including saves and deduplicated snapshots. The
+// case runtime installs this on the main thread for the recording session.
+void set_case_configuration_observer(std::function<void()> callback);
 // Current case prerequisites exclude navigation history and per-instance
 // network identities. Values stay local; only the digest enters case markers.
 [[nodiscard]] std::string case_configuration_sha256();
