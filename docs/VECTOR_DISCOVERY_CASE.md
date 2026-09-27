@@ -49,3 +49,20 @@ The local Chinese `START_HERE.md` gives the actual application paths and steps.
 The user operates each role once and closes it normally. The assistant reads
 the resulting local packages and reports which entries were observed, what was
 verified, and what remains unknown. A readiness report is not user acceptance.
+
+## Delivered checkpoint
+
+Source `a223ed3` is published in draft PR
+[#19](https://github.com/etsusei/Yakumo/pull/19). The signed applications and local
+Chinese guide are under `out/testing/dist/vector-discovery/`. The catalog hash
+is `2ed3ef1dfea164b7a3b9b0aae18e33a8ef5568256d086e4ed01a60bae5c400e1`.
+Both roles share observation revision
+`source-sha256:1935fc676e3f094cd04d2313f2254d0ed5cc5aabd35c17a19b0bcb74ddc20df9`.
+
+Validation: 56 targeted Python tests, four CTests, 33 real-binary paired
+preflights, signed native launcher preparation-only runs, and 43/43 production
+game-font samples from each prepared settings directory passed. The readiness
+report is `out/testing/vector-discovery-readiness.json`; immutable build
+manifests/binaries are in `out/testing/observed-builds/vector-discovery-a223ed3/`.
+No game or live recording was started. VEC-003 remains unfinished pending user
+discovery and evidence-based required-coverage cases.

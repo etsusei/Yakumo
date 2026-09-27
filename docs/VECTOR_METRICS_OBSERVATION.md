@@ -119,5 +119,7 @@ passed its 1,280 bounded original calls. Archived build manifests are under
 `out/testing/observed-builds/vector-observation-399754a/`; the consolidated local
 report is `out/testing/vector-observation-validation.json`.
 
-VEC-003 remains in progress because live trigger discovery and its finite user
-case are not yet complete. These builds are not a new delivered application pair.
+VEC-003 awaits user discovery because live trigger evidence and formal required
+coverage remain incomplete. The 399754a archives are retained; a separate
+localized discovery pair built from a223ed3 is now ready, as documented in
+[VECTOR_DISCOVERY_CASE.md](VECTOR_DISCOVERY_CASE.md).
