@@ -164,3 +164,11 @@ free, owner free, and in-place reuse. Until those links are present, state 3,
 state 4, a mapped RAM span, a cached ID, or a parseable child table does not
 authorize the native builder adapter. No new manual gameplay case is needed
 for this remaining static/instrumented proof.
+
+
+The subsequent [transfer completion gate](TEXTURE_TRANSFER_VALIDATION.md) and
+[source-authority contract](TEXTURE_SOURCE_AUTHORITY.md) resolve the bounded
+DATA.BIN completion/write-extent investigation. ASSET-012 is complete in that
+scope; ASSET-013 implements the authority next. These later results do not
+retroactively claim live loading, actual concurrent scheduling, alternate-file
+coverage or production integration for this audit.

@@ -860,6 +860,11 @@ if(MHP3RD_PROBE_INSTRUMENTED_SOURCES)
             set_target_properties(mhp3rd_texture_owner_oracle PROPERTIES
                 ENABLE_EXPORTS TRUE RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
         endif()
+        add_executable(mhp3rd_texture_transfer_oracle EXCLUDE_FROM_ALL
+            tests/texture_transfer_oracle.cpp $<TARGET_OBJECTS:mhp3rd_generated>)
+        target_include_directories(mhp3rd_texture_transfer_oracle PRIVATE "${MHP3RD_PROFILE_DIR}/generated")
+        target_link_libraries(mhp3rd_texture_transfer_oracle PRIVATE mhp3rd_native_probes)
+        set_target_properties(mhp3rd_texture_transfer_oracle PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
         add_executable(mhp3rd_texture_allocation_oracle EXCLUDE_FROM_ALL
             tests/texture_allocation_oracle.cpp $<TARGET_OBJECTS:mhp3rd_generated>)
         target_include_directories(mhp3rd_texture_allocation_oracle PRIVATE "${MHP3RD_PROFILE_DIR}/generated")

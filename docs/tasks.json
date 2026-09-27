@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 112,
+  "revision": 115,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T11:28:45Z",
+  "updated_at": "2026-09-27T12:02:43Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -618,6 +618,30 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_async_worker",
+      "type": "agent",
+      "role": "Original resource queue worker completion and error audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_decode_extent",
+      "type": "agent",
+      "role": "Original resource transfer/transform output extent audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_authority_review",
+      "type": "agent",
+      "role": "Independent source-authority contract and transfer-evidence review",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -658,8 +682,8 @@
   },
   "execution_state": {
     "current_task_id": "ASSET-012",
-    "next_task_id": "ASSET-012",
-    "next_action": "Continue ASSET-012 at the selected asynchronous worker completion path: correlate resource ID, exact destination, successful read/transform result and decoded extent to the live owner generation. Creation and command-pointer free are now proven in scoped original-code evidence; retain queue-idle/post-build flag limitations and keep production dispatch off.",
+    "next_task_id": "ASSET-013",
+    "next_action": "Implement the Runtime-independent bounded source-authority module and offline event replay from docs/TEXTURE_SOURCE_AUTHORITY.md. The original owner/transfer investigation is complete in its documented scope; do not enable production native hooks or request a new manual case yet.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": []
@@ -714,7 +738,10 @@
     "texture_owner_overlay_audit": "docs/TEXTURE_OWNER_OVERLAY_AUDIT.md",
     "texture_slot_lifecycle": "docs/TEXTURE_SLOT_LIFECYCLE.md",
     "texture_owner_validation": "docs/TEXTURE_OWNER_VALIDATION.md",
-    "texture_owner_lifecycle_pr": "https://github.com/etsusei/Yakumo/pull/29"
+    "texture_owner_lifecycle_pr": "https://github.com/etsusei/Yakumo/pull/29",
+    "texture_source_authority": "docs/TEXTURE_SOURCE_AUTHORITY.md",
+    "texture_transfer_validation": "docs/TEXTURE_TRANSFER_VALIDATION.md",
+    "texture_transfer_completion_pr": "https://github.com/etsusei/Yakumo/pull/30"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -7811,7 +7838,7 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-001",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -7819,17 +7846,20 @@
         "/root/texture_caller_source_audit",
         "/root/texture_allocator_audit",
         "/root/texture_overlay_owner",
-        "/root/texture_slot_lifecycle"
+        "/root/texture_slot_lifecycle",
+        "/root/texture_async_worker",
+        "/root/texture_decode_extent",
+        "/root/texture_authority_review"
       ],
       "created_at": "2026-09-27T10:55:25Z",
-      "updated_at": "2026-09-27T11:28:45Z",
+      "updated_at": "2026-09-27T12:02:43Z",
       "started_at": "2026-09-27T10:57:54Z",
-      "completed_at": null,
+      "completed_at": "2026-09-27T11:59:47Z",
       "scope": "Trace a real original texture-builder call path to source and command allocation owners, bounds and lifetime. Define a checked authority usable by production integration without inferring allocation extent from RAM mapping or an untrusted count.",
       "depends_on": [
         "ASSET-011"
       ],
-      "work_summary": "Closed the specific source-owner allocation-to-lobby-constructor pointer chain and command-pointer free pairing. Original lobby constructor, provider, state reset, command release and owner free/reuse passed22 AOT/interpreter calls with full RAM/VRAM/CPU equality. Static loading audit identified asynchronous enqueue/poll/build states; per-request successful decoded extent and complete lifecycle interception remain unproved. ASSET-012 stays in progress; no production dispatch is enabled.",
+      "work_summary": "Completed the finite owner/caller/transfer boundary investigation. Exact live-bound producers and invalidations are identified for the supported lobby/DATA.BIN route; original transfer workers passed64 modeled-boundary AOT/interpreter scenarios, including retries, both copy routes, rounded writes, late group-cancel writes and a private original SHA-1 sample. Defined the per-owner source-authority contract, distinguishing transferred bytes, padding footprint, conditional digest generation and actual comparison. Production authority and observer integration remain future implementation tasks.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
@@ -7938,6 +7968,66 @@
           "kind": "validation_report",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "docs/TEXTURE_ASYNC_COMPLETION.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_TRANSFER_EXTENT.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_TRANSFER_VALIDATION.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_SOURCE_AUTHORITY.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_transfer_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_texture_transfer.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_transfer_runner.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-async-worker-static.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-extent-static.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-completion-certified.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -7994,18 +8084,46 @@
             "name": "Owner report rejection checks and strict compiler",
             "status": "passed",
             "evidence": "Four test_texture_owner_runner.py tests passed; rejects omitted coverage, altered scope/broadened loader claims, invalid execution budgets and missing overlay page. Strict C++20 conversion/signed warnings passed for owner harness."
+          },
+          {
+            "name": "Original read/copy/transform completion gate",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-transfer-completion-certified.json",
+            "sha256": "c1de11917d9184ae0f1dbb9f897775e85069719f6ed595c1741660085e506bef",
+            "details": "64 scenarios per AOT/interpreter path with whole RAM/VRAM/main CPU and secondary CPU equality plus import-trace equality. Includes24 retry,8 injected marker-clear(not original reset),16 late group-write,4 rounded-write and4 private entry1489 digest-generation cases;14 separate copy-worker and56 transform-worker executions. Entry1489 block-span bytes match extracted data and original digest table; zero original comparison visits on state8. Maximum1485992 slices; I/O/cache/event scheduling explicitly modeled."
+          },
+          {
+            "name": "Original worker and transform extent audit",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-async-worker-static.json",
+              "out/testing/texture-transfer-extent-static.json"
+            ],
+            "details": "Rechecked 17 worker and 22 transfer/branch spans. Confirmed exact-read guard, n-byte copy, roundUp4(n) write footprint, conditional SHA-1 flag and state8 comparison bypass."
+          },
+          {
+            "name": "Strict report validation and compiler",
+            "status": "passed",
+            "evidence": "Five test_texture_transfer_runner.py tests passed after review; exact allowed fields, coverage, model boundaries, slice budget and zero original digest comparisons required. Strict C++20 signed/conversion warnings passed."
+          },
+          {
+            "name": "Independent contract/evidence review",
+            "status": "passed",
+            "evidence": "Reviewer /root/texture_authority_review identified pending-candidate poisoning, injected-marker-clear labeling, block-span naming, exact final-fragment end and unknown report claims. Root corrected all five; final64-case gate and five report tests passed afterward."
           }
         ],
         "limitations": [
-          "Actual lobby creation pointer flow is established statically and constructor behavior validated with constructed heaps; the full factory and outer removal workflow were not executed.",
-          "Successful asynchronous resource completion and exact decoded extent for selector7 remain unproved; queue idle and post-build state4 are insufficient source readiness evidence.",
-          "Complete interception of reset/cancel/reload/free and binding of outer container slots to live owner instances remain implementation/coverage obligations.",
-          "No production ownership registry or native command dispatch, game run, GPU, concurrency or performance test. Existing apps and user records remain unchanged."
+          "Only the identified lobby owner and DATA.BIN state8 route are certified for this contract. Other overlays/owners/routes remain unsupported until separately validated.",
+          "I/O returns, caches, delays, event scheduling and suspension are explicit test models; no real concurrent scheduler, hardware cache or game run.",
+          "Single-fragment worker cases do not establish multi-fragment production coverage; alternate memory-stick-file digest failures remain unexecuted.",
+          "The private sample is a transferred extracted block span, not an independently established semantic root length or live scene/source mapping.",
+          "Owner/source/command authority is specified but not implemented or connected to production. Hook completeness, generation tracking, overlapping pending writers and execution exclusion must be validated before native activation."
         ]
       },
       "implementation_commits": [
         "8110aeed7448a159226d71e7989e566d3939dc88",
-        "4cc628f4da86388b3a97670375b3e1e648e57682"
+        "4cc628f4da86388b3a97670375b3e1e648e57682",
+        "29038735735b43c807d996c256d65ca1f96782d1"
       ],
       "pause_reason": null,
       "blockers": [],
@@ -8060,6 +8178,84 @@
           "actor_id": "/root",
           "action": "published_owner_lifecycle_evidence",
           "description": "Published exact lobby creation pointer flow, loading-state audit and22-call original owner/release gate in draft PR #29 at4cc628f. ASSET-012 remains in progress for successful asynchronous source completion and exact decoded extent."
+        },
+        {
+          "recorded_at": "2026-09-27T11:31:35Z",
+          "occurred_at": "2026-09-27T11:31:35Z",
+          "actor_id": "/root",
+          "action": "async_completion_audit_started",
+          "description": "Tracing per-request read, transform, retry and completion state for the selected source slot. Independent worker and transfer audits support a bounded original fault/result harness; no game run."
+        },
+        {
+          "recorded_at": "2026-09-27T11:59:47Z",
+          "occurred_at": "2026-09-27T11:59:47Z",
+          "actor_id": "/root",
+          "action": "completed_boundary_investigation",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Completed the finite owner/caller/transfer boundary investigation. Exact live-bound producers and invalidations are identified for the supported lobby/DATA.BIN route; original transfer workers passed64 modeled-boundary AOT/interpreter scenarios, including retries, both copy routes, rounded writes, late group-cancel writes and a private original SHA-1 sample. Defined the per-owner source-authority contract, distinguishing transferred bytes, padding footprint, conditional digest generation and actual comparison. Production authority and observer integration remain future implementation tasks."
+        },
+        {
+          "recorded_at": "2026-09-27T12:02:43Z",
+          "occurred_at": "2026-09-27T12:02:43Z",
+          "actor_id": "/root",
+          "action": "published_completed_boundary_contract",
+          "description": "Published the completed original transfer boundary investigation,64-case modeled-boundary gate and source-authority contract in draft PR #30 at2903873. ASSET-013 remains planned; actual production observer/native integration and manual coverage remain separate."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ASSET-013",
+      "title": "Implement bounded resource source authority",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root"
+      ],
+      "created_at": "2026-09-27T11:59:47Z",
+      "updated_at": "2026-09-27T11:59:47Z",
+      "started_at": null,
+      "completed_at": null,
+      "scope": "Implement a Runtime-independent event/state module from TEXTURE_SOURCE_AUTHORITY.md. Track bounded owner/command leases, source/request/descriptor generations, fragment receipts and physical write hazards; expose eligibility only after complete supported transfer evidence, with no guest mutation or production hook.",
+      "depends_on": [
+        "ASSET-012"
+      ],
+      "work_summary": "Planned next implementation task after the finite original boundary investigation completed.",
+      "deliverables": [
+        {
+          "path": "docs/TEXTURE_SOURCE_AUTHORITY.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Values/events only: no Runtime, GuestMemory, file I/O, scheduler or renderer dependency in the core.",
+        "Enforce live lease identity, raw/canonical checked intervals, exact fragment totals, phase order, requested length versus rounded write footprint, descriptor reuse and code epochs.",
+        "Foreign overlapping writes revoke published sources and poison pending candidates; stale writers remain hazards across reset/free/address reuse until actual quiescence.",
+        "Use bounded storage and explicit fail-closed outcomes for unknown events, observer loss, counter overflow and allocation limits; source authority never fabricates loaded bytes.",
+        "Offline tests cover successful receipt flow plus gaps, overlaps, short/failing reads, retirement without transfer, digest evidence distinctions, stale completion, late writers, aliasing and lifecycle invalidation.",
+        "Leave production registration and delivered applications unchanged; record integration requirements for a later related acceptance batch."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T11:59:47Z",
+          "occurred_at": "2026-09-27T11:59:47Z",
+          "actor_id": "/root",
+          "action": "planned",
+          "description": "Implement the bounded source authority defined by the completed original owner/transfer investigation; production hook coverage remains separate."
         }
       ],
       "updated_by_agent_id": "/root"
