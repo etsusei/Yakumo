@@ -428,7 +428,7 @@ if(PSPRECOMP_BUILD_TESTS)
                 ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
         endforeach()
         if(NOT MHP3RD_BASELINE_B0)
-            foreach(suite observed_baseline package_test_pair test_launcher pair_readiness initial_case_pack)
+            foreach(suite observed_baseline package_test_pair test_launcher pair_readiness initial_case_pack native_batch)
                 add_test(NAME mhp3rd_${suite}_tests
                     COMMAND "${Python3_EXECUTABLE}" -m unittest discover
                         -s "${MHP3RD_PROFILE_DIR}/tests" -p "test_${suite}.py" -v)

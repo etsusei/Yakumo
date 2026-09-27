@@ -18,6 +18,7 @@ import plistlib
 import subprocess
 
 import launch_test_run as launch
+import native_batch
 import run_cases
 import run_package
 
@@ -51,9 +52,30 @@ def run(command: list[str], timeout: int = 30) -> subprocess.CompletedProcess:
     return result
 
 
-def check_contract(pair: dict, configs: dict, catalog_hash: str) -> None:
+def _execution_profile(pair: dict, catalog: dict | None) -> dict | None:
+    has_profile = "execution_profile" in pair
+    require(has_profile == ("execution_profile_sha256" in pair),
+            "Pair execution profile and digest must appear together")
+    if not has_profile:
+        return None
+    require(catalog is not None, "Native execution profile requires its case catalog")
+    try:
+        profile = native_batch.validate_profile(pair["execution_profile"], catalog)
+    except native_batch.NativeBatchError as exc:
+        raise ReadinessError(f"Invalid pair execution profile: {exc}") from exc
+    require(pair["execution_profile_sha256"] == native_batch.profile_sha256(profile),
+            "Pair execution profile digest differs")
+    return profile
+
+
+def check_contract(pair: dict, configs: dict, catalog_hash: str,
+                   catalog: dict | None = None) -> dict | None:
     require(pair.get("schema") == "yakumo-test-pair-v1" and pair.get("baseline_id") == "B0",
             "Unknown pair manifest")
+    profile = _execution_profile(pair, catalog)
+    if profile is not None:
+        require(profile["case_catalog_sha256"] == catalog_hash,
+                "Pair execution profile has a stale case catalog")
     baseline, candidate = configs["baseline"], configs["candidate"]
     font = pair.get("game_font")
     require(type(font) is dict and bool(font.get("path")) and bool(font.get("sha256")),
@@ -65,9 +87,14 @@ def check_contract(pair: dict, configs: dict, catalog_hash: str) -> None:
         require(config["cases"]["sha256"] == catalog_hash, "App has a stale case catalog")
         require(config["batch_id"] == pair["batch_id"], "App batch differs from pair manifest")
         require(config["probe_selection"] == "all", "Discovery probes must remain selected")
-        expected_mode = "off" if role == "baseline" else "verify"
-        require(all(mode == expected_mode for mode in config["native_modes"].values()),
-                "First-pack native mode differs")
+        if role == "baseline":
+            expected_modes = {name: "off" for name in native_batch.NATIVE_SWITCH_BY_ENTRY.values()}
+        elif profile is not None:
+            expected_modes = profile["candidate_modes"]
+        else:
+            expected_modes = {name: "verify" for name in native_batch.NATIVE_SWITCH_BY_ENTRY.values()}
+        require(config["native_modes"] == expected_modes,
+                "Native mode differs from paired execution policy")
         for name in ("recorder_revision", "build_config_sha256", "configuration_sha256"):
             require(config[name] == pair[name], "Pair metadata differs: " + name)
     require(baseline["baseline_commit"] == "4292eb66ee66eab37c327575382d071addcf6249",
@@ -83,6 +110,7 @@ def check_contract(pair: dict, configs: dict, catalog_hash: str) -> None:
     require(baseline["overlays"]["tree_id"] == pair["overlays_tree_id"], "Pair overlay identity differs")
     require(baseline["binary"]["sha256"] != candidate["binary"]["sha256"],
             "Baseline and candidate are the same binary")
+    return profile
 
 
 def check_readiness(pair_dir: Path, catalog_path: Path, fixture: Path) -> dict:
@@ -91,11 +119,14 @@ def check_readiness(pair_dir: Path, catalog_path: Path, fixture: Path) -> dict:
     catalog_path = catalog_path.resolve(strict=True)
     catalog = run_cases.load_case_catalog(catalog_path)
     expected_hash = digest(catalog)
-    require([case["id"] for case in catalog["cases"]] == ["REC-01", "REC-02", "NATIVE-01", "REC-03"],
-            "The first user pack must contain its four ordered cases")
-    require(all(case["human_acceptance"] for case in catalog["cases"]),
-            "User observations remain required for every initial case")
     pair = read_json(pair_dir / "pair-manifest.json")
+    profile = _execution_profile(pair, catalog)
+    if profile is None:
+        require([case["id"] for case in catalog["cases"]] ==
+                ["REC-01", "REC-02", "NATIVE-01", "REC-03"],
+                "The first user pack must contain its four ordered cases")
+    require(bool(catalog["cases"]) and all(case["human_acceptance"] for case in catalog["cases"]),
+            "User observations remain required for every case")
     font = pair.get("game_font", {})
     font_path = launch._path(font.get("path"), "game_font.path", kind="file")
     require(launch._regular_hash(font_path)[1] == font.get("sha256"), "Game-text font content changed")
@@ -112,12 +143,18 @@ def check_readiness(pair_dir: Path, catalog_path: Path, fixture: Path) -> dict:
         require(config["binary"]["path"] == app / "Contents/MacOS/YakumoGame", "Game path escapes its app")
         require(config["cases"]["path"] == app / "Contents/Resources/testing/cases.json", "Catalog path escapes its app")
         require(run_cases.load_case_catalog(config["cases"]["path"]) == catalog, "Catalog contents differ")
+        bundled_profile = app / "Contents/Resources/testing/execution-profile.json"
+        if profile is not None:
+            require(bundled_profile.is_file() and read_json(bundled_profile) == profile,
+                    "Bundled execution profile differs from pair manifest")
+        else:
+            require(not bundled_profile.exists(), "Legacy pair unexpectedly bundles an execution profile")
         parsed = json.loads(run([str(fixture), "--catalog", str(config["cases"]["path"])]).stdout)
         require(parsed == {"sha256": expected_hash, "case_count": len(catalog["cases"])},
                 "Compiled C++ and Python catalog interpretations differ")
         configs[role] = config
         applications[role] = app
-    check_contract(pair, configs, expected_hash)
+    check_contract(pair, configs, expected_hash, catalog)
 
     outcomes = {}
     bases = []
@@ -156,7 +193,7 @@ def check_readiness(pair_dir: Path, catalog_path: Path, fixture: Path) -> dict:
         a = (Path(outcomes["baseline"]["save_directory"]) / item["path"]).stat()
         b = (Path(outcomes["candidate"]["save_directory"]) / item["path"]).stat()
         require((a.st_dev, a.st_ino) != (b.st_dev, b.st_ino), "Roles share a writable save file")
-    return {"schema": "yakumo-first-pack-readiness-v1", "status": "ready_for_user_test",
+    report = {"schema": "yakumo-first-pack-readiness-v1", "status": "ready_for_user_test",
             "recorded_at": datetime.now(timezone.utc).isoformat(), "full_game_launched": False,
             "case_catalog_sha256": expected_hash, "prerequisite_basis_sha256": bases[0],
             "pair_manifest_sha256": launch._regular_hash(pair_dir / "pair-manifest.json")[1],
@@ -164,6 +201,10 @@ def check_readiness(pair_dir: Path, catalog_path: Path, fixture: Path) -> dict:
             "limitations": ["Manual route duration is a planning estimate, not a measured play session.",
                             "Physical controls, dialog appearance and live helper coverage remain unverified.",
                             "Readiness is not gameplay acceptance; no user cases were executed."]}
+    if profile is not None:
+        report["execution_profile_id"] = profile["id"]
+        report["execution_profile_sha256"] = native_batch.profile_sha256(profile)
+    return report
 
 
 def main() -> int:

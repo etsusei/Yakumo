@@ -7,6 +7,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from check_pair_readiness import ReadinessError, check_contract
+import native_batch
 from run_package import NATIVE_MODE_FIELDS
 
 
@@ -80,6 +81,42 @@ class ReadinessContractTests(unittest.TestCase):
                 self.configs["candidate"][key] = value
                 with self.assertRaises(ReadinessError): self.check()
                 self.configs["candidate"][key] = original
+
+    def test_explicit_native_profile_binds_catalog_modes_and_probe_requirements(self):
+        catalog = {"schema": "yakumo-case-catalog-v1", "cases": [{
+            "id": "NATIVE-DATA", "version": 1, "title": "Village native data",
+            "steps": ["Observe"], "checkpoints": ["done"],
+            "required_probes": [{"entry": entry, "min_calls": 1}
+                                for entry in native_batch.REQUIRED_NATIVE_ENTRIES],
+            "required_state_fields": [], "human_acceptance": True,
+        }]}
+        from check_pair_readiness import digest
+        catalog_hash = digest(catalog)
+        profile = {"schema": native_batch.SCHEMA, "id": "native-data-1",
+                   "case_catalog_sha256": catalog_hash,
+                   "candidate_modes": {
+                       switch: ("native" if entry in native_batch.REQUIRED_NATIVE_ENTRIES else "off")
+                       for entry, switch in native_batch.NATIVE_SWITCH_BY_ENTRY.items()},
+                   "required_native_entries": list(native_batch.REQUIRED_NATIVE_ENTRIES)}
+        self.pair["execution_profile"] = profile
+        self.pair["execution_profile_sha256"] = native_batch.profile_sha256(profile)
+        for config in self.configs.values():
+            config["cases"]["sha256"] = catalog_hash
+        self.configs["candidate"]["native_modes"] = dict(profile["candidate_modes"])
+        self.assertEqual(check_contract(self.pair, self.configs, catalog_hash, catalog), profile)
+        self.assertNotEqual(self.pair["batch_id"], profile["id"])
+
+        self.configs["candidate"]["native_modes"]["MHP3RD_NATIVE_MATRIX_COPY"] = "verify"
+        with self.assertRaisesRegex(ReadinessError, "Native mode differs"):
+            check_contract(self.pair, self.configs, catalog_hash, catalog)
+        self.configs["candidate"]["native_modes"] = dict(profile["candidate_modes"])
+        self.pair["execution_profile_sha256"] = "0" * 64
+        with self.assertRaisesRegex(ReadinessError, "digest differs"):
+            check_contract(self.pair, self.configs, catalog_hash, catalog)
+        self.pair["execution_profile_sha256"] = native_batch.profile_sha256(profile)
+        catalog["cases"][0]["required_probes"].pop()
+        with self.assertRaisesRegex(ReadinessError, "catalog hash differs"):
+            check_contract(self.pair, self.configs, catalog_hash, catalog)
 
 
 if __name__ == "__main__":

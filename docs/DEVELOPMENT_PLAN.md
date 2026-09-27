@@ -2,7 +2,7 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-27T04:13:46Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-27T04:43:43Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -135,6 +135,19 @@ Do not make the user search complex combat scenes merely to trigger an unobserve
 - [ ] **ITER-001** — Maintain the module/dependency inventory and create finite child tasks for each accepted batch.
 - [ ] **ITER-002** — Repeatedly deliver, analyze, fix, and regress gameplay/resource batches with the user.
 
+Finite work beneath these ongoing workstreams:
+
+- [x] **INV-001** — Complete the initial source-based module inventory and finite batch contracts.
+- [x] **NAT-001** — Implement explicit scale/copy native execution profiles, gates and production chained-call checks.
+- [ ] **NAT-002** — Deliver the matched one-case native execution pair.
+- [ ] **NAT-003** — User executes the paired native data case.
+- [ ] **NAT-004** — Analyze actual native execution and retain scoped acceptance or off defaults.
+- [ ] **VEC-001** — Certify the four vector-metric contracts and numerical/state behavior offline.
+- [ ] **VEC-002** — Implement a portable vector-metric core, adapters and differential tests.
+- [ ] **VEC-003** — Add bounded observations and evidence-based user cases for that module.
+
+The initial inventory is [NATIVE_MODULES.md](NATIVE_MODULES.md); finite requirements are in [NEXT_NATIVE_BATCHES.md](NEXT_NATIVE_BATCHES.md). ITER-001/002 stay in progress as workstreams. Finite tasks depend on INV-001 or other finite prerequisites, not on treating an ongoing workstream as already finished.
+
 Every batch follows: investigate behavior and dependencies -> define contract and observations -> implement and run automatic checks -> prepare cases -> user plays both versions -> analyze -> fix -> retain reusable regression inputs -> accept or keep disabled.
 
 Prioritize modules with independent inputs/oracles, then modules with validated replayable samples, then modules requiring new observation and subjective cases. Keep each batch related and individually switchable. Animation, models, movement, collision, combat, AI, quests, saves, and networking are grouped by actual dependencies and evidence readiness rather than treated as a fixed sequence of wholesale rewrites.
@@ -222,9 +235,9 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 through OBS-004 and PAIR-001 are completed. PAIR-002 and PAIR-003 are completed; CASE-001 and CASE-002 are completed; FONT-001 is completed after user visual confirmation; ITER-001 is next.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
+Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 through OBS-004 and PAIR-001 are completed. PAIR-002 and PAIR-003 are completed; CASE-001 and CASE-002 are completed; FONT-001 is completed after user visual confirmation; INV-001 and NAT-001 are completed; NAT-002 is next.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
 
-Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with ITER-001, the migration inventory and finite next-batch definitions. The first user pair has been received and analyzed with explicit limits. PAIR-002 now supplies independent signed applications and a verified preparation-only launcher flow. PAIR-001 panel/controller integration passed offline tests; its contracts and limitations are in docs/TEST_SESSION_PANEL.md. Use the marker, counter-boundary, context and comparison contracts in docs/RUN_COMPARISON.md. OBS-004 packaging and comparison passed offline tests, including actual C++ writer integration; its local validation report and visual-preview limitation are recorded in the ledger. OBS-003 production-object probes, guarded state/performance readers and lifecycle checks passed offline; exact evidence and limitations are in docs/CERTIFIED_PROBES.md and the ledger. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
+Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with NAT-002, the matched native-mode pair and one fresh village case. The first inventory and mode-aware offline gate are complete. The first user pair has been received and analyzed with explicit limits. PAIR-002 now supplies independent signed applications and a verified preparation-only launcher flow. PAIR-001 panel/controller integration passed offline tests; its contracts and limitations are in docs/TEST_SESSION_PANEL.md. Use the marker, counter-boundary, context and comparison contracts in docs/RUN_COMPARISON.md. OBS-004 packaging and comparison passed offline tests, including actual C++ writer integration; its local validation report and visual-preview limitation are recorded in the ledger. OBS-003 production-object probes, guarded state/performance readers and lifecycle checks passed offline; exact evidence and limitations are in docs/CERTIFIED_PROBES.md and the ledger. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
 
 #### Paired delivery checkpoint and next action
 
@@ -232,7 +245,7 @@ PAIR-002 is completed at implementation commit `4759d99`, published in draft PR 
 
 Validation includes 32 synthetic component tests, 21 real-binary preflight checks, both 1,280-call production AOT comparisons, and each actual application's native entry point running headless preparation-only supervision. The two prepared save copies have equal contents and distinct files/directories; original inputs stayed unchanged. No full game, native result dialog or live case was exercised. Evidence paths and actual contributor attribution are recorded in PAIR-002 and [the paired-app guide](PAIRED_TEST_APPLICATIONS.md).
 
-**FONT-001 completed; resume ITER-001.** The user subsequently reported missing Chinese game text in both roles. Actual logs show 23 blank glyphs under Hiragino Sans W4; earlier complete-text experiments explicitly selected STHeiti Light.ttc. The paired launcher lost that setting when seeding isolated configurations. The corrected copies are ready in `out/testing/dist/font-fixed/`, using the previously selected font. The production rasterizer restores all 23 reported omissions and all 43 probe samples, including both app-created settings. Signed preparation checks pass. The user confirmed normal game text after the correct font-fixed app was launched. An intervening screenshot came from the old first-pair copy; distinct corrected app identifiers and display names now separate them. The full case batch does not need to be repeated. See [the font regression report](GAME_FONT_REGRESSION.md). Shared warnings are not evidence that a visual defect is harmless.
+**FONT-001 completed.** The user subsequently reported missing Chinese game text in both roles. Actual logs show 23 blank glyphs under Hiragino Sans W4; earlier complete-text experiments explicitly selected STHeiti Light.ttc. The paired launcher lost that setting when seeding isolated configurations. The corrected copies are ready in `out/testing/dist/font-fixed/`, using the previously selected font. The production rasterizer restores all 23 reported omissions and all 43 probe samples, including both app-created settings. Signed preparation checks pass. The user confirmed normal game text after the correct font-fixed app was launched. An intervening screenshot came from the old first-pair copy; distinct corrected app identifiers and display names now separate them. The full case batch does not need to be repeated. See [the font regression report](GAME_FONT_REGRESSION.md). Shared warnings are not evidence that a visual defect is harmless.
 
 **Current migration evidence:** the user finished both formal first-pack applications. Both packages are complete and all eight case outcomes are normal. The original automatic comparison remains inconclusive because manual inputs differ and two paused-menu rendering-scale changes were recorded. Candidate case-scoped scale/copy verification totals are 511,126 and 9,772, with no mismatch, fallback or incomplete scope; angle, translation and vector helpers remain untriggered. See [the first paired acceptance](FIRST_PAIRED_ACCEPTANCE.md) and `out/testing/reports/initial-user-acceptance-1/analysis.json`.
 
@@ -240,7 +253,11 @@ CASE-002 fixed the recorder's missed transient setting change: save/snapshot obs
 
 The delivered apps remain under `out/testing/dist/initial-batch/`, built from observation/candidate source `75ca5ff`; the B0 source snapshot is `out/testing/observed-sources/B0-initial-75ca5ff` with its build under `out/mhp3rd`. Preserve these snapshots and the two immutable user packages. The current checkout contains newer source-only recording fixes. Before a future paired handoff, rebuild both roles with matching observations and a fresh catalog/manifest as required. Do not confuse current source with already delivered binaries.
 
-ITER-001 should inventory portable modules and residual guest ABI/memory/scheduling/overlay/render dependencies, then create finite child tasks. Two high-frequency verified leaves do not establish a whole subsystem's migration or coverage of combat, monsters, quests and networking. Reuse existing offline evidence and confirmed live samples; prepare targeted user cases only where new evidence is needed.
+INV-001 now maps 15 source-anchored architecture areas and records static callers for the three untriggered leaves. Their 17/1/2 base JAL references and overlay references do not establish live coverage. Four vector-metric spans were independently fingerprinted as the next coherent module candidate; VEC-001 still needs the exact numerical/state contract before implementation.
+
+**Resume NAT-002.** NAT-001 added the explicit scale/copy-native profile, separate native_execution gate and production AOT chained-call checks. Nine integrated CTests and the original-code harness passed. Create a fresh one-case catalog requiring both scale and copy, matched B0/candidate observations and font configuration, and a signed preparation-only pair. Existing all-verify apps stay historical references. Do not treat native-only execution as same-input verification, do not enable new defaults, and do not claim support for runtime code patches.
+
+VEC-001 is independently ready for offline contract work; preserve the full broader migration scope. The inventory and native pilot do not establish migrated animation, AI, collision, quests or networking.
 
 The pair pins an installed Python interpreter and local resource paths; it is not a portable standalone distribution. A successful preparation or complete record is not gameplay acceptance. The first user-led cases are recorded, and broader animation, AI, collision and combat claims remain pending relevant cases.
 

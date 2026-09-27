@@ -39,6 +39,16 @@ The local launcher uses an installed Python interpreter pinned by path and SHA-2
 
 ## Run lifecycle and evidence
 
+An optional `--execution-profile` on the assembler selects the bounded
+scale/copy native pilot. Its exact mode map and catalog hash are validated,
+the profile and digest are saved in the pair manifest, and both applications
+carry the same `execution-profile.json`. Readiness checks those copies and
+their declared modes instead of assuming the initial four-case verify batch.
+Without a profile, the original all-verify candidate policy remains. A profile
+cannot supply arbitrary environment variables. Baseline always keeps every
+replacement off. Actual native execution requires the separate post-run gate
+described in [the comparison guide](RUN_COMPARISON.md).
+
 The native launcher starts `launch_test_run.py` without a shell. The supervisor validates configured fingerprints, creates a fresh run directory, copies the starting-save payload into its own writable installation, seeds settings and calls binary preflight. Only after successful preparation does an ordinary launch start the game. Each role and run uses a different save directory; originals are never restored over a running process.
 
 The inherited `MHP3RD_*`, `PSPRECOMP_*` and `DYLD_*` variables are removed before applying the manifest's approved environment. Baseline modes stay off. The initial candidate packaging selects verify mode; verification retains the original result while comparing supported same-input helper outcomes. It does not measure native speedup.

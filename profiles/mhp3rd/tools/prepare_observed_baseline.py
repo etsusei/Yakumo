@@ -53,6 +53,7 @@ OBSERVATION_FILES = (
     "profiles/mhp3rd/host/ui/translations/zh_cn.inc",
     "profiles/mhp3rd/scripts/check_offline.py",
     "profiles/mhp3rd/tools/compare_test_runs.py",
+    "profiles/mhp3rd/tools/native_batch.py",
     "profiles/mhp3rd/tools/instrument_probes.py",
     "profiles/mhp3rd/tools/prepare_observed_baseline.py",
     "profiles/mhp3rd/tools/prepare_resources.py",

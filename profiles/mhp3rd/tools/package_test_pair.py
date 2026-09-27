@@ -26,6 +26,7 @@ from typing import Any, Callable
 
 import register_baseline
 import run_cases
+import native_batch
 
 
 PROFILE = Path(__file__).resolve().parents[1]
@@ -64,6 +65,7 @@ class PairInputs:
     moltenvk: Path | None = None
     font: Path | None = None
     game_font: Path | None = None
+    execution_profile: Path | None = None
 
 
 def _json(path: Path) -> dict[str, Any]:
@@ -494,7 +496,8 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
                 settings: dict[str, str],
                 registration: dict[str, Any], sources: dict[str, str],
                 overlay_tree: dict[str, Any], overlay_id: str,
-                work_root: Path, output: Path, batch_id: str, runner: Run) -> dict[str, Any]:
+                work_root: Path, output: Path, batch_id: str, runner: Run,
+                execution_profile: dict[str, Any] | None = None) -> dict[str, Any]:
     contents = app / "Contents"
     macos = contents / "MacOS"
     framework = contents / "Frameworks"
@@ -528,6 +531,8 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
     for script in scripts:
         _copy_checked(script, testing / script.name)
     _copy_checked(cases, testing / "cases.json")
+    if execution_profile is not None:
+        _write_json(testing / "execution-profile.json", execution_profile)
     (testing / "python.path").write_text(str(python) + "\n", encoding="utf-8")
     (testing / "python.sha256").write_text(_hash(python) + "\n", encoding="ascii")
     # Separate delivered batches in Launch Services as well as in window titles.
@@ -552,6 +557,12 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
     binary_sha = _hash(game)
     installed_overlays = register_baseline._scan_tree(framework / "overlays")
     installed_overlay_id = register_baseline._tree_id(installed_overlays)
+    if role == "baseline":
+        native_modes = {name: "off" for name in NATIVE_MODES}
+    elif execution_profile is not None:
+        native_modes = dict(execution_profile["candidate_modes"])
+    else:
+        native_modes = {name: "verify" for name in NATIVE_MODES}
     config = {
         "schema": LAUNCH_SCHEMA, "role": role, "batch_id": batch_id,
         "baseline_id": "B0", "baseline_commit": registration["identity"]["source"]["commit"],
@@ -568,7 +579,7 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
                   "sha256": hashlib.sha256(json.dumps(run_cases.load_case_catalog(cases), sort_keys=True,
                                                        separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest()},
         "work_root": str(work_root), "settings": dict(settings),
-        "native_modes": {name: ("off" if role == "baseline" else "verify") for name in NATIVE_MODES},
+        "native_modes": native_modes,
         "probe_selection": "all", "configuration_sha256": settings_hash,
         "build_config_sha256": build["build_config_sha256"],
         "recorder_revision": build["recorder_revision"],
@@ -622,12 +633,16 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
     catalog = run_cases.load_case_catalog(cases)
     if not catalog["cases"]:
         raise PairError("Case catalog is empty")
+    execution_profile = (native_batch.load_profile(
+        _real_file(inputs.execution_profile, "native execution profile"), catalog)
+        if inputs.execution_profile is not None else None)
     launcher = _real_file(inputs.launcher, "native test launcher")
     python = _real_file(inputs.python, "external Python interpreter")
     if not os.access(python, os.X_OK):
         raise PairError("External Python interpreter is not executable")
     scripts = [_real_file(PROFILE / "tools" / name, name) for name in (
-        "run_package.py", "run_cases.py", "compare_test_runs.py", "launch_test_run.py")]
+        "run_package.py", "run_cases.py", "native_batch.py", "compare_test_runs.py",
+        "launch_test_run.py")]
     moltenvk = _real_file(inputs.moltenvk or Path("/opt/homebrew/lib/libMoltenVK.dylib"), "MoltenVK driver")
     font = _real_file(inputs.font or repo / "out/native-experiment/Yakumo-baseline.app/Contents/Resources/fonts/NotoSansCJKjp-Regular.otf",
                       "CJK font")
@@ -653,7 +668,7 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
                 settings=settings,
                 registration=registration, sources=sources, overlay_tree=overlay_tree,
                 overlay_id=overlay_id, work_root=work_root, output=output,
-                batch_id=batch_id, runner=runner)
+                batch_id=batch_id, runner=runner, execution_profile=execution_profile)
         if configs["baseline"]["binary"]["sha256"] == configs["candidate"]["binary"]["sha256"]:
             raise PairError("Baseline and candidate application binaries are identical")
         if configs["baseline"]["overlays"]["tree_id"] != configs["candidate"]["overlays"]["tree_id"]:
@@ -668,6 +683,9 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
                   "python": {"path": str(python), "sha256": _hash(python)},
                   "game_font": {"path": str(game_font), "sha256": _hash(game_font)},
                   "scope": "Apple Silicon local test pair; no game launch or user acceptance"}
+        if execution_profile is not None:
+            report["execution_profile"] = execution_profile
+            report["execution_profile_sha256"] = native_batch.profile_sha256(execution_profile)
         _write_json(stage / "pair-manifest.json", report)
         if output.exists() or output.is_symlink():
             raise PairError("Output appeared during assembly")
@@ -687,6 +705,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--font", type=Path, help="Local Noto CJK font from a previous bundle")
     parser.add_argument("--game-font", type=Path,
                         help="Common game-text font (default: the verified macOS STHeiti Light face)")
+    parser.add_argument("--execution-profile", type=Path,
+                        help="Declared scale/copy native execution profile bound to the case catalog")
     args = parser.parse_args(argv)
     try:
         report = package_pair(PairInputs(**vars(args)))
