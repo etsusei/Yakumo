@@ -38,6 +38,9 @@ NATIVE_MODES = tuple(register_baseline.NATIVE_SWITCHES)
 SHA = re.compile(r"[0-9a-f]{64}\Z", re.ASCII)
 COMMIT = re.compile(r"[0-9a-f]{40}\Z", re.ASCII)
 RECORDER = re.compile(r"source-sha256:[0-9a-f]{64}\Z", re.ASCII)
+# The font used by the earlier complete-text Chinese game experiments.
+# This is a local macOS setting, not a font redistributed in the bundles.
+DEFAULT_GAME_FONT = Path("/System/Library/Fonts/STHeiti Light.ttc")
 MAX_JSON = 2 * 1024 * 1024
 Run = Callable[..., subprocess.CompletedProcess[str]]
 
@@ -60,6 +63,7 @@ class PairInputs:
     repo: Path = REPO
     moltenvk: Path | None = None
     font: Path | None = None
+    game_font: Path | None = None
 
 
 def _json(path: Path) -> dict[str, Any]:
@@ -223,10 +227,12 @@ def _run(cmd: list[str], *, runner: Run = subprocess.run, env: dict[str, str] | 
     return result.stdout
 
 
-def _preflight(build: dict[str, Any], *, runner: Run = subprocess.run) -> dict[str, Any]:
+def _preflight(build: dict[str, Any], *, settings: dict[str, str],
+               runner: Run = subprocess.run) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix="yakumo-pair-preflight-") as directory:
         data = Path(directory)
-        (data / "settings.ini").write_text("ui.language=zh-CN\n", encoding="utf-8")
+        (data / "settings.ini").write_text(
+            "".join(f"{key}={value}\n" for key, value in sorted(settings.items())), encoding="utf-8")
         env = {key: value for key, value in os.environ.items()
                if not key.startswith(("MHP3RD_", "PSPRECOMP_", "DYLD_"))}
         env["MHP3RD_DATA_DIR"] = str(data)
@@ -485,6 +491,7 @@ def _verify_links(path: Path, libraries: dict[str, Path], *, runner: Run) -> Non
 def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
                 scripts: list[Path], cases: Path, python: Path, overlays: Path,
                 libraries: dict[str, Path], font: Path, settings_hash: str,
+                settings: dict[str, str],
                 registration: dict[str, Any], sources: dict[str, str],
                 overlay_tree: dict[str, Any], overlay_id: str,
                 work_root: Path, output: Path, batch_id: str, runner: Run) -> dict[str, Any]:
@@ -556,7 +563,7 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
         "cases": {"path": str(output / app.name / "Contents/Resources/testing/cases.json"),
                   "sha256": hashlib.sha256(json.dumps(run_cases.load_case_catalog(cases), sort_keys=True,
                                                        separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest()},
-        "work_root": str(work_root), "settings": {"ui.language": "zh-CN"},
+        "work_root": str(work_root), "settings": dict(settings),
         "native_modes": {name: ("off" if role == "baseline" else "verify") for name in NATIVE_MODES},
         "probe_selection": "all", "configuration_sha256": settings_hash,
         "build_config_sha256": build["build_config_sha256"],
@@ -589,8 +596,12 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
             baseline["recorder_revision"] != candidate["recorder_revision"] or
             baseline["build_config_sha256"] != candidate["build_config_sha256"]):
         raise PairError("Paired builds do not share recorder revision and build configuration")
-    preflight_base = _preflight(baseline, runner=runner)
-    preflight_candidate = _preflight(candidate, runner=runner)
+    game_font = _real_file(inputs.game_font or DEFAULT_GAME_FONT, "game text font")
+    if any(character in str(game_font) for character in "\r\n\0"):
+        raise PairError("Game font path cannot contain settings delimiters")
+    settings = {"ui.language": "zh-CN", "text.font": str(game_font)}
+    preflight_base = _preflight(baseline, settings=settings, runner=runner)
+    preflight_candidate = _preflight(candidate, settings=settings, runner=runner)
     if preflight_base["configuration_sha256"] != preflight_candidate["configuration_sha256"]:
         raise PairError("Paired builds have different effective configuration")
     overlays = _real_dir(inputs.overlays, "overlay directory")
@@ -635,6 +646,7 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
                 scripts=scripts, cases=cases, python=python, overlays=overlays,
                 libraries=base_closure, font=font,
                 settings_hash=preflight_base["configuration_sha256"],
+                settings=settings,
                 registration=registration, sources=sources, overlay_tree=overlay_tree,
                 overlay_id=overlay_id, work_root=work_root, output=output,
                 batch_id=batch_id, runner=runner)
@@ -650,6 +662,7 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
                   "overlays_tree_id": configs["baseline"]["overlays"]["tree_id"],
                   "overlay_source_tree_id": overlay_id,
                   "python": {"path": str(python), "sha256": _hash(python)},
+                  "game_font": {"path": str(game_font), "sha256": _hash(game_font)},
                   "scope": "Apple Silicon local test pair; no game launch or user acceptance"}
         _write_json(stage / "pair-manifest.json", report)
         if output.exists() or output.is_symlink():
@@ -668,6 +681,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument("--" + name, required=True, type=Path)
     parser.add_argument("--moltenvk", type=Path, help="Installed local MoltenVK dylib")
     parser.add_argument("--font", type=Path, help="Local Noto CJK font from a previous bundle")
+    parser.add_argument("--game-font", type=Path,
+                        help="Common game-text font (default: the verified macOS STHeiti Light face)")
     args = parser.parse_args(argv)
     try:
         report = package_pair(PairInputs(**vars(args)))

@@ -55,7 +55,12 @@ def check_contract(pair: dict, configs: dict, catalog_hash: str) -> None:
     require(pair.get("schema") == "yakumo-test-pair-v1" and pair.get("baseline_id") == "B0",
             "Unknown pair manifest")
     baseline, candidate = configs["baseline"], configs["candidate"]
+    font = pair.get("game_font")
+    require(type(font) is dict and bool(font.get("path")) and bool(font.get("sha256")),
+            "Pair omits its verified game-text font")
     for role, config in configs.items():
+        require(config["settings"].get("text.font") == font["path"],
+                "App omits or changes the verified game-text font")
         require(config["role"] == role and config["baseline_id"] == "B0", "Role or baseline differs")
         require(config["cases"]["sha256"] == catalog_hash, "App has a stale case catalog")
         require(config["batch_id"] == pair["batch_id"], "App batch differs from pair manifest")
@@ -91,6 +96,9 @@ def check_readiness(pair_dir: Path, catalog_path: Path, fixture: Path) -> dict:
     require(all(case["human_acceptance"] for case in catalog["cases"]),
             "User observations remain required for every initial case")
     pair = read_json(pair_dir / "pair-manifest.json")
+    font = pair.get("game_font", {})
+    font_path = launch._path(font.get("path"), "game_font.path", kind="file")
+    require(launch._regular_hash(font_path)[1] == font.get("sha256"), "Game-text font content changed")
     configs = {}
     applications = {}
     for role in ("baseline", "candidate"):

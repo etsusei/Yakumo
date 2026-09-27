@@ -16,12 +16,14 @@ class ReadinessContractTests(unittest.TestCase):
         self.pair = {"schema": "yakumo-test-pair-v1", "baseline_id": "B0", "batch_id": "initial",
                      "recorder_revision": "source-sha256:" + "a" * 64,
                      "build_config_sha256": "b" * 64, "configuration_sha256": "c" * 64,
-                     "overlays_tree_id": "d" * 64}
+                     "overlays_tree_id": "d" * 64,
+                     "game_font": {"path": "/synthetic/game-font.ttc", "sha256": "8" * 64}}
         baseline = {"role": "baseline", "baseline_id": "B0", "batch_id": "initial",
                     "source_commit": commit, "baseline_commit": commit,
                     "cases": {"sha256": "e" * 64}, "probe_selection": "all",
                     "native_modes": {key: "off" for key in NATIVE_MODE_FIELDS},
-                    "settings": {"ui.language": "zh-CN"}, "work_root": Path("/synthetic/runs"),
+                    "settings": {"ui.language": "zh-CN", "text.font": "/synthetic/game-font.ttc"},
+                    "work_root": Path("/synthetic/runs"),
                     "iso": {"path": Path("/synthetic/disc.iso"), "sha256": "f" * 64},
                     "elf": {"path": Path("/synthetic/elf"), "sha256": "0" * 64},
                     "starting_save": {"tree_id": "1" * 64}, "overlays": {"tree_id": "d" * 64},
@@ -43,6 +45,12 @@ class ReadinessContractTests(unittest.TestCase):
     def test_reject_stale_catalog_despite_matching_pair_claims(self):
         self.configs["candidate"]["cases"]["sha256"] = "5" * 64
         with self.assertRaisesRegex(ReadinessError, "stale case catalog"):
+            self.check()
+
+    def test_reject_missing_game_font_even_when_roles_match(self):
+        for config in self.configs.values():
+            config["settings"].pop("text.font")
+        with self.assertRaisesRegex(ReadinessError, "game-text font"):
             self.check()
 
     def test_reject_unplanned_native_mode_or_disabled_discovery(self):

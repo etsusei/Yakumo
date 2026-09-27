@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 50,
+  "revision": 52,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T03:02:18Z",
+  "updated_at": "2026-09-27T03:24:37Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -290,6 +290,14 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/game_font_regression_probe",
+      "type": "agent",
+      "role": "Offline production game-font glyph coverage regression probe",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -329,9 +337,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "ITER-001",
-    "next_task_id": "ITER-002",
-    "next_action": "Build the migration module/dependency inventory and define finite next batches from verified evidence. First live route provides scale and matrix-copy verify-mode coverage only. Keep angle/translation/vector marked uncovered, preserve immutable user records and do not enable native paths by default. Recorder guard/menu improvements are source-only until a future matched observer build is deliberately delivered.",
+    "current_task_id": "FONT-001",
+    "next_task_id": "ITER-001",
+    "next_action": "Corrected apps are in out/testing/dist/font-fixed; request only a brief game-text visual confirmation, not another four-case batch. The production rasterizer and actual prepared settings pass 43/43 with all 23 known omissions restored. Preserve prior apps/evidence and await confirmation before resuming migration.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": []
   },
@@ -356,7 +364,8 @@
     "first_case_pack_pr": "https://github.com/etsusei/Yakumo/pull/12",
     "first_case_guide": "docs/TEST_CASES.md",
     "first_acceptance_report": "docs/FIRST_PAIRED_ACCEPTANCE.md",
-    "first_acceptance_pr": "https://github.com/etsusei/Yakumo/pull/13"
+    "first_acceptance_pr": "https://github.com/etsusei/Yakumo/pull/13",
+    "game_font_regression_report": "docs/GAME_FONT_REGRESSION.md"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -3787,6 +3796,172 @@
           "from_status": "completed",
           "to_status": "completed",
           "description": "Published the acceptance analysis and verified recorder/UI changes as acbce56 in draft PR #13, stacked on #12. Delivered apps and immutable user packages remain unchanged."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "FONT-001",
+      "title": "Restore the verified Chinese game font in paired test configurations",
+      "phase": "milestone_3",
+      "kind": "finite",
+      "status": "awaiting_user_test",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root",
+        "/root/game_font_regression_probe"
+      ],
+      "created_at": "2026-09-27T03:16:04Z",
+      "updated_at": "2026-09-27T03:24:37Z",
+      "started_at": "2026-09-27T03:16:04Z",
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Fix user-reported missing in-game Chinese characters in both delivered test roles before further migration. Preserve original apps/logs and restore the historically working font selection.",
+      "depends_on": [
+        "CASE-002"
+      ],
+      "work_summary": "Restored the historically working STHeiti game-font selection in both signed app copies under out/testing/dist/font-fixed. Actual production rasterizer reproduces old 23 missing glyphs and renders restored 43/43 samples; the same 43/43 pass when reading each app-created settings file. Future packaging seeds game font in preflight and runtime, with path/hash readiness binding. Original apps, binaries and user records are preserved. Awaiting only a brief user visual check of game text, not a repeat of four cases.",
+      "deliverables": [
+        {
+          "path": "docs/GAME_FONT_REGRESSION.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/game_font_coverage.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/font-old-default.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/font-restored-heiti.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/font-baseline-prepared.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/font-candidate-prepared.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/font-pair-reconfiguration.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/font-readiness.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/font-fixed/Yakumo Baseline.app",
+          "kind": "application",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/font-fixed/Yakumo Candidate.app",
+          "kind": "application",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/dist/font-fixed/START_HERE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Production font rasterizer reproduces the logged missing glyphs under old defaults and renders them with the restored font.",
+        "Both corrected apps use the same verified game-font setting and effective configuration; originals and previous evidence remain untouched.",
+        "Future paired packaging cannot silently omit the agreed game font.",
+        "Offline readiness passes; any unverified live appearance is explicit."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "Production font missing-glyph reproduction and fix",
+            "status": "passed",
+            "evidence": [
+              "out/testing/font-old-default.json",
+              "out/testing/font-restored-heiti.json"
+            ],
+            "previously_missing_old_passed": 0,
+            "previously_missing_restored_passed": 23,
+            "restored_total": 43
+          },
+          {
+            "name": "Both actual prepared settings rasterize correctly",
+            "status": "passed",
+            "evidence": [
+              "out/testing/font-baseline-prepared.json",
+              "out/testing/font-candidate-prepared.json"
+            ],
+            "glyphs_per_role": 43
+          },
+          {
+            "name": "Signed corrected app preparation and font identity",
+            "status": "passed",
+            "evidence": "out/testing/font-readiness.json",
+            "game_launched": false
+          },
+          {
+            "name": "Packaging and readiness regressions",
+            "status": "passed",
+            "evidence": [
+              "profiles/mhp3rd/tests/test_package_test_pair.py",
+              "profiles/mhp3rd/tests/test_pair_readiness.py"
+            ],
+            "unit_checks": 11
+          }
+        ],
+        "limitations": [
+          "No game was launched; a brief user visual confirmation is pending.",
+          "Coverage includes the 23 logged omissions and 43 representative glyphs, not exhaustive game text.",
+          "The corrected pair still depends on its installed Mac system font and external Python.",
+          "Corrected copies preserve the old game/observer binaries; newer source-only recording/menu fixes are not part of this font-only update."
+        ]
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T03:16:04Z",
+          "occurred_at": "2026-09-27T03:16:04Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "User explicitly reports missing game text in both versions and confirms the Esc UI is unaffected. Packaging configuration lost the previously verified Chinese font selection; fix this before ITER-001."
+        },
+        {
+          "recorded_at": "2026-09-27T03:24:37Z",
+          "occurred_at": "2026-09-27T03:24:37Z",
+          "actor_id": "/root",
+          "action": "ready_for_visual_check",
+          "from_status": "in_progress",
+          "to_status": "awaiting_user_test",
+          "description": "Restored the historically working STHeiti game-font selection in both signed app copies under out/testing/dist/font-fixed. Actual production rasterizer reproduces old 23 missing glyphs and renders restored 43/43 samples; the same 43/43 pass when reading each app-created settings file. Future packaging seeds game font in preflight and runtime, with path/hash readiness binding. Original apps, binaries and user records are preserved. Awaiting only a brief user visual check of game text, not a repeat of four cases."
         }
       ],
       "updated_by_agent_id": "/root"
