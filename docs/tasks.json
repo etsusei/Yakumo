@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 80,
+  "revision": 81,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T07:31:39Z",
+  "updated_at": "2026-09-27T07:33:43Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -513,7 +513,8 @@
     "indexed_resource_views": "docs/INDEXED_RESOURCE_VIEWS.md",
     "indexed_resource_views_pr": "https://github.com/etsusei/Yakumo/pull/20",
     "tmh_resource_contract": "docs/TMH_RESOURCE_CONTRACT.md",
-    "owned_tmh_views": "docs/OWNED_TMH_VIEWS.md"
+    "owned_tmh_views": "docs/OWNED_TMH_VIEWS.md",
+    "owned_tmh_views_pr": "https://github.com/etsusei/Yakumo/pull/21"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -5778,7 +5779,7 @@
         "/root/tmh_consumer_contract"
       ],
       "created_at": "2026-09-27T06:53:56Z",
-      "updated_at": "2026-09-27T07:31:39Z",
+      "updated_at": "2026-09-27T07:33:43Z",
       "started_at": "2026-09-27T06:58:20Z",
       "completed_at": "2026-09-27T07:10:07Z",
       "scope": "Recover one repeated child-format layout from decoded-parent views and original consumers; identify internal record spans, references, transformations and image semantics only where supported.",
@@ -5831,7 +5832,9 @@
           "Pixel layout/swizzle context, visual meaning and live source-ID mappings remain unresolved."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "ccdb56422596287648741652881ec70803d6fea7"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -5859,6 +5862,13 @@
           "actor_id": "/root",
           "action": "branch_review",
           "description": "Before publication, independent branch review corrected the C2 command summary: this builder sets swizzle1 for indexed4/5 and0 for compressed8..10. Root checked the branch/register initialization and all1025 dimension-table words. A8 uses raw width; B8 selects ceil(log2) power-of-two extents. No encoded reader behavior depended on the earlier wording."
+        },
+        {
+          "recorded_at": "2026-09-27T07:33:43Z",
+          "occurred_at": "2026-09-27T07:33:43Z",
+          "actor_id": "/root",
+          "action": "published",
+          "description": "Published original TMH contract, owned encoded views and whole-corpus descriptor checks in draft PR #21 at ccdb564. Pixel decoding and gameplay acceptance remain separate; no app replacement or merge."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -5877,7 +5887,7 @@
         "/root/tmh_owned_views"
       ],
       "created_at": "2026-09-27T07:10:07Z",
-      "updated_at": "2026-09-27T07:31:39Z",
+      "updated_at": "2026-09-27T07:33:43Z",
       "started_at": "2026-09-27T07:10:07Z",
       "completed_at": "2026-09-27T07:31:39Z",
       "scope": "Implement a checked TMH reader retaining encoded image/palette slices and raw words, with bounded original descriptor and corpus tests; no guessed swizzle or pixel conversion.",
@@ -5986,7 +5996,9 @@
           "Full game source-ID-to-object mapping remains unobserved; existinguserpairs unchanged."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "ccdb56422596287648741652881ec70803d6fea7"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -5998,6 +6010,13 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Implemented portable shared-storage encoded TMH views with checked record/block bounds, image/palette descriptors, retained raw fields and padding/tails. All2256 inputs (2244indexedchildren+12standalone) and8866descriptors match productionAOT and boundedinterpreter with fullCPU/outputcanaries/source-byte preservation; max336slices. Core27 tests passstrictwarnings andASan/UBSan; five structuraltests/twoCTests pass. Pixel decoding/swizzle/visible extent remains separate; game loader/renderer/apps unchanged."
+        },
+        {
+          "recorded_at": "2026-09-27T07:33:43Z",
+          "occurred_at": "2026-09-27T07:33:43Z",
+          "actor_id": "/root",
+          "action": "published",
+          "description": "Published original TMH contract, owned encoded views and whole-corpus descriptor checks in draft PR #21 at ccdb564. Pixel decoding and gameplay acceptance remain separate; no app replacement or merge."
         }
       ],
       "updated_by_agent_id": "/root"

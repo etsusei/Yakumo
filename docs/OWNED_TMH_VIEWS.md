@@ -96,3 +96,8 @@ or original GE state; file-only guesses must not silently select swizzle.
 Visual/gameplay compatibility, full original object ownership and the live
 source-ID-to-object mapping remain unverified. Both delivered user pairs stay
 unchanged.
+
+
+Implementation `ccdb564` is published in draft PR
+[#21](https://github.com/etsusei/Yakumo/pull/21). Source/executable/object hashes
+and executed check counts are in `out/testing/tmh-native-validation.json`.
