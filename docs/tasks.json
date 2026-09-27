@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 102,
+  "revision": 105,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T10:41:48Z",
+  "updated_at": "2026-09-27T10:55:25Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -570,6 +570,22 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_adapter_core",
+      "type": "agent",
+      "role": "Bounded guest texture command adapter implementation",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_adapter_rejections",
+      "type": "agent",
+      "role": "Independent adapter rejection and mutation-atomicity tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -609,9 +625,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "ASSET-010",
-    "next_task_id": "ASSET-011",
-    "next_action": "Implement and offline-certify the guarded guest ABI adapter for the completed portable texture command core. Keep production registration and grouped user delivery separate. No native-data rerun or additional village replay is requested.",
+    "current_task_id": "ASSET-011",
+    "next_task_id": "ASSET-012",
+    "next_action": "Certify a real original texture-builder caller and allocation-bound/lifetime provenance before production registration. Preserve delivered apps and user evidence; no additional manual test is requested.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": []
@@ -657,7 +673,8 @@
     "owned_tmh_views": "docs/OWNED_TMH_VIEWS.md",
     "owned_tmh_views_pr": "https://github.com/etsusei/Yakumo/pull/21",
     "portable_texture_commands": "docs/PORTABLE_TEXTURE_COMMANDS.md",
-    "portable_texture_commands_pr": "https://github.com/etsusei/Yakumo/pull/26"
+    "portable_texture_commands_pr": "https://github.com/etsusei/Yakumo/pull/26",
+    "texture_command_adapter": "docs/TEXTURE_COMMAND_ADAPTER.md"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -7575,27 +7592,95 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
-        "/root"
+        "/root",
+        "/root/texture_adapter_core",
+        "/root/texture_adapter_rejections"
       ],
       "created_at": "2026-09-27T10:40:22Z",
-      "updated_at": "2026-09-27T10:40:22Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-27T10:55:25Z",
+      "started_at": "2026-09-27T10:43:03Z",
+      "completed_at": "2026-09-27T10:55:25Z",
       "scope": "Bridge the certified guest builder ABI to the portable value core in an offline harness. Validate complete source/output/state/stack ranges and physical disjointness, preserve exact CPU and memory effects, and reject unsupported inputs without mutation before any production registration.",
       "depends_on": [
         "ASSET-010"
       ],
-      "work_summary": "Planned next finite offline task. Production installation and user delivery require a later explicit integration gate.",
+      "work_summary": "Implemented the bounded offline guest adapter with per-call code/helper/table identity checks, main-RAM bounds, physical disjointness, bounded metadata traversal and exact state/register/stack effects. Actual adapter matches original AOT/interpreter across 2256 inputs and 4512 calls; 36 synthetic calls cover 52 slots. Ten modeled successes and 68 atomic rejections passed with full RAM/VRAM/CPU checks and memory sanitizers. No production hook or game run.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
           "kind": "contract",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_COMMAND_ADAPTER.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/texture_commands_bridge.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/texture_commands_bridge.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_commands_bridge_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_command_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_texture_commands.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_command_runner.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-command-adapter-original-gate-final.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-adapter-rejections.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-adapter-sanitizers.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-adapter-runner-tests.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -7605,8 +7690,39 @@
         "Do not modify the delivered apps or enable a production hook. Record unresolved live mapping, observation and integration requirements before a related user batch."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Actual guest adapter and original corpus differential gate",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-command-adapter-original-gate-final.json",
+            "sha256": "a7f610e09ac7ee3cfecc7e82f0e73b597fe9a4d193955d5cfa95aa5e611083cb",
+            "details": "2256 inputs, 8866 descriptors, 4512 adapter/AOT/interpreter calls, 11122 command slots. An additional 36 synthetic calls cover 52 slots, including underdeclared-count overrides and two-subblock palette selection. Full CPU and selected memory/canary regions matched; all source/header/binary hashes rechecked."
+          },
+          {
+            "name": "Whole-memory rejection and success checks",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-command-adapter-rejections.log",
+            "details": "10 modeled successes and 68 atomic rejections compare full RAM, VRAM and CPU; covers fingerprint changes, VRAM exclusion, aliases, bounds, malformed metadata, no-command and late failures."
+          },
+          {
+            "name": "Memory sanitizers and strict compilation",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-command-adapter-sanitizers.log",
+            "details": "All 78 cases passed under AddressSanitizer and UndefinedBehaviorSanitizer with adapter, core, harness and runtime sources instrumented. Strict C++20 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror syntax checks passed for adapter and harness after one explicit unsigned cast in the test model."
+          },
+          {
+            "name": "Runner rejects reports without actual adapter coverage",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-command-adapter-runner-tests.log",
+            "details": "Five Python tests passed; reports require guest_adapter_compared=true and exact adapter_calls."
+          }
+        ],
+        "limitations": [
+          "Offline caller supplies source allocation bounds and destination capacity; no live allocation ownership/lifetime authority or production registration yet.",
+          "Only bounded disjoint main-RAM regions; malformed original behavior is rejected rather than replicated. Unused output capacity is not dereferenced.",
+          "The caller excludes concurrent mutation. Returned rejections are atomic; throwing host write-watch diagnostics during commit are outside the guarantee. The offline gate disables write watches.",
+          "No game, GPU, rendering, performance or other-platform test. Delivered applications and actual user records remain unchanged."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
@@ -7618,6 +7734,77 @@
           "actor_id": "/root",
           "action": "planned",
           "description": "Define a bounded offline guest adapter after the value core passed the full original gate."
+        },
+        {
+          "recorded_at": "2026-09-27T10:43:03Z",
+          "occurred_at": "2026-09-27T10:43:03Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Implementing the bounded guest adapter, original-code differential integration and rejection/atomicity tests. Root owns interface, integration and evidence."
+        },
+        {
+          "recorded_at": "2026-09-27T10:55:25Z",
+          "occurred_at": "2026-09-27T10:55:25Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented the bounded offline guest adapter with per-call code/helper/table identity checks, main-RAM bounds, physical disjointness, bounded metadata traversal and exact state/register/stack effects. Actual adapter matches original AOT/interpreter across 2256 inputs and 4512 calls; 36 synthetic calls cover 52 slots. Ten modeled successes and 68 atomic rejections passed with full RAM/VRAM/CPU checks and memory sanitizers. No production hook or game run."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ASSET-012",
+      "title": "Certify texture builder caller allocation provenance",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-001",
+      "status": "not_started",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root"
+      ],
+      "created_at": "2026-09-27T10:55:25Z",
+      "updated_at": "2026-09-27T10:55:25Z",
+      "started_at": null,
+      "completed_at": null,
+      "scope": "Trace a real original texture-builder call path to source and command allocation owners, bounds and lifetime. Define a checked authority usable by production integration without inferring allocation extent from RAM mapping or an untrusted count.",
+      "depends_on": [
+        "ASSET-011"
+      ],
+      "work_summary": "Planned prerequisite to production texture command replacement; offline harness bounds cannot silently become live allocation evidence.",
+      "deliverables": [
+        {
+          "path": "docs/NEXT_NATIVE_BATCHES.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Identify and fingerprint an actual caller path and the source/command allocation dependencies using original code evidence.",
+        "Record allocation, free, reuse and alias obligations; use bounded original execution or validated samples where feasible and retain unresolved callers explicitly.",
+        "Define how production dispatch would obtain trustworthy extents, reject stale/unknown allocations, retain original fallback and record scoped coverage while preserving Baseline.",
+        "Do not enable an unsafe production hook or request another manual route based only on guessed reachability."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T10:55:25Z",
+          "occurred_at": "2026-09-27T10:55:25Z",
+          "actor_id": "/root",
+          "action": "planned",
+          "description": "Audit original caller allocation provenance before passing live bounds to the tested adapter."
         }
       ],
       "updated_by_agent_id": "/root"

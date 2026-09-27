@@ -116,3 +116,22 @@ This finite task does not install a production hook. Its result must identify
 remaining call-site, fallback, observation and dependency invalidation work
 before integration. Preserve all delivered apps and existing acceptance
 evidence; group future manual acceptance with related native changes.
+
+
+ASSET-011 now has a bounded adapter and separate-memory original differential
+checks; see [the adapter contract](TEXTURE_COMMAND_ADAPTER.md). Its bounds
+are supplied by the offline harness. This does not establish where equivalent
+allocation bounds and lifetimes come from during gameplay.
+
+**ASSET-012 — Certify a real caller's allocation provenance.** Select a
+concrete original call path to `0x0889E5C0` and trace both the source resource
+and command allocation to their owners. Check original instructions and
+allocation/free/reuse behavior, then design a bounded authority for source
+extents and command capacity that cannot outlive an allocation or mistake
+RAM mapping/header counts for object bounds. Use offline original execution
+or independently validated samples where feasible. Preserve unknown callers
+and aliases as unsupported rather than guessing sizes. Record how production
+registration, original fallback, per-call dependency guards, observation and
+Baseline exclusion would consume that authority. This contract must precede
+a production hook; no new manual case is requested merely to fill a static
+analysis gap.

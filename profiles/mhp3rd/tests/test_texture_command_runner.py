@@ -16,6 +16,7 @@ class TextureCommandRunnerTests(unittest.TestCase):
                       "offset_in_decoded_entry": 16, "size": 512, "count_word8": 3}, "fixture")]
         self.report = {"schema_version": 1, "scope": tool.ORACLE_SCOPE, "success": True,
                        "portable_core_compared": True, "portable_calls": 2,
+                       "guest_adapter_compared": True, "adapter_calls": 2,
                        "input_count": 1, "descriptor_records": 3, "builder_calls": 2,
                        "emitted_command_slots": 4, "max_interpreter_slices": 400,
                        "inputs": [{"entry_id": 5, "child_id": "2", "child_sha256": "a" * 64,
@@ -29,7 +30,8 @@ class TextureCommandRunnerTests(unittest.TestCase):
 
     def test_omitted_records_or_wrong_identity_cannot_pass(self):
         for key, value in (("input_count", 0), ("descriptor_records", 2), ("builder_calls", 1),
-                           ("emitted_command_slots", 3), ("builder_calls", True)):
+                           ("emitted_command_slots", 3), ("builder_calls", True),
+                           ("adapter_calls", 0), ("guest_adapter_compared", False)):
             with self.subTest(key=key):
                 changed = copy.deepcopy(self.report)
                 changed[key] = value
@@ -51,12 +53,14 @@ class TextureCommandRunnerTests(unittest.TestCase):
     def test_synthetic_execution_cannot_be_replaced_by_empty_report(self):
         report = {"schema_version": 1, "scope": tool.ORACLE_SCOPE, "success": True,
                   "portable_core_compared": True, "portable_calls": 24,
+                  "guest_adapter_compared": True, "adapter_calls": 24,
                   "input_count": 0, "descriptor_records": 0, "inputs": [],
                   "synthetic_cases": 24, "builder_calls": 24, "max_interpreter_slices": 3420}
         tool.validate_synthetic(report)
         for key, value in (("synthetic_cases", 0), ("builder_calls", 23),
                            ("success", False), ("scope", "pixels"), ("portable_core_compared", False),
-                           ("portable_calls", 0)):
+                           ("portable_calls", 0), ("guest_adapter_compared", False),
+                           ("adapter_calls", 0)):
             changed = dict(report, **{key: value})
             with self.assertRaises(ValueError): tool.validate_synthetic(changed)
 

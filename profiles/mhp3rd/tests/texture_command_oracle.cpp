@@ -1,6 +1,7 @@
 #include "resources/tmh.hpp"
 #include "resources/texture_commands.hpp"
 #include "native/bridge_contracts.hpp"
+#include "native/texture_commands_bridge.hpp"
 #include "psprecomp/elf32.hpp"
 #include "recomp_units.hpp"
 
@@ -57,7 +58,7 @@ std::array<std::uint32_t, 9> command_words(const TmhDescriptor &d, std::uint32_t
 }
 
 class Oracle {
-    Runtime aot_, interpreted_;
+    Runtime aot_, interpreted_, adapted_;
     std::mt19937 random_{0x434d4439u};
     std::array<std::uint8_t, 4100> table_{};
     std::vector<std::uint8_t> random_bytes(std::size_t count) {
@@ -68,7 +69,7 @@ class Oracle {
     void check_region(std::uint32_t address, std::span<const std::uint8_t> expected,
                       const char *name) {
         std::vector<std::uint8_t> got(expected.size());
-        for (Runtime *runtime : {&aot_, &interpreted_}) {
+        for (Runtime *runtime : {&aot_, &interpreted_, &adapted_}) {
             runtime->memory().copy_out(address, got);
             require(std::equal(got.begin(), got.end(), expected.begin()), std::string(name) + " differs or canary changed");
         }
@@ -76,8 +77,10 @@ class Oracle {
 public:
     std::uint64_t calls{}, slots{};
     unsigned max_slices{};
-    explicit Oracle(const Elf32Image &elf) : aot_(elf.required_ram_size()), interpreted_(elf.required_ram_size()) {
+    explicit Oracle(const Elf32Image &elf) : aot_(elf.required_ram_size()), interpreted_(elf.required_ram_size()),
+        adapted_(elf.required_ram_size()) {
         (void)elf.load_and_relocate(aot_.memory()); (void)elf.load_and_relocate(interpreted_.memory());
+        (void)elf.load_and_relocate(adapted_.memory());
         register_generated_functions(aot_);
         require(mhp3rd::native::matches_code_fingerprint<528>(aot_.memory(), kEntry,
             "c4f5b737eb673e30b7d21425ef67ed9d2c3bab11228aadcbb389e25f1519694b"), "Builder code span differs");
@@ -132,7 +135,7 @@ public:
         auto object_expected = object_before, stack_expected = stack_before, commands_expected = commands_before;
         std::array<std::uint8_t, 4> global{};
         store32(global, 0u, random_());
-        for (Runtime *runtime : {&aot_, &interpreted_}) {
+        for (Runtime *runtime : {&aot_, &interpreted_, &adapted_}) {
             runtime->memory().copy_in(kSource, bytes);
             runtime->memory().copy_in(kObject, object_before);
             runtime->memory().copy_in(kCommands, commands_before);
@@ -197,6 +200,13 @@ public:
                     std::cerr << "GPR " << i << " got " << std::hex << compiled.gpr[i] << " want " << expected.gpr[i] << std::dec << '\n';
             throw std::runtime_error("Original CPU differs from independently modeled footprint");
         }
+        auto adapted = initial;
+        const auto bridge = mhp3rd::native::apply_texture_commands(adapted_.memory(), adapted,
+            {bytes.size(), request.destination_slots, 4096u});
+        require(bridge.ok() && bridge.blocks == iterations,
+                "Guest adapter rejected a certified input: " + std::to_string(static_cast<int>(bridge.error)));
+        require(mhp3rd::native::same_context(adapted, compiled),
+                "Actual guest adapter CPU differs from original AOT/interpreter");
         check_region(kObject, object_expected, "Object"); check_region(kCommands, commands_expected, "Command buffer");
         check_region(kStack, stack_expected, "Stack"); check_region(kSource, bytes, "Source");
         check_region(kTable, table_, "Table"); check_region(kGlobal, global, "Read-only global");
@@ -246,6 +256,33 @@ void synthetic_gate(Oracle &oracle) {
         (void)oracle.check(many, 255u, 255u, 3u, mirror);
         (void)oracle.check(big, 1u, 0u, 0u, mirror);
     }
+    // An explicit override may select records beyond the declared header count.
+    // Preserve descriptors from the unmodified fixture, then change only that
+    // word; the original helper uses sizes rather than the header to walk.
+    const auto basic_view = TmhView::parse(basic);
+    std::vector<TmhDescriptor> beyond_declared;
+    for (std::size_t i = 0; i < basic_view.records().size(); ++i)
+        beyond_declared.push_back(basic_view.descriptor(i));
+    std::vector<std::uint8_t> underdeclared(basic.bytes().begin(), basic.bytes().end());
+    store32(underdeclared, 8u, 1u);
+    const auto override_source = SharedBytes::take(std::move(underdeclared));
+    for (bool mirror : {false, true})
+        (void)oracle.check(override_source, 3u, 2u, 3u, mirror, &beyond_declared);
+
+    // The palette walk is driven by the record's subblock count. Include a
+    // second image subblock, so assuming palette == end(first image) fails.
+    std::vector<std::uint8_t> multi(240u, 0u);
+    store32(multi, 8u, 1u); store32(multi, 16u, 224u); store32(multi, 24u, 2u);
+    store32(multi, 32u, 144u); store32(multi, 40u, 4u);
+    store32(multi, 44u, 16u | (16u << 16u));
+    store32(multi, 176u, 16u); store32(multi, 192u, 48u);
+    store32(multi, 200u, 1u); store32(multi, 204u, 16u);
+    const auto multi_source = SharedBytes::take(std::move(multi));
+    const std::vector<TmhDescriptor> multi_descriptor{{48u, 4u, 16u, 16u, 208u,
+        1u, 16, multi_source.slice(48u, 128u), multi_source.slice(208u, 32u)}};
+    for (bool mirror : {false, true})
+        (void)oracle.check(multi_source, 0u, 0u, 0u, mirror, &multi_descriptor);
+
     // A signed-negative header count takes the zero-command path without
     // parsing descriptors, but is still copied in full to r2 and low-byte state.
     std::vector<std::uint8_t> negative(empty.bytes().begin(), empty.bytes().end());
@@ -335,6 +372,7 @@ int main(int argc, char **argv) {
         report << "],\"input_count\":" << inputs << ",\"descriptor_records\":" << descriptors
                << ",\"builder_calls\":" << oracle.calls << ",\"emitted_command_slots\":" << oracle.slots
                << ",\"portable_core_compared\":true,\"portable_calls\":" << oracle.calls
+               << ",\"guest_adapter_compared\":true,\"adapter_calls\":" << oracle.calls
                << ",\"max_interpreter_slices\":" << oracle.max_slices
                << ",\"synthetic_cases\":" << (synthetic_only ? oracle.calls : 0u) << ",\"success\":true}\n";
         std::ofstream output(output_path); require(bool(output), "Cannot create report"); output << report.str(); output.close();
