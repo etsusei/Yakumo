@@ -18,7 +18,7 @@ import verify_pair_preflight  # noqa: E402
 
 
 class PairedPreflightTests(unittest.TestCase):
-    def check_synthetic_pair(self, *, texture_schema: bool) -> dict:
+    def check_synthetic_pair(self, *, texture_schema: bool, profile_aware: bool = False) -> dict:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             baseline = root / "baseline"
@@ -42,6 +42,9 @@ class PairedPreflightTests(unittest.TestCase):
                 if texture_schema:
                     rejected = rejected or mode not in texture_decode_policy.MODES or (
                         role == "baseline" and mode != "off")
+                profile_hash = env.get("MHP3RD_RENDERER_PROFILE_SHA256")
+                if profile_aware and profile_hash is not None:
+                    rejected = rejected or len(profile_hash) != 64 or any(c not in "0123456789abcdef" for c in profile_hash)
                 if rejected:
                     return subprocess.CompletedProcess(command, 1, "", "rejected")
                 value = {
@@ -59,10 +62,12 @@ class PairedPreflightTests(unittest.TestCase):
                 if texture_schema:
                     value[texture_decode_policy.SCHEMA_FIELD] = texture_decode_policy.SCHEMA
                     value[texture_decode_policy.MODE_FIELD] = mode
+                if profile_aware and profile_hash is not None:
+                    value["renderer_profile_sha256"] = profile_hash
                 return subprocess.CompletedProcess(command, 0, json.dumps(value), "")
 
             with mock.patch.object(verify_pair_preflight.subprocess, "run", side_effect=run):
-                return verify_pair_preflight.check_pair(baseline, candidate, audit_path)
+                return verify_pair_preflight.check_pair(baseline, candidate, audit_path, profile_aware)
 
     def test_new_policy_rejects_baseline_and_invalid_candidate_modes(self):
         report = self.check_synthetic_pair(texture_schema=True)
@@ -79,6 +84,14 @@ class PairedPreflightTests(unittest.TestCase):
         self.assertEqual(report["status"], "passed")
         self.assertNotIn(texture_decode_policy.SCHEMA_FIELD,
                          report["binaries"]["baseline"]["preflight"])
+
+    def test_explicit_renderer_profile_hash_checks(self):
+        report = self.check_synthetic_pair(texture_schema=True, profile_aware=True)
+        self.assertEqual(len(report["checks"]), 50)
+        checks = {(item["role"], item["check"]) for item in report["checks"]}
+        for role in ("baseline", "candidate"):
+            self.assertIn((role, "echo_renderer_profile_hash"), checks)
+            self.assertIn((role, "reject_renderer_profile_empty"), checks)
 
 
 if __name__ == "__main__":

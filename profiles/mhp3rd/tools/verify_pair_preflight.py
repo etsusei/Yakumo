@@ -28,7 +28,8 @@ def fingerprint(path: Path) -> str:
     return digest.hexdigest()
 
 
-def check_pair(baseline: Path, candidate: Path, audit_path: Path) -> dict:
+def check_pair(baseline: Path, candidate: Path, audit_path: Path,
+               renderer_profile_aware: bool = False) -> dict:
     binaries = {"baseline": baseline.resolve(strict=True),
                 "candidate": candidate.resolve(strict=True)}
     audit = json.loads(audit_path.read_text())
@@ -65,9 +66,14 @@ def check_pair(baseline: Path, candidate: Path, audit_path: Path) -> dict:
                             "baseline_provenance_sha256", "baseline_sealed",
                             "renderer_compiled", "aot_probes_compiled"}
                 allowed = required | {"native_mode_schema"} | texture_decode_policy.FIELDS
+                profile_hash = env.get("MHP3RD_RENDERER_PROFILE_SHA256")
+                if profile_hash is not None:
+                    allowed.add("renderer_profile_sha256")
                 if (type(value) is not dict or not required <= set(value) or
                         set(value) - allowed or value["schema"] != "yakumo-test-preflight-v1"):
                     raise ValueError(f"{role}/{label}: wrong preflight schema")
+                if profile_hash is not None and value.get("renderer_profile_sha256") != profile_hash:
+                    raise ValueError(f"{role}/{label}: renderer profile hash was not echoed")
                 if "native_mode_schema" in value and value["native_mode_schema"] != native_modes.V2_SCHEMA:
                     raise ValueError(f"{role}/{label}: unknown native mode schema")
                 try:
@@ -127,6 +133,14 @@ def check_pair(baseline: Path, candidate: Path, audit_path: Path) -> dict:
                 if selected[texture_decode_policy.MODE_FIELD] != mode:
                     raise ValueError("Candidate texture mode was not reported canonically")
         # Read a different setting, proving the hash is effective configuration.
+        if renderer_profile_aware:
+            if texture_decode_policy.SCHEMA_FIELD not in reference:
+                raise ValueError("Renderer profile checks require explicit texture policy support")
+            for role in binaries:
+                for label, value in (("empty", ""), ("invalid", "not-a-hash"), ("uppercase", "A" * 64)):
+                    invoke(role, "reject_renderer_profile_" + label,
+                           {"MHP3RD_RENDERER_PROFILE_SHA256": value}, rejected=True)
+                invoke(role, "echo_renderer_profile_hash", {"MHP3RD_RENDERER_PROFILE_SHA256": "a" * 64})
         other = invoke("candidate", "configuration_change", {"MHP3RD_UI_LANGUAGE": "en"})
         if other["configuration_sha256"] == changed["configuration_sha256"]:
             raise ValueError("Effective language override did not affect configuration identity")
@@ -146,10 +160,11 @@ def main() -> int:
     parser.add_argument("--candidate", type=Path, required=True)
     parser.add_argument("--audit", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--renderer-profile-aware", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("Output already exists; preserve prior evidence")
-    report = check_pair(args.baseline, args.candidate, args.audit)
+    report = check_pair(args.baseline, args.candidate, args.audit, args.renderer_profile_aware)
     with args.output.open("x", encoding="utf-8") as stream:
         json.dump(report, stream, indent=2)
         stream.write("\n")

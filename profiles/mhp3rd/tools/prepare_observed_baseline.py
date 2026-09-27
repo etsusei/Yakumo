@@ -59,6 +59,7 @@ OBSERVATION_FILES = (
     "profiles/mhp3rd/scripts/check_offline.py",
     "profiles/mhp3rd/tools/compare_test_runs.py",
     "profiles/mhp3rd/tools/native_batch.py",
+    "profiles/mhp3rd/tools/renderer_batch.py",
     "profiles/mhp3rd/tools/native_modes.py",
     "profiles/mhp3rd/tools/texture_decode_policy.py",
     "profiles/mhp3rd/tools/instrument_probes.py",

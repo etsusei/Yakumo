@@ -76,6 +76,7 @@ void MHP3RD_VECTOR_METRICS_UNIT(Runtime &, AllegrexContext &);
 namespace {
 
 void require_sealed_baseline_modes() {
+    (void)mhp3rd::gpu::renderer_profile_hash(std::getenv(mhp3rd::gpu::kRendererProfileHashSwitch));
     const auto texture_mode = mhp3rd::gpu::parse_texture_decode_mode(
         std::getenv(mhp3rd::gpu::kTextureDecodeSwitch));
     mhp3rd::gpu::require_texture_decode_policy(texture_mode,
@@ -129,6 +130,10 @@ int test_preflight() {
         {"aot_probes_compiled", false},
 #endif
     };
+    const auto renderer_profile = mhp3rd::gpu::renderer_profile_hash(
+        std::getenv(mhp3rd::gpu::kRendererProfileHashSwitch));
+    if (!renderer_profile.empty())
+        fields.push_back({"renderer_profile_sha256", std::string(renderer_profile)});
     std::cout << mhp3rd::testing::fields_json(fields) << '\n';
     return 0;
 }
@@ -462,6 +467,10 @@ int main(int argc, char **argv) {
                 throw std::runtime_error("Baseline recording requires portable texture decoding off");
             metadata.push_back({"texture_decode_schema", std::string(mhp3rd::gpu::kTextureDecodeSchema)});
             metadata.push_back({"texture_decode_mode", std::string(mhp3rd::gpu::texture_decode_mode_name(texture_mode))});
+            const auto renderer_profile = mhp3rd::gpu::renderer_profile_hash(
+                std::getenv(mhp3rd::gpu::kRendererProfileHashSwitch));
+            if (!renderer_profile.empty())
+                metadata.push_back({"renderer_profile_sha256", std::string(renderer_profile)});
             for (const char *name : mhp3rd::native::kNativeModeSwitches) {
                 const char *value = std::getenv(name);
                 const auto mode = mhp3rd::native::parse_native_mode(value);

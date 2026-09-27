@@ -245,6 +245,23 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(set(manifest["native_modes"]), set(native_modes.V2_FIELDS))
         self.assertEqual(package.load_package(self.output)["validation"]["issues"], [])
 
+    def test_renderer_profile_hash_is_preserved_and_validated(self):
+        raw = package._read_journal_bytes(journal(self.ctx))
+        begin = raw["records"][0]["fields"]
+        begin.update(texture_decode_schema="yakumo-texture-decode-v1", texture_decode_mode="off",
+                     renderer_profile_sha256="a" * 64)
+        self.assertEqual(package._identity(begin)["renderer_profile_sha256"], "a" * 64)
+        self.assertTrue(package._validate(raw, self.ctx, supervisor())["metadata_complete"])
+        for invalid in ("", "not-a-hash", 1, None):
+            begin["renderer_profile_sha256"] = invalid
+            result = package._validate(raw, self.ctx, supervisor())
+            self.assertFalse(result["metadata_complete"])
+            self.assertIn("invalid_renderer_profile_sha256", result["issues"])
+        begin["renderer_profile_sha256"] = "a" * 64
+        del begin["texture_decode_schema"]
+        self.assertIn("renderer_profile_without_texture_policy",
+                      package._validate(raw, self.ctx, supervisor())["issues"])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="yakumo-package-")
         self.addCleanup(self.temp.cleanup)

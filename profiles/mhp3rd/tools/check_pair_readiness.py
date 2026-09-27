@@ -20,6 +20,7 @@ import subprocess
 import launch_test_run as launch
 import native_batch
 import native_modes
+import renderer_batch
 import texture_decode_policy
 import run_cases
 import run_package
@@ -70,14 +71,34 @@ def _execution_profile(pair: dict, catalog: dict | None) -> dict | None:
     return profile
 
 
+def _renderer_profile(pair: dict, catalog: dict | None) -> dict | None:
+    has_profile = "renderer_profile" in pair
+    require(has_profile == ("renderer_profile_sha256" in pair),
+            "Pair renderer profile and digest must appear together")
+    if not has_profile:
+        return None
+    require(catalog is not None, "Renderer profile requires its case catalog")
+    try:
+        profile = renderer_batch.validate_profile(pair["renderer_profile"], catalog)
+    except renderer_batch.RendererBatchError as exc:
+        raise ReadinessError(f"Invalid pair renderer profile: {exc}") from exc
+    require(pair["renderer_profile_sha256"] == renderer_batch.profile_sha256(profile),
+            "Pair renderer profile digest differs")
+    return profile
+
+
 def check_contract(pair: dict, configs: dict, catalog_hash: str,
                    catalog: dict | None = None) -> dict | None:
     require(pair.get("schema") == "yakumo-test-pair-v1" and pair.get("baseline_id") == "B0",
             "Unknown pair manifest")
     profile = _execution_profile(pair, catalog)
+    renderer_profile = _renderer_profile(pair, catalog)
     if profile is not None:
         require(profile["case_catalog_sha256"] == catalog_hash,
                 "Pair execution profile has a stale case catalog")
+    if renderer_profile is not None:
+        require(renderer_profile["case_catalog_sha256"] == catalog_hash,
+                "Pair renderer profile has a stale case catalog")
     required_schema = (native_modes.V2_SCHEMA if profile is not None and
                        profile["schema"] == native_batch.V2_SCHEMA else None)
     require(pair.get("native_mode_schema") == required_schema,
@@ -86,6 +107,11 @@ def check_contract(pair: dict, configs: dict, catalog_hash: str,
         texture_mode = texture_decode_policy.mode(pair)
     except ValueError as error:
         raise ReadinessError(str(error)) from error
+    if renderer_profile is not None:
+        require(pair.get(texture_decode_policy.SCHEMA_FIELD) == texture_decode_policy.SCHEMA,
+                "Renderer profile requires the supplemental texture decode schema")
+        require(texture_mode == renderer_profile["candidate_mode"],
+                "Pair texture decode mode differs from renderer profile")
     baseline, candidate = configs["baseline"], configs["candidate"]
     font = pair.get("game_font")
     require(type(font) is dict and bool(font.get("path")) and bool(font.get("sha256")),
@@ -108,6 +134,12 @@ def check_contract(pair: dict, configs: dict, catalog_hash: str,
                 "App texture decode schema differs from the pair")
         require(app_texture_mode == ("off" if role == "baseline" else texture_mode),
                 "App texture decode mode differs from the paired execution policy")
+        if renderer_profile is None:
+            require("renderer_profile_sha256" not in config,
+                    "App declares a renderer profile absent from the pair")
+        else:
+            require(config.get("renderer_profile_sha256") == renderer_batch.profile_sha256(renderer_profile),
+                    "App renderer profile digest differs from the pair")
         if role == "baseline":
             expected_modes = {name: "off" for name in native_modes.fields(required_schema)}
         elif profile is not None:
@@ -142,7 +174,8 @@ def check_readiness(pair_dir: Path, catalog_path: Path, fixture: Path) -> dict:
     expected_hash = digest(catalog)
     pair = read_json(pair_dir / "pair-manifest.json")
     profile = _execution_profile(pair, catalog)
-    if profile is None:
+    renderer_profile = _renderer_profile(pair, catalog)
+    if profile is None and renderer_profile is None:
         require([case["id"] for case in catalog["cases"]] ==
                 ["REC-01", "REC-02", "NATIVE-01", "REC-03"],
                 "The first user pack must contain its four ordered cases")
@@ -170,6 +203,12 @@ def check_readiness(pair_dir: Path, catalog_path: Path, fixture: Path) -> dict:
                     "Bundled execution profile differs from pair manifest")
         else:
             require(not bundled_profile.exists(), "Legacy pair unexpectedly bundles an execution profile")
+        bundled_renderer_profile = app / "Contents/Resources/testing/renderer-profile.json"
+        if renderer_profile is not None:
+            require(bundled_renderer_profile.is_file() and read_json(bundled_renderer_profile) == renderer_profile,
+                    "Bundled renderer profile differs from pair manifest")
+        else:
+            require(not bundled_renderer_profile.exists(), "Legacy pair unexpectedly bundles a renderer profile")
         parsed = json.loads(run([str(fixture), "--catalog", str(config["cases"]["path"])]).stdout)
         require(parsed == {"sha256": expected_hash, "case_count": len(catalog["cases"])},
                 "Compiled C++ and Python catalog interpretations differ")
@@ -225,6 +264,9 @@ def check_readiness(pair_dir: Path, catalog_path: Path, fixture: Path) -> dict:
     if profile is not None:
         report["execution_profile_id"] = profile["id"]
         report["execution_profile_sha256"] = native_batch.profile_sha256(profile)
+    if renderer_profile is not None:
+        report["renderer_profile_id"] = renderer_profile["id"]
+        report["renderer_profile_sha256"] = renderer_batch.profile_sha256(renderer_profile)
     return report
 
 

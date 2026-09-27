@@ -6,7 +6,16 @@
 namespace mhp3rd::gpu {
 inline constexpr const char *kTextureDecodeSwitch = "MHP3RD_PORTABLE_TEXTURE_DECODE";
 inline constexpr const char *kTextureDecodeSchema = "yakumo-texture-decode-v1";
+inline constexpr const char *kRendererProfileHashSwitch = "MHP3RD_RENDERER_PROFILE_SHA256";
 enum class TextureDecodeMode { Off, Verify, Native };
+
+inline std::string_view renderer_profile_hash(const char *value) {
+    if (value == nullptr) return {};
+    const std::string_view hash(value);
+    if (hash.size() != 64u || hash.find_first_not_of("0123456789abcdef") != hash.npos)
+        throw std::invalid_argument("Invalid MHP3RD_RENDERER_PROFILE_SHA256; expected lowercase SHA-256");
+    return hash;
+}
 
 inline TextureDecodeMode parse_texture_decode_mode(const char *value) {
     const std::string_view text = value ? value : "off";

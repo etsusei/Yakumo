@@ -48,6 +48,7 @@ _HASH = re.compile(r"[0-9a-f]{64}\Z", re.ASCII)
 _COMMIT = re.compile(r"[0-9a-fA-F]{7,40}\Z", re.ASCII)
 _SAFE_ID = re.compile(r"[A-Za-z0-9_.-]{1,96}\Z", re.ASCII)
 _REVISION = re.compile(r"source-sha256:[0-9a-f]{64}\Z", re.ASCII)
+RENDERER_PROFILE_ENVIRONMENT = "MHP3RD_RENDERER_PROFILE_SHA256"
 _ENV_PASSTHROUGH = frozenset({
     "HOME", "TMPDIR", "PATH", "LANG", "LC_ALL", "LC_CTYPE", "TERM",
     "DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY", "XDG_RUNTIME_DIR",
@@ -257,7 +258,7 @@ def _load_config(config_path: os.PathLike[str] | str) -> dict[str, Any]:
     except (run_package.PackageError, ValueError, UnicodeError, RecursionError) as error:
         raise LaunchError("invalid launch configuration JSON") from error
     fields = set(config)
-    optional = {"native_mode_schema"} | texture_decode_policy.FIELDS
+    optional = {"native_mode_schema", "renderer_profile_sha256"} | texture_decode_policy.FIELDS
     if not _LAUNCH_FIELDS <= fields or fields - _LAUNCH_FIELDS - optional or config.get("schema") != LAUNCH_SCHEMA:
         raise LaunchError("invalid launch configuration schema or fields")
     mode_schema = config.get("native_mode_schema")
@@ -271,11 +272,18 @@ def _load_config(config_path: os.PathLike[str] | str) -> dict[str, Any]:
         texture_mode = texture_decode_policy.mode(config)
     except ValueError as error:
         raise LaunchError(str(error)) from error
+    renderer_profile_sha256 = None
+    if "renderer_profile_sha256" in config:
+        renderer_profile_sha256 = _hash(config["renderer_profile_sha256"], "renderer_profile_sha256")
+        if texture_decode_policy.FIELDS - fields:
+            raise LaunchError("renderer profile requires complete texture decode policy fields")
     role = config["role"]
     if role not in ("baseline", "candidate"):
         raise LaunchError("role must be baseline or candidate")
     if role == "baseline" and texture_mode != "off":
         raise LaunchError("Baseline portable texture decoding must be off")
+    if renderer_profile_sha256 is not None and role == "candidate" and texture_mode == "off":
+        raise LaunchError("Candidate renderer profile requires verify or native texture decoding")
     batch_id = _id(config["batch_id"], "batch_id")
     baseline_id = _id(config["baseline_id"], "baseline_id")
     baseline_commit = _commit(config["baseline_commit"], "baseline_commit")
@@ -353,6 +361,8 @@ def _load_config(config_path: os.PathLike[str] | str) -> dict[str, Any]:
     if texture_decode_policy.SCHEMA_FIELD in config:
         normalized[texture_decode_policy.SCHEMA_FIELD] = texture_decode_policy.SCHEMA
         normalized[texture_decode_policy.MODE_FIELD] = texture_mode
+    if renderer_profile_sha256 is not None:
+        normalized["renderer_profile_sha256"] = renderer_profile_sha256
     return normalized
 
 
@@ -427,6 +437,8 @@ def _environment(config: dict[str, Any], data: Path, run_id: str,
     env["MHP3RD_RECORD_PROBES"] = config["probe_selection"]
     env.update(config["native_modes"])
     env[texture_decode_policy.ENVIRONMENT] = config.get(texture_decode_policy.MODE_FIELD, "off")
+    if "renderer_profile_sha256" in config:
+        env[RENDERER_PROFILE_ENVIRONMENT] = config["renderer_profile_sha256"]
     env["MHP3RD_WINDOW_TITLE"] = f"Yakumo {config['role'].title()} {config['batch_id']} {run_id[:12]}"
     if record_dir is not None:
         assert context_sha256 is not None and basis_sha256 is not None and cases_path is not None
@@ -514,10 +526,13 @@ def _read_preflight(path: Path, returncode: int | None, timed_out: bool,
     except (run_package.PackageError, ValueError, UnicodeError, RecursionError) as error:
         raise LaunchError("binary preflight did not emit one bounded JSON object") from error
     mode_schema = config.get("native_mode_schema")
-    expected_fields = _PREFLIGHT_FIELDS | ({"native_mode_schema"} if mode_schema is not None else set())
+    expected_fields = set(_PREFLIGHT_FIELDS) | ({"native_mode_schema"} if mode_schema is not None else set())
     texture_schema = config.get(texture_decode_policy.SCHEMA_FIELD)
     if texture_schema is not None:
         expected_fields |= texture_decode_policy.FIELDS
+    renderer_profile_sha256 = config.get("renderer_profile_sha256")
+    if renderer_profile_sha256 is not None:
+        expected_fields.add("renderer_profile_sha256")
     if set(value) != expected_fields or value["schema"] != PREFLIGHT_SCHEMA:
         raise LaunchError("binary preflight schema or fields differ")
     if mode_schema is not None and value["native_mode_schema"] != mode_schema:
@@ -526,6 +541,8 @@ def _read_preflight(path: Path, returncode: int | None, timed_out: bool,
             value[texture_decode_policy.SCHEMA_FIELD] != texture_schema or
             value[texture_decode_policy.MODE_FIELD] != config[texture_decode_policy.MODE_FIELD]):
         raise LaunchError("binary preflight texture decode policy differs from the launch manifest")
+    if renderer_profile_sha256 is not None and value["renderer_profile_sha256"] != renderer_profile_sha256:
+        raise LaunchError("binary preflight renderer profile digest differs from the launch manifest")
     expected = {
         "recorder_revision": config["recorder_revision"],
         "configuration_sha256": config["configuration_sha256"],

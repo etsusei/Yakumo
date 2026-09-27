@@ -358,6 +358,8 @@ def _identity(begin: Dict[str, Any]) -> Dict[str, Any]:
     for name in texture_decode_policy.FIELDS:
         if name in begin:
             identity[name] = begin[name]
+    if "renderer_profile_sha256" in begin:
+        identity["renderer_profile_sha256"] = begin["renderer_profile_sha256"]
     return identity
 
 
@@ -435,6 +437,12 @@ def _validate(journal: Dict[str, Any], context: Dict[str, Any],
         elif begin[name] not in ("off", "0", "verify", "native"):
             issues.append("invalid_native_mode:" + name)
     texture_fields = texture_decode_policy.FIELDS & begin.keys()
+    if "renderer_profile_sha256" in begin:
+        if (not _valid_hash(begin["renderer_profile_sha256"]) or
+                begin["renderer_profile_sha256"] != begin["renderer_profile_sha256"].lower()):
+            issues.append("invalid_renderer_profile_sha256")
+        if texture_fields != texture_decode_policy.FIELDS:
+            issues.append("renderer_profile_without_texture_policy")
     if texture_fields and texture_fields != texture_decode_policy.FIELDS:
         issues.append("incomplete_texture_decode_policy")
     elif texture_fields:
@@ -584,6 +592,7 @@ def _validate(journal: Dict[str, Any], context: Dict[str, Any],
         "unknown_native_mode_schema",
         "incomplete_texture_decode_policy", "unknown_texture_decode_schema",
         "invalid_texture_decode_mode", "baseline_texture_decode_not_off",
+        "invalid_renderer_profile_sha256", "renderer_profile_without_texture_policy",
     }
     metadata_complete = not any(item.startswith(metadata_only_prefixes) or
                                 item in metadata_only_issues for item in issues)

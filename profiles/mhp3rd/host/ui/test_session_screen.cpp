@@ -35,6 +35,13 @@ Selection &selection() {
 // Only enumerated case strings are translated. Catalog text outside
 // this list is displayed verbatim and never used as a format string.
 std::string_view case_text(const std::string &value) {
+    if (value == "Render and vector discovery in the village") return tr("Render and vector discovery in the village");
+    if (value == "Use that same hunter slot and the same input device in both roles; keep equipment and settings unchanged.")
+        return tr("Use that same hunter slot and the same input device in both roles; keep equipment and settings unchanged.");
+    if (value == "After the camera move, pause for three seconds and inspect the hunter's outfit or weapon, village surfaces, and Chinese text for missing or incorrect textures.")
+        return tr("After the camera move, pause for three seconds and inspect the hunter's outfit or weapon, village surfaces, and Chinese text for missing or incorrect textures.");
+    if (value == "Open Test session and record Render observation complete. Reopen it to mark your outcome, then close the game normally.")
+        return tr("Open Test session and record Render observation complete. Reopen it to mark your outcome, then close the game normally.");
     if (value == "Vector call discovery in the village") return tr("Vector call discovery in the village");
     if (value == "This case discovers vector calls. Missing calls are not a player error; do not repeat the route to force coverage.")
         return tr("This case discovers vector calls. Missing calls are not a player error; do not repeat the route to force coverage.");
@@ -117,6 +124,7 @@ std::string_view case_text(const std::string &value) {
 
 std::string_view checkpoint_text(const std::string &value) {
     if (value == "vector_observation_complete") return tr("Vector observation complete");
+    if (value == "render_observation_complete") return tr("Render observation complete");
     if (value == "native_path_observed") return tr("Native path observed");
     if (value == "village_ready") return tr("Village ready");
     if (value == "route_complete") return tr("Route finished");

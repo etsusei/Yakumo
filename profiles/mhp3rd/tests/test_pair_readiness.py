@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from check_pair_readiness import ReadinessError, check_contract
 import native_batch
 import native_modes
+import renderer_batch
 import texture_decode_policy
 from run_package import NATIVE_MODE_FIELDS
 
@@ -90,6 +91,78 @@ class ReadinessContractTests(unittest.TestCase):
         del self.configs["candidate"][texture_decode_policy.SCHEMA_FIELD]
         with self.assertRaises(ReadinessError):
             self.check()
+
+    def test_renderer_profile_binds_case_hash_modes_and_both_roles(self):
+        catalog = {"schema": "yakumo-case-catalog-v1", "cases": [{
+            "id": "RENDERER", "version": 1, "title": "Synthetic renderer case",
+            "steps": ["Observe"], "checkpoints": ["done"],
+            "required_probes": [{"entry": 0x08877244, "min_calls": 1}],
+            "required_state_fields": [], "human_acceptance": True,
+        }]}
+        from check_pair_readiness import digest
+        catalog_hash = digest(catalog)
+        modes = {name: "off" for name in native_modes.V2_FIELDS}
+        modes["MHP3RD_NATIVE_VECTOR_NORM"] = "verify"
+        native_profile = native_batch.validate_profile({
+            "schema": native_batch.V2_SCHEMA, "id": "vector-test",
+            "case_catalog_sha256": catalog_hash, "candidate_modes": modes,
+            "required_native_entries": [],
+        }, catalog)
+        renderer_profile = renderer_batch.validate_profile({
+            "schema": renderer_batch.SCHEMA, "id": "renderer-test",
+            "case_catalog_sha256": catalog_hash, "candidate_mode": "verify",
+            "minimum_decodes": 1, "coverage_scope": "run_total",
+        }, catalog)
+        profile_hash = renderer_batch.profile_sha256(renderer_profile)
+        self.pair.update({
+            "execution_profile": native_profile,
+            "execution_profile_sha256": native_batch.profile_sha256(native_profile),
+            "renderer_profile": renderer_profile,
+            "renderer_profile_sha256": profile_hash,
+            "native_mode_schema": native_modes.V2_SCHEMA,
+            texture_decode_policy.SCHEMA_FIELD: texture_decode_policy.SCHEMA,
+            texture_decode_policy.MODE_FIELD: "verify",
+        })
+        for role, config in self.configs.items():
+            config["cases"]["sha256"] = catalog_hash
+            config["native_mode_schema"] = native_modes.V2_SCHEMA
+            config["native_modes"] = ({name: "off" for name in native_modes.V2_FIELDS}
+                                      if role == "baseline" else dict(modes))
+            config[texture_decode_policy.SCHEMA_FIELD] = texture_decode_policy.SCHEMA
+            config[texture_decode_policy.MODE_FIELD] = "off" if role == "baseline" else "verify"
+            config["renderer_profile_sha256"] = profile_hash
+
+        def check():
+            return check_contract(self.pair, self.configs, catalog_hash, catalog)
+
+        self.assertEqual(check(), native_profile)
+        self.configs["baseline"][texture_decode_policy.MODE_FIELD] = "verify"
+        with self.assertRaisesRegex(ReadinessError, "texture decode mode"):
+            check()
+        self.configs["baseline"][texture_decode_policy.MODE_FIELD] = "off"
+        self.configs["candidate"][texture_decode_policy.MODE_FIELD] = "off"
+        with self.assertRaisesRegex(ReadinessError, "texture decode mode"):
+            check()
+        self.configs["candidate"][texture_decode_policy.MODE_FIELD] = "verify"
+        self.configs["candidate"]["renderer_profile_sha256"] = "0" * 64
+        with self.assertRaisesRegex(ReadinessError, "renderer profile digest"):
+            check()
+        self.configs["candidate"]["renderer_profile_sha256"] = profile_hash
+        del self.configs["baseline"]["renderer_profile_sha256"]
+        with self.assertRaisesRegex(ReadinessError, "renderer profile digest"):
+            check()
+        self.configs["baseline"]["renderer_profile_sha256"] = profile_hash
+        self.pair["renderer_profile_sha256"] = "0" * 64
+        with self.assertRaisesRegex(ReadinessError, "renderer profile digest"):
+            check()
+        self.pair["renderer_profile_sha256"] = profile_hash
+        del self.pair[texture_decode_policy.SCHEMA_FIELD]
+        with self.assertRaises(ReadinessError):
+            check()
+        self.pair[texture_decode_policy.SCHEMA_FIELD] = texture_decode_policy.SCHEMA
+        catalog["cases"][0]["checkpoints"].append("changed")
+        with self.assertRaisesRegex(ReadinessError, "catalog hash differs"):
+            check()
 
     def test_reject_stale_catalog_despite_matching_pair_claims(self):
         self.configs["candidate"]["cases"]["sha256"] = "5" * 64

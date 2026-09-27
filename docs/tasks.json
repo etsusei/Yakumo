@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 92,
+  "revision": 94,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T08:40:29Z",
+  "updated_at": "2026-09-27T09:02:55Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -506,6 +506,30 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/renderer_evidence_policy",
+      "type": "agent",
+      "role": "Renderer profile and cumulative evidence analysis",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/renderer_pair_delivery",
+      "type": "agent",
+      "role": "Renderer policy-aware signed pair packaging/readiness",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/renderer_vector_case",
+      "type": "agent",
+      "role": "Finite combined vector/texture discovery catalog and Chinese UI strings",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -545,7 +569,7 @@
     ]
   },
   "execution_state": {
-    "current_task_id": null,
+    "current_task_id": "ASSET-008",
     "next_task_id": "ASSET-008",
     "next_action": "Prepare explicit renderer comparison policy and related paired case; consider combining pending vector discovery. NAT-004 waits onlyfor Baseline rerunwith in-app Auto beforeCaseBegin, preserving existingCandidate run. Noautomaticgame/appreplacement.",
     "implementation_after_documentation_started": true,
@@ -6737,27 +6761,96 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "in_progress",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
-        "/root"
+        "/root",
+        "/root/renderer_evidence_policy",
+        "/root/renderer_pair_delivery",
+        "/root/renderer_vector_case"
       ],
       "created_at": "2026-09-27T08:40:29Z",
-      "updated_at": "2026-09-27T08:40:29Z",
-      "started_at": null,
+      "updated_at": "2026-09-27T09:02:55Z",
+      "started_at": "2026-09-27T08:45:51Z",
       "completed_at": null,
       "scope": "Bind explicit supplemental renderer mode policy to case/record comparisons and prepare a finite related user-led paired batch. Account for cumulative asynchronous counters/finalization and reject absent/incomplete coverage; evaluate consolidating pending vector discovery without changing previous artifacts.",
       "depends_on": [
         "ASSET-007"
       ],
-      "work_summary": "Dependency-ready. Existing helper-only comparisons intentionally rejectactive texturemodes; a dedicated policy/case and signed delivery are required before user acceptance.",
+      "work_summary": "Authored one nine-step Chinese combined render/vector village case, two catalog-bound profiles, renderer run-total policy/evidence classification, runtime/preflight profile-hash binding and signed-pair tooling. Root ran123targetedPython tests,3CTests,758translation checks andcompiled C++cataloghash check; Candidate/launcher/fixture build. Final source-bound paired builds and signed preparation-only readiness remain pending. Newrenderer pairs seedAutoresolution inbothroles; oldapps remainunchanged.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
           "kind": "contract",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "docs/RENDER_DISCOVERY_CASE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/testing/cases/render_discovery.json",
+          "kind": "case_catalog",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/testing/profiles/render_discovery_vectors_v1.json",
+          "kind": "execution_profile",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/testing/profiles/render_discovery_texture_v1.json",
+          "kind": "renderer_profile",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/renderer_batch.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_renderer_batch.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_renderer_comparison.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_render_discovery_case.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/render-discovery-python.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/render-discovery-ctest.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/render-discovery-localization.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -6775,7 +6868,24 @@
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T08:45:51Z",
+          "occurred_at": "2026-09-27T08:45:51Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Preparing one combined finite village observation case with existing four vector Verify modes and separate portable texture Verify policy. Renderer counters are explicitly run-total including startup; helper windows stay case-specific. Root integrates runtime profile hash and comparison, subagents implement bounded evidence policy, packaging and localized case. Existing apps/records remain unchanged; no user handoff before current native-data rerun."
+        },
+        {
+          "recorded_at": "2026-09-27T09:02:55Z",
+          "occurred_at": "2026-09-27T09:02:55Z",
+          "actor_id": "/root",
+          "action": "source_ready",
+          "description": "Authored one nine-step Chinese combined render/vector village case, two catalog-bound profiles, renderer run-total policy/evidence classification, runtime/preflight profile-hash binding and signed-pair tooling. Root ran123targetedPython tests,3CTests,758translation checks andcompiled C++cataloghash check; Candidate/launcher/fixture build. Final source-bound paired builds and signed preparation-only readiness remain pending. Newrenderer pairs seedAutoresolution inbothroles; oldapps remainunchanged."
+        }
+      ],
       "updated_by_agent_id": "/root"
     }
   ],

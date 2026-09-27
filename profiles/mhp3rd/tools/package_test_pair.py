@@ -28,6 +28,7 @@ import register_baseline
 import run_cases
 import native_batch
 import native_modes
+import renderer_batch
 import texture_decode_policy
 
 
@@ -68,6 +69,7 @@ class PairInputs:
     font: Path | None = None
     game_font: Path | None = None
     execution_profile: Path | None = None
+    renderer_profile: Path | None = None
 
 
 def _json(path: Path) -> dict[str, Any]:
@@ -510,6 +512,7 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
                 overlay_tree: dict[str, Any], overlay_id: str,
                 work_root: Path, output: Path, batch_id: str, runner: Run,
                 execution_profile: dict[str, Any] | None = None,
+                renderer_profile: dict[str, Any] | None = None,
                 mode_schema: str | None = None,
                 texture_schema: str | None = None) -> dict[str, Any]:
     contents = app / "Contents"
@@ -547,6 +550,8 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
     _copy_checked(cases, testing / "cases.json")
     if execution_profile is not None:
         _write_json(testing / "execution-profile.json", execution_profile)
+    if renderer_profile is not None:
+        _write_json(testing / "renderer-profile.json", renderer_profile)
     (testing / "python.path").write_text(str(python) + "\n", encoding="utf-8")
     (testing / "python.sha256").write_text(_hash(python) + "\n", encoding="ascii")
     # Separate delivered batches in Launch Services as well as in window titles.
@@ -574,6 +579,8 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
     mode_fields = native_modes.fields(mode_schema)
     if texture_schema not in (None, texture_decode_policy.SCHEMA):
         raise PairError("Unknown texture decode schema")
+    if renderer_profile is not None and texture_schema != texture_decode_policy.SCHEMA:
+        raise PairError("Renderer profile requires the supplemental texture decode schema")
     if mode_schema == native_modes.V2_SCHEMA and execution_profile is None:
         raise PairError("Versioned native modes require an explicit execution profile")
     if execution_profile is not None:
@@ -614,7 +621,10 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
         config["native_mode_schema"] = mode_schema
     if texture_schema is not None:
         config[texture_decode_policy.SCHEMA_FIELD] = texture_schema
-        config[texture_decode_policy.MODE_FIELD] = "off"
+        config[texture_decode_policy.MODE_FIELD] = (
+            renderer_profile["candidate_mode"] if renderer_profile is not None and role == "candidate" else "off")
+    if renderer_profile is not None:
+        config["renderer_profile_sha256"] = renderer_batch.profile_sha256(renderer_profile)
     _write_json(testing / "launch-config.json", config)
     _run(["codesign", "--force", "--sign", "-", "--timestamp=none", str(app)], runner=runner)
     _run(["codesign", "--verify", "--deep", "--strict", str(app)], runner=runner)
@@ -645,6 +655,10 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
     if any(character in str(game_font) for character in "\r\n\0"):
         raise PairError("Game font path cannot contain settings delimiters")
     settings = {"ui.language": "zh-CN", "text.font": str(game_font)}
+    if inputs.renderer_profile is not None:
+        # Match the user's chosen setting in both roles from startup, so the
+        # new combined batch does not require a manual pre-case adjustment.
+        settings["video.internal_scale"] = "auto"
     preflight_base = _preflight(baseline, settings=settings, runner=runner)
     preflight_candidate = _preflight(candidate, settings=settings, runner=runner)
     if preflight_base["configuration_sha256"] != preflight_candidate["configuration_sha256"]:
@@ -672,6 +686,11 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
     execution_profile = (native_batch.load_profile(
         _real_file(inputs.execution_profile, "native execution profile"), catalog)
         if inputs.execution_profile is not None else None)
+    renderer_profile = (renderer_batch.load_profile(
+        _real_file(inputs.renderer_profile, "renderer profile"), catalog)
+        if inputs.renderer_profile is not None else None)
+    if renderer_profile is not None and texture_schema != texture_decode_policy.SCHEMA:
+        raise PairError("Renderer profile requires paired supplemental texture preflights")
     expected_schema = (native_modes.V2_SCHEMA if execution_profile is not None and
                        execution_profile["schema"] == native_batch.V2_SCHEMA else None)
     if mode_schema != expected_schema:
@@ -681,7 +700,8 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
     if not os.access(python, os.X_OK):
         raise PairError("External Python interpreter is not executable")
     scripts = [_real_file(PROFILE / "tools" / name, name) for name in (
-        "run_package.py", "run_cases.py", "native_batch.py", "native_modes.py", "texture_decode_policy.py",
+        "run_package.py", "run_cases.py", "native_batch.py", "native_modes.py", "renderer_batch.py",
+        "texture_decode_policy.py",
         "compare_test_runs.py",
         "launch_test_run.py")]
     moltenvk = _real_file(inputs.moltenvk or Path("/opt/homebrew/lib/libMoltenVK.dylib"), "MoltenVK driver")
@@ -710,6 +730,7 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
                 registration=registration, sources=sources, overlay_tree=overlay_tree,
                 overlay_id=overlay_id, work_root=work_root, output=output,
                 batch_id=batch_id, runner=runner, execution_profile=execution_profile,
+                renderer_profile=renderer_profile,
                 mode_schema=mode_schema, texture_schema=texture_schema)
         if configs["baseline"]["binary"]["sha256"] == configs["candidate"]["binary"]["sha256"]:
             raise PairError("Baseline and candidate application binaries are identical")
@@ -728,11 +749,15 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
         if execution_profile is not None:
             report["execution_profile"] = execution_profile
             report["execution_profile_sha256"] = native_batch.profile_sha256(execution_profile)
+        if renderer_profile is not None:
+            report["renderer_profile"] = renderer_profile
+            report["renderer_profile_sha256"] = renderer_batch.profile_sha256(renderer_profile)
         if mode_schema is not None:
             report["native_mode_schema"] = mode_schema
         if texture_schema is not None:
             report[texture_decode_policy.SCHEMA_FIELD] = texture_schema
-            report[texture_decode_policy.MODE_FIELD] = "off"
+            report[texture_decode_policy.MODE_FIELD] = (
+                renderer_profile["candidate_mode"] if renderer_profile is not None else "off")
         _write_json(stage / "pair-manifest.json", report)
         if output.exists() or output.is_symlink():
             raise PairError("Output appeared during assembly")
@@ -754,6 +779,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="Common game-text font (default: the verified macOS STHeiti Light face)")
     parser.add_argument("--execution-profile", type=Path,
                         help="Declared scale/copy native execution profile bound to the case catalog")
+    parser.add_argument("--renderer-profile", type=Path,
+                        help="Declared renderer comparison profile bound to the case catalog")
     args = parser.parse_args(argv)
     try:
         report = package_pair(PairInputs(**vars(args)))
