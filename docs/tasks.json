@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 95,
+  "revision": 99,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T09:20:10Z",
+  "updated_at": "2026-09-27T10:23:23Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -530,6 +530,30 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_builder_contract",
+      "type": "agent",
+      "role": "Independent original texture command builder contract audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/render_discovery_acceptance",
+      "type": "agent",
+      "role": "Actual combined renderer/vector paired-record analysis",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_command_runner",
+      "type": "agent",
+      "role": "Bounded original texture command corpus runner and provenance checks",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -570,14 +594,11 @@
   },
   "execution_state": {
     "current_task_id": null,
-    "next_task_id": "ASSET-009",
-    "next_action": "Certify the original texture-state command builder offline using the existing resource contracts. NAT-004 awaits only the Baseline rerun with Auto selected in-app before CaseBegin. After that, RENDER-001 can use the ready combined pair to also advance VEC-003. Do not request a separate vector-only replay or boot the game automatically.",
+    "next_task_id": "ASSET-010",
+    "next_action": "Implement the portable texture-command module against the certified original gate. The user waived native-data resampling and completed render-discovery; no further village replay is requested. Preserve norm-squared, immediate/Native texture and wider gameplay coverage gaps for later related batches.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
-    "awaiting_user_task_ids": [
-      "NAT-004",
-      "VEC-003"
-    ]
+    "awaiting_user_task_ids": []
   },
   "references": {
     "chinese_ui_pr": "https://github.com/etsusei/Yakumo/pull/1",
@@ -4898,22 +4919,22 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "awaiting_user_test",
+      "status": "completed",
       "owner_agent_id": null,
-      "responsible_actor_id": "project-owner",
+      "responsible_actor_id": null,
       "contributor_agent_ids": [
         "/root/native_data_acceptance"
       ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T08:21:39Z",
+      "updated_at": "2026-09-27T09:44:22Z",
       "started_at": "2026-09-27T08:21:39Z",
-      "completed_at": null,
+      "completed_at": "2026-09-27T09:44:22Z",
       "timestamp_note": null,
       "scope": "Assess native-mode counters, human observations and starting conditions; accept bounded behavior or retain off default.",
       "depends_on": [
         "NAT-003"
       ],
-      "work_summary": "Analyzed both actual packages. Candidate scale166586 andcopy3180 exclusive native; Baseline scale185039/copy3504 exclusive AOT; certified complete windows and zero fallback/mismatch. Strict profile compare is incomparable/not_covered because only video.internal_scale differs before CaseBegin (Baseline2, Candidateauto). Requested Baseline-only rerun: same unmodified app/fresh copied save; change internal scale toauto in-app before beginningcase. Existing Candidate canbe reused after matchingprerequisite gate; no native-default or speedup claim.",
+      "work_summary": "Closed the native-data review after the user waived the Baseline rerun and explained the resolution difference as accidental, with no problem observed. Complete certified windows retain exclusive Candidate native scale/copy and Baseline AOT execution. The immutable strict comparison remains incomparable/not_covered because configurations differed; no same-input, speedup or default-native claim.",
       "deliverables": [
         {
           "path": "out/testing/reports/native-data",
@@ -4957,12 +4978,12 @@
             "name": "Strict native-data paired acceptance",
             "status": "not_covered",
             "evidence_path": "out/testing/native-data-user-acceptance/report-20260927-1713/report.json",
-            "details": "Onlyeffective settingdifference isvideo.internal_scale; caseprerequisite hashes differ. No in-caseconfigurationchange; one Baseline rerunpending."
+            "details": "Only video.internal_scale differed before CaseBegin; the strict report remains not_covered. The user later waived the matched Baseline rerun, identifying an accidental setting choice."
           }
         ],
         "limitations": [
           "Native-only counts do not establish same-input equivalence or speedup.",
-          "Acceptance pending matched Baseline case; existing Candidate evidence retained."
+          "User explicitly waived the configuration-matched rerun; this does not convert the strict comparison into a pass."
         ]
       },
       "implementation_commits": [],
@@ -4977,6 +4998,15 @@
           "from_status": "not_started",
           "to_status": "awaiting_user_test",
           "description": "Analyzed both actual packages. Candidate scale166586 andcopy3180 exclusive native; Baseline scale185039/copy3504 exclusive AOT; certified complete windows and zero fallback/mismatch. Strict profile compare is incomparable/not_covered because only video.internal_scale differs before CaseBegin (Baseline2, Candidateauto). Requested Baseline-only rerun: same unmodified app/fresh copied save; change internal scale toauto in-app before beginningcase. Existing Candidate canbe reused after matchingprerequisite gate; no native-default or speedup claim."
+        },
+        {
+          "recorded_at": "2026-09-27T09:44:22Z",
+          "occurred_at": "2026-09-27T09:44:22Z",
+          "actor_id": "/root",
+          "action": "user_waived_rerun",
+          "from_status": "awaiting_user_test",
+          "to_status": "completed",
+          "description": "Closed the native-data review after the user waived the Baseline rerun and explained the resolution difference as accidental, with no problem observed. Complete certified windows retain exclusive Candidate native scale/copy and Baseline AOT execution. The immutable strict comparison remains incomparable/not_covered because configurations differed; no same-input, speedup or default-native claim."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -5290,9 +5320,9 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "awaiting_user_test",
+      "status": "completed",
       "owner_agent_id": "/root",
-      "responsible_actor_id": "project-owner",
+      "responsible_actor_id": null,
       "contributor_agent_ids": [
         "/root",
         "/root/vector_probe_integration",
@@ -5301,16 +5331,16 @@
         "/root/vector_discovery_report"
       ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T09:20:10Z",
+      "updated_at": "2026-09-27T10:20:19Z",
       "started_at": "2026-09-27T05:43:06Z",
-      "completed_at": null,
+      "completed_at": "2026-09-27T10:20:19Z",
       "timestamp_note": null,
       "scope": "Extend certified observation/mode policy and prepare a related batch after actual trigger evidence is available.",
       "depends_on": [
         "VEC-002",
         "NAT-001"
       ],
-      "work_summary": "Delivered a separate signed vector-discovery pair at a223ed3 with one localized finite village case and four Verify modes, no required helper calls/native targets. 56 targeted Python tests, four CTests, 33 paired preflights, real native launcher preparation for both roles, and 43/43 font samples from both prepared settings passed. Optional report windows distinguish calls from verification and incomplete/zero coverage. No game run or live metric trigger claimed. Current native-data pair stays first; VEC-003 awaits discovery input before formal metric cases. Combined render-discovery pair atf61ae34 isnowready tocollect thesamevectorobservations alongside textureVerify, aftercurrentnative-data rerun; oldvector-only pair preserved.",
+      "work_summary": "Actual render-discovery Baseline run-74e201a8871a4681ab09aa104559a8df and Candidate run-562a09cfb4684142bdd2e69997ea98dd both validate complete/bound, normal and configuration-matched with fresh character-loaded checkpoints. Candidate verified all132 asynchronous texture decodes with zero fallback/mismatch/error; no immediate or Native texture call was observed. Vector norm6530, distance41511 and distance-squared2457 Candidate Verify calls were certified and complete; norm-squared had zero calls. Manual input differences do not establish a regression or frame equality.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/testing/cases/vector_metrics_batch.json",
@@ -5515,6 +5545,18 @@
           "kind": "user_guide",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "docs/RENDER_DISCOVERY_ACCEPTANCE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/render-discovery-user-acceptance/report-20260927/report.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -5557,12 +5599,18 @@
             "name": "Discovery catalog and optional report regression",
             "status": "passed",
             "details": "56 targeted Python tests and four CTests; optional zero/fallback/one-role/reset/mode/schema/config cases remain explicit, native targets empty cannot claim native execution."
+          },
+          {
+            "name": "Actual combined user pair",
+            "status": "passed",
+            "evidence_path": "out/testing/render-discovery-user-acceptance/report-20260927/report.json",
+            "details": "Actual render-discovery Baseline run-74e201a8871a4681ab09aa104559a8df and Candidate run-562a09cfb4684142bdd2e69997ea98dd both validate complete/bound, normal and configuration-matched with fresh character-loaded checkpoints. Candidate verified all132 asynchronous texture decodes with zero fallback/mismatch/error; no immediate or Native texture call was observed. Vector norm6530, distance41511 and distance-squared2457 Candidate Verify calls were certified and complete; norm-squared had zero calls. Manual input differences do not establish a regression or frame equality."
           }
         ],
         "limitations": [
-          "Discovery pair is ready, not yet played. No live metric trigger or gameplay/performance result.",
-          "Formal vector required-coverage cases remain planned until real calls are observed.",
-          "User completes native-data first, then vector-discovery; existing apps/records preserved."
+          "Norm-squared entry has zero calls and remains unobserved in gameplay.",
+          "Renderer evidence is run-total, including startup, and covers132 asynchronous Verify requests; no immediate or Native texture execution, all-format, frame-equality or performance claim.",
+          "Manual routes differ; the renderer-specific verdict is verified while the ordinary case report retains observed_difference for input streams."
         ]
       },
       "implementation_commits": [
@@ -5624,6 +5672,15 @@
           "actor_id": "/root",
           "action": "combined_route_ready",
           "description": "A signedcombined render-discovery pair atf61ae34 nowprovides thesame optionalfour-vectorVerify observation inone relatedvillage route. Existingvector-only apps preserved; usecombinedbatch aftercurrentnative-data Baseline rerun ratherthanrequestbothroutes. Actualvector calls remainunobserved."
+        },
+        {
+          "recorded_at": "2026-09-27T10:20:19Z",
+          "occurred_at": "2026-09-27T10:20:19Z",
+          "actor_id": "/root",
+          "action": "actual_user_pair_reviewed",
+          "from_status": "awaiting_user_test",
+          "to_status": "completed",
+          "description": "Actual render-discovery Baseline run-74e201a8871a4681ab09aa104559a8df and Candidate run-562a09cfb4684142bdd2e69997ea98dd both validate complete/bound, normal and configuration-matched with fresh character-loaded checkpoints. Candidate verified all132 asynchronous texture decodes with zero fallback/mismatch/error; no immediate or Native texture call was observed. Vector norm6530, distance41511 and distance-squared2457 Candidate Verify calls were certified and complete; norm-squared had zero calls. Manual input differences do not establish a regression or frame equality."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -7018,28 +7075,41 @@
       "phase": "milestone_4",
       "kind": "manual",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "completed",
       "owner_agent_id": "/root",
-      "responsible_actor_id": "project-owner",
+      "responsible_actor_id": null,
       "contributor_agent_ids": [
-        "/root"
+        "/root",
+        "/root/render_discovery_acceptance"
       ],
       "created_at": "2026-09-27T09:20:10Z",
-      "updated_at": "2026-09-27T09:20:10Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-27T10:20:19Z",
+      "started_at": "2026-09-27T09:44:22Z",
+      "completed_at": "2026-09-27T10:20:19Z",
       "scope": "The user runs the combined case in both roles after the current native-data rerun. Preparation-only outputs do not count as gameplay.",
       "depends_on": [
         "ASSET-008",
         "NAT-004"
       ],
-      "work_summary": "Planned from verified prior evidence; execution has not started.",
+      "work_summary": "Actual render-discovery Baseline run-74e201a8871a4681ab09aa104559a8df and Candidate run-562a09cfb4684142bdd2e69997ea98dd both validate complete/bound, normal and configuration-matched with fresh character-loaded checkpoints. Candidate verified all132 asynchronous texture decodes with zero fallback/mismatch/error; no immediate or Native texture call was observed. Vector norm6530, distance41511 and distance-squared2457 Candidate Verify calls were certified and complete; norm-squared had zero calls. Manual input differences do not establish a regression or frame equality.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
           "kind": "contract",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "docs/RENDER_DISCOVERY_ACCEPTANCE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/render-discovery-user-acceptance/report-20260927/report.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -7047,18 +7117,274 @@
         "User observations and checkpoint outcomes are retained; zero optional helper calls remain explicit."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Actual combined user pair",
+            "status": "passed",
+            "evidence_path": "out/testing/render-discovery-user-acceptance/report-20260927/report.json",
+            "details": "Actual render-discovery Baseline run-74e201a8871a4681ab09aa104559a8df and Candidate run-562a09cfb4684142bdd2e69997ea98dd both validate complete/bound, normal and configuration-matched with fresh character-loaded checkpoints. Candidate verified all132 asynchronous texture decodes with zero fallback/mismatch/error; no immediate or Native texture call was observed. Vector norm6530, distance41511 and distance-squared2457 Candidate Verify calls were certified and complete; norm-squared had zero calls. Manual input differences do not establish a regression or frame equality."
+          }
+        ],
+        "limitations": [
+          "Norm-squared entry has zero calls and remains unobserved in gameplay.",
+          "Renderer evidence is run-total, including startup, and covers132 asynchronous Verify requests; no immediate or Native texture execution, all-format, frame-equality or performance claim.",
+          "Manual routes differ; the renderer-specific verdict is verified while the ordinary case report retains observed_difference for input streams."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T09:44:22Z",
+          "occurred_at": "2026-09-27T09:44:22Z",
+          "actor_id": "/root",
+          "action": "user_reported_complete",
+          "description": "User reports the render-discovery pair completed. Verify actual packages before marking manual execution complete or accepting renderer/vector scope."
+        },
+        {
+          "recorded_at": "2026-09-27T10:20:19Z",
+          "occurred_at": "2026-09-27T10:20:19Z",
+          "actor_id": "/root",
+          "action": "actual_user_pair_reviewed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Actual render-discovery Baseline run-74e201a8871a4681ab09aa104559a8df and Candidate run-562a09cfb4684142bdd2e69997ea98dd both validate complete/bound, normal and configuration-matched with fresh character-loaded checkpoints. Candidate verified all132 asynchronous texture decodes with zero fallback/mismatch/error; no immediate or Native texture call was observed. Vector norm6530, distance41511 and distance-squared2457 Candidate Verify calls were certified and complete; norm-squared had zero calls. Manual input differences do not establish a regression or frame equality."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
       "id": "RENDER-002",
       "title": "Analyze combined renderer and vector evidence",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root",
+        "/root/render_discovery_acceptance"
+      ],
+      "created_at": "2026-09-27T09:20:10Z",
+      "updated_at": "2026-09-27T10:23:23Z",
+      "started_at": "2026-09-27T09:44:22Z",
+      "completed_at": "2026-09-27T10:20:19Z",
+      "scope": "Analyze profile-bound actual records, diagnose mismatches, fallback or incomplete coverage, update VEC-003, and retain scoped results without whole-game claims.",
+      "depends_on": [
+        "RENDER-001"
+      ],
+      "work_summary": "Actual render-discovery Baseline run-74e201a8871a4681ab09aa104559a8df and Candidate run-562a09cfb4684142bdd2e69997ea98dd both validate complete/bound, normal and configuration-matched with fresh character-loaded checkpoints. Candidate verified all132 asynchronous texture decodes with zero fallback/mismatch/error; no immediate or Native texture call was observed. Vector norm6530, distance41511 and distance-squared2457 Candidate Verify calls were certified and complete; norm-squared had zero calls. Manual input differences do not establish a regression or frame equality.",
+      "deliverables": [
+        {
+          "path": "docs/NEXT_NATIVE_BATCHES.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/RENDER_DISCOVERY_ACCEPTANCE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/render-discovery-user-acceptance/report-20260927/report.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Keep renderer run-total evidence separate from vector case-window evidence.",
+        "Do not accept missing finalization, policy/configuration mismatch, anomalies or zero required decode coverage."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "Actual combined user pair",
+            "status": "passed",
+            "evidence_path": "out/testing/render-discovery-user-acceptance/report-20260927/report.json",
+            "details": "Actual render-discovery Baseline run-74e201a8871a4681ab09aa104559a8df and Candidate run-562a09cfb4684142bdd2e69997ea98dd both validate complete/bound, normal and configuration-matched with fresh character-loaded checkpoints. Candidate verified all132 asynchronous texture decodes with zero fallback/mismatch/error; no immediate or Native texture call was observed. Vector norm6530, distance41511 and distance-squared2457 Candidate Verify calls were certified and complete; norm-squared had zero calls. Manual input differences do not establish a regression or frame equality."
+          }
+        ],
+        "limitations": [
+          "Norm-squared entry has zero calls and remains unobserved in gameplay.",
+          "Renderer evidence is run-total, including startup, and covers132 asynchronous Verify requests; no immediate or Native texture execution, all-format, frame-equality or performance claim.",
+          "Manual routes differ; the renderer-specific verdict is verified while the ordinary case report retains observed_difference for input streams."
+        ]
+      },
+      "implementation_commits": [
+        "9e01b9c0fc4008a6292dc2f336b18918a9935ddf"
+      ],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T09:44:22Z",
+          "occurred_at": "2026-09-27T09:44:22Z",
+          "actor_id": "/root",
+          "action": "user_reported_complete",
+          "description": "User reports the render-discovery pair completed. Verify actual packages before marking manual execution complete or accepting renderer/vector scope."
+        },
+        {
+          "recorded_at": "2026-09-27T10:20:19Z",
+          "occurred_at": "2026-09-27T10:20:19Z",
+          "actor_id": "/root",
+          "action": "actual_user_pair_reviewed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Actual render-discovery Baseline run-74e201a8871a4681ab09aa104559a8df and Candidate run-562a09cfb4684142bdd2e69997ea98dd both validate complete/bound, normal and configuration-matched with fresh character-loaded checkpoints. Candidate verified all132 asynchronous texture decodes with zero fallback/mismatch/error; no immediate or Native texture call was observed. Vector norm6530, distance41511 and distance-squared2457 Candidate Verify calls were certified and complete; norm-squared had zero calls. Manual input differences do not establish a regression or frame equality."
+        },
+        {
+          "recorded_at": "2026-09-27T10:23:23Z",
+          "occurred_at": "2026-09-27T10:23:23Z",
+          "actor_id": "/root",
+          "action": "published",
+          "description": "Published the original command contract/gate and scoped actual render-discovery review in draft PR #25 at 9e01b9c. User rerun waiver remains separate from renderer verification; existing app bundles and raw records are unchanged."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ASSET-009",
+      "title": "Certify original texture-state command builder boundary",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-001",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root",
+        "/root/texture_builder_contract",
+        "/root/texture_command_runner"
+      ],
+      "created_at": "2026-09-27T09:20:10Z",
+      "updated_at": "2026-09-27T10:23:23Z",
+      "started_at": "2026-09-27T09:28:17Z",
+      "completed_at": "2026-09-27T10:20:19Z",
+      "scope": "Recover the original texture-state builder at 0x0889E5C0: its ABI, CPU/memory footprint, table and dependency assumptions, and command output. Use bounded offline original execution to define a concrete portable resource-consumer boundary.",
+      "depends_on": [
+        "ASSET-004",
+        "ASSET-005",
+        "ASSET-007"
+      ],
+      "work_summary": "Certified the original texture-state builder ABI, nine-command blocks, source/destination byte-mask semantics, header/state count distinction, CPU/stack effects and dependencies. Complete corpus:2256 inputs,8866 descriptors,4512 builder calls and11122 command slots agree across original AOT, bounded interpreter and independent model. Twenty-four synthetic cases cover36 slots, including the additional no-palette format branches. No production hook, game run or app change.",
+      "deliverables": [
+        {
+          "path": "docs/NEXT_NATIVE_BATCHES.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_COMMAND_BUILDER_CONTRACT.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_command_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_texture_commands.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_command_runner.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-command-static-contract.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-original-gate-final.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Check the full original code span and input table identities.",
+        "Use synthetic inputs and available TMH descriptors to exercise bounded original AOT/interpreter behavior and CPU/memory canaries.",
+        "Retain unknown variants and dependencies; do not install a guessed native hook or claim rendered fidelity."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "Independent original code and table audit",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-command-static-contract.json",
+            "details": "Builder528bytes, descriptor helper236bytes and1025-word exponent table independently fingerprinted; exact loads, stores, branches and footprints documented."
+          },
+          {
+            "name": "Complete original command execution gate",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-command-original-gate-final.json",
+            "details": "2256 inputs/8866 descriptors;4512 calls per original path,11122 command slots, full CPU and selected memory/canary comparisons. Max19168 interpreter slices per corpus call;24 synthetic cases/36slots max3420slices."
+          },
+          {
+            "name": "Runner rejection and coverage checks",
+            "status": "passed",
+            "evidence": "Five tests in test_texture_command_runner.py passed; omitted records, wrong identities, malformed counts/hashes, budget violations and empty synthetic coverage reject."
+          }
+        ],
+        "limitations": [
+          "Disjoint physical regions with cached/uncached mirrors only; overlapping state/source/output/stack regions are not certified.",
+          "Corpus file formats4/5/8; extra1/3/9/10 branches use synthetic metadata and do not widen the production TMH reader.",
+          "No malformed-resource safety, live source-to-object mapping, rendered pixels, hardware fidelity or performance claim.",
+          "The command model remains test-only; production integration is a later task."
+        ]
+      },
+      "implementation_commits": [
+        "9e01b9c0fc4008a6292dc2f336b18918a9935ddf"
+      ],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T09:28:17Z",
+          "occurred_at": "2026-09-27T09:28:17Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Recovering the original texture-state constructor ABI, descriptor dependency, command slots and CPU/memory effects. Root prepares a bounded AOT/interpreter gate; an independent agent audits the original code and tables. No production hook, game run or app change."
+        },
+        {
+          "recorded_at": "2026-09-27T10:20:19Z",
+          "occurred_at": "2026-09-27T10:20:19Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Certified the original texture-state builder ABI, nine-command blocks, source/destination byte-mask semantics, header/state count distinction, CPU/stack effects and dependencies. Complete corpus:2256 inputs,8866 descriptors,4512 builder calls and11122 command slots agree across original AOT, bounded interpreter and independent model. Twenty-four synthetic cases cover36 slots, including the additional no-palette format branches. No production hook, game run or app change."
+        },
+        {
+          "recorded_at": "2026-09-27T10:23:23Z",
+          "occurred_at": "2026-09-27T10:23:23Z",
+          "actor_id": "/root",
+          "action": "published",
+          "description": "Published the original command contract/gate and scoped actual render-discovery review in draft PR #25 at 9e01b9c. User rerun waiver remains separate from renderer verification; existing app bundles and raw records are unchanged."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ASSET-010",
+      "title": "Implement portable texture command generation",
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
@@ -7068,72 +7394,27 @@
       "contributor_agent_ids": [
         "/root"
       ],
-      "created_at": "2026-09-27T09:20:10Z",
-      "updated_at": "2026-09-27T09:20:10Z",
+      "created_at": "2026-09-27T10:20:19Z",
+      "updated_at": "2026-09-27T10:20:19Z",
       "started_at": null,
       "completed_at": null,
-      "scope": "Analyze profile-bound actual records, diagnose mismatches, fallback or incomplete coverage, update VEC-003, and retain scoped results without whole-game claims.",
+      "scope": "Implement a runtime-independent value API for texture command patches and state metadata using the certified builder contract. Keep address tokens explicit, bounds checked, no-command/partial-update semantics preserved and guest ABI effects outside the core.",
       "depends_on": [
-        "RENDER-001"
+        "ASSET-009"
       ],
-      "work_summary": "Planned from verified prior evidence; execution has not started.",
+      "work_summary": "The original contract and full-corpus execution oracle are ready. Production calls remain unchanged until a separate integration gate.",
       "deliverables": [
         {
-          "path": "docs/NEXT_NATIVE_BATCHES.md",
+          "path": "docs/TEXTURE_COMMAND_BUILDER_CONTRACT.md",
           "kind": "contract",
           "state": "existing",
           "local_only": false
         }
       ],
       "acceptance_criteria": [
-        "Keep renderer run-total evidence separate from vector case-window evidence.",
-        "Do not accept missing finalization, policy/configuration mismatch, anomalies or zero required decode coverage."
-      ],
-      "validation": {
-        "checks": [],
-        "limitations": []
-      },
-      "implementation_commits": [],
-      "pause_reason": null,
-      "blockers": [],
-      "history": [],
-      "updated_by_agent_id": "/root"
-    },
-    {
-      "id": "ASSET-009",
-      "title": "Certify original texture-state command builder boundary",
-      "phase": "milestone_4",
-      "kind": "finite",
-      "parent_task_id": "ITER-001",
-      "status": "not_started",
-      "owner_agent_id": "/root",
-      "responsible_actor_id": null,
-      "contributor_agent_ids": [
-        "/root"
-      ],
-      "created_at": "2026-09-27T09:20:10Z",
-      "updated_at": "2026-09-27T09:20:10Z",
-      "started_at": null,
-      "completed_at": null,
-      "scope": "Recover the original texture-state builder at 0x0889E5C0: its ABI, CPU/memory footprint, table and dependency assumptions, and command output. Use bounded offline original execution to define a concrete portable resource-consumer boundary.",
-      "depends_on": [
-        "ASSET-004",
-        "ASSET-005",
-        "ASSET-007"
-      ],
-      "work_summary": "Planned from verified prior evidence; execution has not started.",
-      "deliverables": [
-        {
-          "path": "docs/NEXT_NATIVE_BATCHES.md",
-          "kind": "contract",
-          "state": "existing",
-          "local_only": false
-        }
-      ],
-      "acceptance_criteria": [
-        "Check the full original code span and input table identities.",
-        "Use synthetic inputs and available TMH descriptors to exercise bounded original AOT/interpreter behavior and CPU/memory canaries.",
-        "Retain unknown variants and dependencies; do not install a guessed native hook or claim rendered fidelity."
+        "No Runtime, GuestMemory, guest register or renderer dependency in the portable core.",
+        "Explicit validation preserves source count, initial byte masks, partial destination patches and the nine command words without silent clipping or fabricated bytes.",
+        "Synthetic rejection/ownership tests and the original corpus gate compare the actual portable implementation, retaining ABI/integration limits."
       ],
       "validation": {
         "checks": [],

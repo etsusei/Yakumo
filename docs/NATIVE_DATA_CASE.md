@@ -64,6 +64,7 @@ also passed all 43 game-font glyph checks. `out/testing/native-data-readiness.js
 binds the declared execution profile and delivered catalog. No game was
 launched during preparation. The user subsequently completed both cases;
 [the acceptance review](NATIVE_DATA_ACCEPTANCE.md) records exclusive native
-execution and a pre-case resolution mismatch. NAT-004 awaits only a matched
-Baseline rerun, retaining the existing Candidate record and the mode-specific
-evidence limits above.
+execution and a pre-case resolution mismatch. The user later waived the
+Baseline rerun after identifying an accidental setting change. NAT-004 is
+closed with those scoped observations and the original strict comparison
+limitation; the existing records and mode-specific limits remain unchanged.

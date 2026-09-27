@@ -3,9 +3,10 @@
 Reviewed on 2026-09-27 for `NATIVE-DATA-01` version 1, using the delivered
 `native-data-v1` execution profile and catalog hash
 `a1f1aa5cabf652fc2bd150ec205483c3d39d61e4dfd455bb288263ee41d94b76`.
-The user completed both gameplay roles. This review retains that completed case
-evidence while leaving strict native execution acceptance pending a matched
-case configuration.
+The user completed both gameplay roles and later waived the proposed Baseline
+rerun, confirming that the resolution change was an accidental setting choice
+and did not indicate a game problem. The analysis is closed with scoped path
+coverage; the recorded configuration mismatch remains unmodified evidence.
 
 ## Runs and validation
 
@@ -65,7 +66,7 @@ includes the live case configuration, so the strict pilot must not accept this
 pair despite clean, exclusive call counts. The manually observed input streams
 also differ, as expected for separate gameplay runs.
 
-One new **Baseline-only** case can be paired with the existing Candidate
+The initial follow-up proposal was one new **Baseline-only** case, paired with the existing Candidate
 package. Launch the same unmodified Baseline application so the registered
 initial configuration and fresh copied starting save remain bound. In the
 application, set internal scale to `auto` **before** beginning
@@ -83,3 +84,14 @@ Local-only evidence is under `out/testing/native-data-user-acceptance/`:
 comparison output; `counter-and-settings-evidence.json` records the independent
 window extraction, delivered-binary checks, and pre-case settings diff. No
 applications, source game data, saves, or previous run records were changed.
+
+## User disposition
+
+The user subsequently declined the Baseline rerun and explained the earlier
+resolution difference as an accidental selection, with no problem observed.
+No rerun is required for the current workflow. The original comparison still
+says `incomparable`/`not_covered` under its strict matched-configuration rule;
+it has not been rewritten into a pass. Both normal user outcomes and exclusive
+native/AOT call windows remain valid scoped observations. Defaults are not
+enabled by this disposition, and neither same-input equivalence nor a speedup
+is inferred. Continue with the separately completed render-discovery batch.
