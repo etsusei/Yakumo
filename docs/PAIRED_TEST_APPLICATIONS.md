@@ -29,7 +29,7 @@ Keep manifests local, alongside their build evidence. Do not invent source ident
 
 ## Packaging
 
-`profiles/mhp3rd/scripts/package_test_pair.sh` accepts the following required arguments: `--baseline-build`, `--candidate-build`, `--registration`, `--overlays`, `--cases`, `--launcher`, `--python`, and `--output`. The launcher is built separately as a small native executable. Optional `--moltenvk` and `--font` arguments select installed local resources. Output must be a new directory under ignored `out/testing/dist`.
+`profiles/mhp3rd/scripts/package_test_pair.sh` accepts the following required arguments: `--baseline-build`, `--candidate-build`, `--registration`, `--overlays`, `--cases`, `--launcher`, `--python`, and `--output`. The launcher is built separately as a small native executable. Optional `--moltenvk` and `--font` arguments select installed local resources. `--game-font` selects the common game-text face, defaulting to the previously verified macOS STHeiti Light face. The same choice must seed both binary preflight and launch settings; interface language alone does not select a Chinese game font. The font path and content digest are retained in the pair manifest. Output must be a new directory under ignored `out/testing/dist`.
 
 The assembler checks the registered original ISO, ELF and starting-save snapshot; verifies both build identities through preflight; copies the actual recursive Mach-O dependency closure; rewrites library links; copies relevant installed library licenses; and ad-hoc signs the two bundles. This uses the installed FFmpeg ABI, not an older release bundle's libraries. The 355 registered overlay libraries are reused without rebuilding their game code.
 
@@ -69,3 +69,8 @@ Use [the formal case pack](TEST_CASES.md) for CASE-001; the earlier pair above
 is retained as provisional delivery evidence. The first user sessions have now
 been analyzed in [the scoped acceptance report](FIRST_PAIRED_ACCEPTANCE.md);
 broader gameplay acceptance remains pending.
+
+A later user-reported shared Chinese glyph regression was fixed in the local
+`out/testing/dist/font-fixed/` copies. See [the font regression report](GAME_FONT_REGRESSION.md)
+for reproduction, coverage and preserved historical artifacts. These copies
+use a different effective font configuration from the initial-batch records.

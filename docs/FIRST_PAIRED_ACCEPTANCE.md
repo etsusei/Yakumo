@@ -36,3 +36,13 @@ The regression is tested offline using actual settings saves/snapshots and the C
 - Reviewed epoch-aware analysis: `out/testing/reports/initial-user-acceptance-1/analysis.json`.
 
 The user's normal observations and the two helper verification results are retained as scoped evidence. The three untriggered helpers stay explicitly uncovered; native replacements are not enabled by default. Combat, monster AI, quests, networking, long sessions and broader resource behavior remain outside this route. The next migration inventory must distinguish this verified leaf coverage from guest-independent subsystems and prepare finite related batches with their own evidence obligations.
+
+## Subsequent visual defect report
+
+The user subsequently reported that Chinese game text was missing in both roles.
+The shared missing-glyph notices were evidence of a real delivery problem: the
+isolated settings had dropped the previously selected Chinese game font. The
+normal case marks remain the original observations; they do not override this
+later report. [The font correction](GAME_FONT_REGRESSION.md) restores that
+configuration and verifies the actual missing glyphs. The two same-input helper
+results remain valid, but no blanket visual-compatibility pass is claimed.

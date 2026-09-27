@@ -2,7 +2,7 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-27T03:00:34Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-27T04:13:46Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -119,6 +119,7 @@ Build and test the tooling using constructed events, fake clocks, temporary file
 
 - [x] **CASE-001** — User completes the initial Baseline/candidate batch, totaling 15–30 minutes.
 - [x] **CASE-002** — Analyze the records, resolve defects, identify missing coverage, and publish the acceptance report.
+- [x] **FONT-001** — Restore the previously verified Chinese game font lost by paired configuration seeding; validate glyph coverage and deliver corrected app copies.
 
 | Case | User actions | Evidence required |
 | --- | --- | --- |
@@ -221,7 +222,7 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 through OBS-004 and PAIR-001 are completed. PAIR-002 and PAIR-003 are completed; CASE-001 and CASE-002 are completed; ITER-001 is next.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
+Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 through OBS-004 and PAIR-001 are completed. PAIR-002 and PAIR-003 are completed; CASE-001 and CASE-002 are completed; FONT-001 is completed after user visual confirmation; ITER-001 is next.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
 
 Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with ITER-001, the migration inventory and finite next-batch definitions. The first user pair has been received and analyzed with explicit limits. PAIR-002 now supplies independent signed applications and a verified preparation-only launcher flow. PAIR-001 panel/controller integration passed offline tests; its contracts and limitations are in docs/TEST_SESSION_PANEL.md. Use the marker, counter-boundary, context and comparison contracts in docs/RUN_COMPARISON.md. OBS-004 packaging and comparison passed offline tests, including actual C++ writer integration; its local validation report and visual-preview limitation are recorded in the ledger. OBS-003 production-object probes, guarded state/performance readers and lifecycle checks passed offline; exact evidence and limitations are in docs/CERTIFIED_PROBES.md and the ledger. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
 
@@ -231,7 +232,9 @@ PAIR-002 is completed at implementation commit `4759d99`, published in draft PR 
 
 Validation includes 32 synthetic component tests, 21 real-binary preflight checks, both 1,280-call production AOT comparisons, and each actual application's native entry point running headless preparation-only supervision. The two prepared save copies have equal contents and distinct files/directories; original inputs stayed unchanged. No full game, native result dialog or live case was exercised. Evidence paths and actual contributor attribution are recorded in PAIR-002 and [the paired-app guide](PAIRED_TEST_APPLICATIONS.md).
 
-**Resume ITER-001:** the user finished both formal first-pack applications. Both packages are complete and all eight case outcomes are normal. The original automatic comparison remains inconclusive because manual inputs differ and two paused-menu rendering-scale changes were recorded. Candidate case-scoped scale/copy verification totals are 511,126 and 9,772, with no mismatch, fallback or incomplete scope; angle, translation and vector helpers remain untriggered. See [the first paired acceptance](FIRST_PAIRED_ACCEPTANCE.md) and `out/testing/reports/initial-user-acceptance-1/analysis.json`.
+**FONT-001 completed; resume ITER-001.** The user subsequently reported missing Chinese game text in both roles. Actual logs show 23 blank glyphs under Hiragino Sans W4; earlier complete-text experiments explicitly selected STHeiti Light.ttc. The paired launcher lost that setting when seeding isolated configurations. The corrected copies are ready in `out/testing/dist/font-fixed/`, using the previously selected font. The production rasterizer restores all 23 reported omissions and all 43 probe samples, including both app-created settings. Signed preparation checks pass. The user confirmed normal game text after the correct font-fixed app was launched. An intervening screenshot came from the old first-pair copy; distinct corrected app identifiers and display names now separate them. The full case batch does not need to be repeated. See [the font regression report](GAME_FONT_REGRESSION.md). Shared warnings are not evidence that a visual defect is harmless.
+
+**Current migration evidence:** the user finished both formal first-pack applications. Both packages are complete and all eight case outcomes are normal. The original automatic comparison remains inconclusive because manual inputs differ and two paused-menu rendering-scale changes were recorded. Candidate case-scoped scale/copy verification totals are 511,126 and 9,772, with no mismatch, fallback or incomplete scope; angle, translation and vector helpers remain untriggered. See [the first paired acceptance](FIRST_PAIRED_ACCEPTANCE.md) and `out/testing/reports/initial-user-acceptance-1/analysis.json`.
 
 CASE-002 fixed the recorder's missed transient setting change: save/snapshot observations now invalidate an active case immediately, even if the value is restored before the next marker. The UI explains the interruption and reopens an active case directly at Test session. The host build and six offline CTests passed. No user session was repeated, no delivered app was replaced, and no native replacement was enabled by default. Updated live menu behavior remains for a future related batch.
 

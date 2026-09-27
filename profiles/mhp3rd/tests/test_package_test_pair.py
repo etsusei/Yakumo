@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import plistlib
 from pathlib import Path
 import subprocess
 import sys
@@ -128,6 +129,7 @@ class PairPackagingTests(unittest.TestCase):
     def test_preflight_requires_exact_build_and_sealed_source(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             executable = put(Path(temporary) / "game", b"fake")
+            settings = {"ui.language": "zh-CN", "text.font": str(Path(temporary) / "Chinese game font.ttc")}
             build = {"role": "baseline", "executable": str(executable),
                      "recorder_revision": "source-sha256:" + "a" * 64,
                      "build_config_sha256": "b" * 64,
@@ -138,7 +140,8 @@ class PairPackagingTests(unittest.TestCase):
                 data = Path(options["env"]["MHP3RD_DATA_DIR"])  # type: ignore[index]
                 for variable in ("MHP3RD_INPUT_SCRIPT", "PSPRECOMP_NO_CHAIN", "DYLD_INSERT_LIBRARIES"):
                     self.assertNotIn(variable, options["env"])
-                self.assertEqual((data / "settings.ini").read_text(), "ui.language=zh-CN\n")
+                self.assertEqual(dict(line.split("=", 1) for line in
+                                      (data / "settings.ini").read_text().splitlines()), settings)
                 self.assertEqual(command[1], "--test-preflight")
                 value = {"schema": pair.PREFLIGHT_SCHEMA, "recorder_revision": build["recorder_revision"],
                          "configuration_sha256": "d" * 64, "build_config_sha256": build["build_config_sha256"],
@@ -150,7 +153,7 @@ class PairPackagingTests(unittest.TestCase):
 
             with mock.patch.dict("os.environ", {"MHP3RD_INPUT_SCRIPT": "unwanted",
                                  "PSPRECOMP_NO_CHAIN": "1", "DYLD_INSERT_LIBRARIES": "unwanted"}):
-                self.assertEqual(pair._preflight(build, runner=run)["configuration_sha256"], "d" * 64)
+                self.assertEqual(pair._preflight(build, settings=settings, runner=run)["configuration_sha256"], "d" * 64)
             reported = build["baseline_source_content_sha256"]
             build["baseline_source_content_sha256"] = "e" * 64
             self.assertNotEqual(reported, build["baseline_source_content_sha256"])
@@ -160,7 +163,7 @@ class PairPackagingTests(unittest.TestCase):
                     value = json.loads(result.stdout)
                     value["baseline_provenance_sha256"] = reported
                     return subprocess.CompletedProcess(command, 0, json.dumps(value), "")
-                pair._preflight(build, runner=wrong)
+                pair._preflight(build, settings=settings, runner=wrong)
 
     def test_dependency_closure_distinguishes_overlay_bundle_from_dylib(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -231,20 +234,27 @@ class PairPackagingTests(unittest.TestCase):
                                                TOOLS / "compare_test_runs.py", TOOLS / "launch_test_run.py"],
                     cases=cases, python=python, overlays=overlays,
                     libraries={"libMoltenVK.dylib": moltenvk}, font=font,
-                    settings_hash="e" * 64, registration=registration,
+                    settings_hash="e" * 64,
+                    settings={"ui.language": "zh-CN", "text.font": str(font)}, registration=registration,
                     sources={"iso": str(iso), "elf": str(elf), "snapshot": str(snapshot_files.parent)},
                     overlay_tree=overlay_tree, overlay_id=register_baseline._tree_id(overlay_tree),
                     work_root=root / "runs", output=published, batch_id="test-pair", runner=signed)
             stage.rename(published)
             app = published / "Yakumo Baseline.app"
             self.assertEqual(config["binary"]["sha256"], pair._hash(app / "Contents/MacOS/YakumoGame"))
+            info = plistlib.loads((app / "Contents/Info.plist").read_bytes())
+            self.assertTrue(info["CFBundleIdentifier"].endswith(".test.baseline"))
+            self.assertNotEqual(info["CFBundleIdentifier"], "io.github.teamgdb.yakumo.test.baseline")
+            self.assertIn("test-pair", info["CFBundleDisplayName"])
             self.assertNotEqual(config["overlays"]["tree_id"], register_baseline._tree_id(overlay_tree))
             self.assertEqual(config["starting_save"]["path"], str(snapshot_files))
             self.assertEqual(config["baseline_provenance_sha256"], "d" * 64)
+            self.assertEqual(config["settings"], {"ui.language": "zh-CN", "text.font": str(font)})
             self.assertEqual((app / "Contents/Resources/testing/python.sha256").read_text().strip(), sha(b"python"))
             with mock.patch.object(launch_test_run.run_package, "SUPPORTED_ELF_SHA256", sha(b"ELF")):
                 loaded = launch_test_run._load_config(app / "Contents/Resources/testing/launch-config.json")
             self.assertEqual(loaded["role"], "baseline")
+            self.assertEqual(loaded["settings"]["text.font"], str(font))
             self.assertEqual(loaded["overlays"]["tree_id"], config["overlays"]["tree_id"])
 
 

@@ -567,6 +567,17 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MHP3RD_RECORDIN
 target_compile_definitions(mhp3rd_game_observation PRIVATE
     MHP3RD_RECORDING_REVISION="source-sha256:${MHP3RD_RECORDING_REVISION}")
 target_link_libraries(mhp3rd_game_observation PUBLIC mhp3rd_session_recording)
+if(NOT MHP3RD_BASELINE_B0)
+    # Uses the production glyph rasterizer without starting SDL or the game.
+    add_executable(mhp3rd_game_font_coverage tests/game_font_coverage.cpp
+        host/fonts/game_font.cpp host/app_paths.cpp host/install/user_data.cpp
+        host/settings/settings.cpp host/input/bindings.cpp)
+    target_include_directories(mhp3rd_game_font_coverage PRIVATE
+        "${MHP3RD_PROFILE_DIR}/host" "${MHP3RD_PROFILE_DIR}/third_party")
+    target_link_libraries(mhp3rd_game_font_coverage PRIVATE psprecomp_core mhp3rd_game_observation)
+    set_target_properties(mhp3rd_game_font_coverage PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+endif()
 add_executable(mhp3rd_run_package_fixture tests/run_package_fixture.cpp)
 target_link_libraries(mhp3rd_run_package_fixture PRIVATE mhp3rd_game_observation)
 set_target_properties(mhp3rd_run_package_fixture PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
