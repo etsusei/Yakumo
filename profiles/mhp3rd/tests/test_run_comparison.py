@@ -14,6 +14,7 @@ import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import compare_test_runs as compare
+import native_modes
 import run_package as package
 
 ENTRY = 0x08877818
@@ -85,6 +86,53 @@ def encode(rows):
 
 
 class ComparisonTests(unittest.TestCase):
+    def vector_report(self, calls: int, mode: str = "native"):
+        vector_entry = 0x08877244
+        cases = catalog()
+        cases["cases"][0]["required_probes"] = [{"entry": vector_entry, "min_calls": 1}]
+        modes = {name: "off" for name in native_modes.V2_FIELDS}
+        modes[native_modes.VECTOR_BY_ENTRY[vector_entry]] = mode
+        profile = {"schema": "yakumo-native-batch-v2", "id": "vector-test",
+                   "case_catalog_sha256": compare.canonical_hash(cases),
+                   "candidate_modes": modes,
+                   "required_native_entries": [vector_entry] if mode == "native" else []}
+
+        def edit(role, rows):
+            begin = rows[0][1]
+            begin["native_mode_schema"] = native_modes.V2_SCHEMA
+            begin["MHP3RD_NATIVE_VECTOR_CONSTRUCT"] = "off"
+            begin.update({name: "off" for name in native_modes.VECTOR_FIELDS})
+            if role == "candidate":
+                begin[native_modes.VECTOR_BY_ENTRY[vector_entry]] = mode
+            for _, fields in rows:
+                if fields.get("event") == "probe.summary":
+                    fields["entry"] = vector_entry
+        baseline = self.packaged("baseline", cases=cases, calls=calls,
+                                 edit=lambda rows: edit("baseline", rows))
+        candidate = self.packaged("candidate", cases=cases, calls=calls, mode=mode,
+                                  edit=lambda rows: edit("candidate", rows))
+        return compare.compare_runs(baseline, candidate, cases, execution_profile=profile)
+
+    def test_v2_native_execution_requires_actual_calls_and_does_not_claim_reference_match(self):
+        zero = self.vector_report(0)
+        self.assertEqual(zero["native_execution"]["outcome"], "not_covered")
+        live = self.vector_report(3)
+        self.assertEqual(live["native_execution"]["outcome"], "observed")
+        self.assertEqual(live["cases"][0]["reference_verification"]["outcome"], "not_covered")
+        verify = self.vector_report(3, "verify")
+        self.assertEqual(verify["native_execution"]["outcome"], "not_covered")
+        self.assertEqual(verify["cases"][0]["reference_verification"]["outcome"], "same_input_match")
+
+    def test_cross_version_records_are_explicitly_incomparable(self):
+        baseline = self.packaged("baseline")
+        def v2(rows):
+            rows[0][1]["native_mode_schema"] = native_modes.V2_SCHEMA
+            rows[0][1].update({name: "off" for name in native_modes.VECTOR_FIELDS})
+        candidate = self.packaged("candidate", edit=v2)
+        report = compare.compare_runs(baseline, candidate, catalog())
+        self.assertEqual(report["outcome"], "incomparable")
+        self.assertIn("identity:native_mode_schema", report["compatibility_issues"])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name).resolve()

@@ -19,6 +19,7 @@ import subprocess
 
 import launch_test_run as launch
 import native_batch
+import native_modes
 import run_cases
 import run_package
 
@@ -76,6 +77,10 @@ def check_contract(pair: dict, configs: dict, catalog_hash: str,
     if profile is not None:
         require(profile["case_catalog_sha256"] == catalog_hash,
                 "Pair execution profile has a stale case catalog")
+    required_schema = (native_modes.V2_SCHEMA if profile is not None and
+                       profile["schema"] == native_batch.V2_SCHEMA else None)
+    require(pair.get("native_mode_schema") == required_schema,
+            "Pair native mode schema differs from execution profile")
     baseline, candidate = configs["baseline"], configs["candidate"]
     font = pair.get("game_font")
     require(type(font) is dict and bool(font.get("path")) and bool(font.get("sha256")),
@@ -87,12 +92,14 @@ def check_contract(pair: dict, configs: dict, catalog_hash: str,
         require(config["cases"]["sha256"] == catalog_hash, "App has a stale case catalog")
         require(config["batch_id"] == pair["batch_id"], "App batch differs from pair manifest")
         require(config["probe_selection"] == "all", "Discovery probes must remain selected")
+        require(config.get("native_mode_schema") == required_schema,
+                "App native mode schema differs from paired execution policy")
         if role == "baseline":
-            expected_modes = {name: "off" for name in native_batch.NATIVE_SWITCH_BY_ENTRY.values()}
+            expected_modes = {name: "off" for name in native_modes.fields(required_schema)}
         elif profile is not None:
             expected_modes = profile["candidate_modes"]
         else:
-            expected_modes = {name: "verify" for name in native_batch.NATIVE_SWITCH_BY_ENTRY.values()}
+            expected_modes = {name: "verify" for name in native_modes.LEGACY_FIELDS}
         require(config["native_modes"] == expected_modes,
                 "Native mode differs from paired execution policy")
         for name in ("recorder_revision", "build_config_sha256", "configuration_sha256"):

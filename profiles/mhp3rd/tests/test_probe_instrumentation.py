@@ -19,6 +19,11 @@ VECTOR = 0x08877818
 SCALE = 0x08878B28
 TRANSLATION = 0x08878B4C
 COPY = 0x08879D08
+NORM = 0x08877244
+NORM_SQUARED = 0x08877264
+DISTANCE = 0x08877280
+DISTANCE_SQUARED = 0x088772A8
+STACK_RESTORE = "ctx.gpr[29] = (ctx.gpr[29] + static_cast<std::uint32_t>(16));"
 
 
 def synthetic_source(entries, runtime_name="rt"):
@@ -29,7 +34,7 @@ def synthetic_source(entries, runtime_name="rt"):
         leaf = probes.LEAVES[entry]
         addresses.update(range(entry, entry + leaf.size + 4, 4))
         for offset in leaf.returns:
-            returns[entry + offset] = leaf.store_delay_slot
+            returns[entry + offset] = leaf
     lines = [
         '#include "psprecomp/runtime.hpp"',
         '#include "recomp_units.hpp"',
@@ -43,7 +48,11 @@ def synthetic_source(entries, runtime_name="rt"):
         lines.append(f"L_{address:08X}:")
         if address in returns:
             lines.append("    jump_target = ctx.gpr[31];")
-            lines.append("    aot_mem.aot_store32(0u, 0u);" if returns[address] else "    // nop")
+            leaf = returns[address]
+            lines.append(
+                "    aot_mem.aot_store32(0u, 0u);" if leaf.store_delay_slot
+                else f"    {STACK_RESTORE}" if leaf.stack_restore_delay_slot else "    // nop"
+            )
             lines.extend([
                 "    local_pc = jump_target;",
                 "    if (++local_transfers < 2048u) { entry_id = 0u; goto LOCAL_DISPATCH; }",
@@ -57,11 +66,22 @@ def synthetic_source(entries, runtime_name="rt"):
 
 
 def remove_probe_lines(source):
-    return "\n".join(
-        line for line in source.split("\n")
-        if line != '#include "testing/probes.hpp"'
-        and "mhp3rd::testing::native_probe_aot_" not in line
-    )
+    original = []
+    in_metric_dispatch = False
+    for line in source.split("\n"):
+        if line in ('#include "testing/probes.hpp"', '#include "native/vector_metric_dispatch.hpp"'):
+            continue
+        if line.startswith("    if (mhp3rd::native::dispatch_vector_metric_entry("):
+            in_metric_dispatch = True
+            continue
+        if in_metric_dispatch:
+            if line == "    }":
+                in_metric_dispatch = False
+            continue
+        if "mhp3rd::testing::native_probe_aot_" not in line:
+            original.append(line)
+    assert not in_metric_dispatch
+    return "\n".join(original)
 
 
 class SourceInstrumentationTests(unittest.TestCase):
@@ -69,6 +89,8 @@ class SourceInstrumentationTests(unittest.TestCase):
         source = synthetic_source((ANGLE, VECTOR))
         output, manifest = probes.instrument_source(source, (ANGLE, VECTOR))
         self.assertEqual(remove_probe_lines(output), source)
+        self.assertNotIn("vector_metric_dispatch.hpp", output)
+        self.assertNotIn("dispatch_vector_metric_entry", output)
         self.assertEqual(output.count("native_probe_aot_enter"), 2)
         self.assertEqual(output.count("native_probe_aot_exit"), 3)
         self.assertEqual(manifest["entry_calls"], 2)
@@ -92,6 +114,57 @@ class SourceInstrumentationTests(unittest.TestCase):
             self.assertLess(block.index("aot_mem.aot_store32"), block.index("native_probe_aot_exit"))
             self.assertLess(block.index("native_probe_aot_exit"), block.index("local_pc = jump_target;"))
             self.assertIn(f"native_probe_aot_exit(runtime, ctx, 0x{entry:08X}u, jump_target);", block)
+
+    def test_four_vector_metric_restores_precede_exits(self):
+        entries = (NORM, NORM_SQUARED, DISTANCE, DISTANCE_SQUARED)
+        source = synthetic_source(entries)
+        output, manifest = probes.instrument_source(source, entries)
+        self.assertEqual(remove_probe_lines(output), source)
+        self.assertEqual(manifest["entry_calls"], 4)
+        self.assertEqual(manifest["exit_calls"], 4)
+        self.assertEqual(output.count('#include "native/vector_metric_dispatch.hpp"'), 1)
+        self.assertEqual(output.count("dispatch_vector_metric_entry"), 4)
+        for entry in entries:
+            entry_block = output.split(f"L_{entry:08X}:\n", 1)[1].split("\nL_", 1)[0]
+            dispatch = f"dispatch_vector_metric_entry(rt, ctx, 0x{entry:08X}u)"
+            probe = f"native_probe_aot_enter(rt, ctx, 0x{entry:08X}u)"
+            self.assertLess(entry_block.index(dispatch), entry_block.index(probe))
+            self.assertLess(entry_block.index(probe), entry_block.index("// Synthetic work only."))
+            self.assertIn("if (rt.stopped()) return;", entry_block)
+            self.assertIn("local_pc = ctx.pc;", entry_block)
+            self.assertIn("if (++local_transfers < 2048u) { entry_id = 0u; goto LOCAL_DISPATCH; }", entry_block)
+            address = entry + probes.LEAVES[entry].returns[0]
+            block = output.split(f"L_{address:08X}:\n", 1)[1].split("\nL_", 1)[0]
+            self.assertLess(block.index(STACK_RESTORE), block.index("native_probe_aot_exit"))
+            self.assertLess(block.index("native_probe_aot_exit"), block.index("local_pc = jump_target;"))
+            self.assertIn(f"native_probe_aot_exit(rt, ctx, 0x{entry:08X}u, jump_target);", block)
+
+    def test_metric_dispatch_uses_generated_runtime_name_and_is_idempotent(self):
+        source = synthetic_source((NORM, ANGLE), runtime_name="runtime")
+        output, _ = probes.instrument_source(source, (NORM, ANGLE))
+        self.assertEqual(remove_probe_lines(output), source)
+        self.assertEqual(output.count("dispatch_vector_metric_entry(runtime, ctx, 0x08877244u)"), 1)
+        self.assertIn("if (runtime.stopped()) return;", output)
+        self.assertNotIn("dispatch_vector_metric_entry(runtime, ctx, 0x088775ACu)", output)
+        with self.assertRaises(probes.ProbeInstrumentationError):
+            probes.instrument_source(output, (NORM, ANGLE))
+
+    def test_vector_metric_return_shape_changes_fail_closed(self):
+        for entry in (NORM, NORM_SQUARED, DISTANCE, DISTANCE_SQUARED):
+            source = synthetic_source((entry,))
+            mutations = (
+                source.replace(STACK_RESTORE, "// nop", 1),
+                source.replace(STACK_RESTORE, "ctx.gpr[29] += 16;", 1),
+                source.replace(STACK_RESTORE, STACK_RESTORE.replace("(16)", "(32)"), 1),
+                source.replace(
+                    f"    {STACK_RESTORE}\n    local_pc = jump_target;",
+                    f"    local_pc = jump_target;\n    {STACK_RESTORE}", 1,
+                ),
+            )
+            for changed in mutations:
+                with self.subTest(entry=f"0x{entry:08X}", changed=hashlib.sha256(changed.encode()).hexdigest()[:8]):
+                    with self.assertRaises(probes.ProbeInstrumentationError):
+                        probes.instrument_source(changed, (entry,))
 
     def test_invalid_entry_requests(self):
         for value in ("", "0x088775AC,", "0x088775AC,0x088775AC", "0xDEADBEEF", "088775AC"):

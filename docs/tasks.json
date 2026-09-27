@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 66,
+  "revision": 70,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T05:41:04Z",
+  "updated_at": "2026-09-27T06:06:25Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -362,6 +362,30 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/vector_probe_integration",
+      "type": "agent",
+      "role": "Certified vector probe boundaries and original-call suppression",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/vector_mode_policy",
+      "type": "agent",
+      "role": "Versioned nine-mode record and packaging policy",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/vector_observed_runtime_tests",
+      "type": "agent",
+      "role": "Independent production registration and observation tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -403,7 +427,7 @@
   "execution_state": {
     "current_task_id": "VEC-003",
     "next_task_id": "NAT-004",
-    "next_action": "Begin VEC-003 certified vector observations and startup/mode integration using the completed VEC-002 core and owned adapter. Do not silently extend the five-entry recording policy or infer live coverage from static callers. Delivered native-data apps stay unchanged; analyze NAT-004 only after actual NAT-003 user packages arrive.",
+    "next_action": "VEC-003 integration is verified and both builds archived at 399754a. Retain this checkpoint while NAT-003 awaits the user; analyze actual native-data packages in NAT-004 when supplied. Plan a separate bounded observation handoff to discover metric gameplay triggers before creating required vector acceptance steps. No static caller count is live coverage. Keep analysis offline and preserve the existing native-data apps; the user operates related gameplay cases.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": [
@@ -439,7 +463,9 @@
     "vector_metrics_contract": "docs/VECTOR_METRICS_CONTRACT.md",
     "native_data_and_vector_contract_pr": "https://github.com/etsusei/Yakumo/pull/16",
     "vector_metrics_module": "docs/VECTOR_METRICS_MODULE.md",
-    "vector_metrics_module_pr": "https://github.com/etsusei/Yakumo/pull/17"
+    "vector_metrics_module_pr": "https://github.com/etsusei/Yakumo/pull/17",
+    "vector_metrics_observation": "docs/VECTOR_METRICS_OBSERVATION.md",
+    "vector_metric_observations_pr": "https://github.com/etsusei/Yakumo/pull/18"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -5036,13 +5062,18 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "in_progress",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/vector_probe_integration",
+        "/root/vector_mode_policy",
+        "/root/vector_observed_runtime_tests"
+      ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T04:32:05Z",
-      "started_at": null,
+      "updated_at": "2026-09-27T06:06:25Z",
+      "started_at": "2026-09-27T05:43:06Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Extend certified observation/mode policy and prepare a related batch after actual trigger evidence is available.",
@@ -5050,13 +5081,115 @@
         "VEC-002",
         "NAT-001"
       ],
-      "work_summary": "Planned finite task; no execution claimed.",
+      "work_summary": "Integration and paired-build gates passed at 399754a: nine probes, scoped original-call suppression, owned registration including actual same-unit calls, and explicit backward-compatible v2 modes/profiles. Runtime, 12,060 metric comparisons, both 1,280-call legacy AOT gates, four CTests, 101 Python tests and 33 real-binary paired preflights passed. B0 and candidate share identical generated metric object and observer revision. Immutable binaries/build manifests are archived. VEC-003 remains in progress pending real gameplay triggers and finite related user cases; current apps unchanged.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/testing/cases/vector_metrics_batch.json",
           "kind": "case_catalog",
           "state": "planned",
           "local_only": false
+        },
+        {
+          "path": "docs/VECTOR_METRICS_OBSERVATION.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/vector_metrics_runtime.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/vector_metric_dispatch.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/mode_registry.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/native_modes.py",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/vector_metrics_runtime_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/vector-observation-runtime.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-observation-leaf-regression.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-observation-existing-probes.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-observation-preflight.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-observation-legacy-packages.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-observation-paired-preflight.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-observation-baseline-aot.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/vector-observation-validation.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/vector-observation-399754a/baseline.json",
+          "kind": "build_manifest",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/vector-observation-399754a/candidate.json",
+          "kind": "build_manifest",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-sources/B0-vector-observation-399754a/observed_baseline_manifest.json",
+          "kind": "source_audit",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -5065,13 +5198,67 @@
         "Only demonstrated triggers become required user-case coverage."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Production metric dispatch and one-call observation",
+            "status": "passed",
+            "evidence_path": "out/testing/vector-observation-runtime.log",
+            "details": "All four modes/entries, actual same-unit caller 0x08877610, direct-chain routing, owner isolation/restoration and code mutation refusal."
+          },
+          {
+            "name": "Metric and legacy AOT regression",
+            "status": "passed",
+            "evidence_path": "out/testing/vector-observation-leaf-regression.log",
+            "details": "12,060 metric comparisons and separate 1,280-call five-leaf AOT gate pass; no unexpected mismatch/error."
+          },
+          {
+            "name": "C++ observation and mode tooling checks",
+            "status": "passed",
+            "details": "Four CTests and 101 selected Python tests passed on Apple Silicon macOS. Legacy user packages both revalidated complete/bound with zero issues and five mode fields."
+          },
+          {
+            "name": "Independent B0 and v2 paired preflight",
+            "status": "passed",
+            "evidence_path": "out/testing/vector-observation-paired-preflight.json",
+            "details": "33 real-binary checks; B0 rejects verify/native/invalid for all9switches. Source audit matches candidate observer revision; both role generated0028objects SHA256 26d4dedc53f46a80a972982d1595e635eebaee3919336c3f9369cf96a18a7a9c. Baseline 1280original AOT calls passed; archived manifests validate."
+          }
+        ],
+        "limitations": [
+          "No live gameplay metric triggers or performance measurements.",
+          "VEC-003 remains in progress until finite related user cases can be supported by trigger evidence.",
+          "New metrics remain off by default; current native-data apps are unchanged."
+        ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "399754aed8c6b8d7a20e783f0b99566ff7e0c880"
+      ],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T05:43:06Z",
+          "occurred_at": "2026-09-27T05:43:06Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Integrating four vector metrics with certified AOT boundaries, owned runtime registration, explicit versioned mode metadata and backward-compatible record tooling. Existing user apps remain unchanged; a user case will require demonstrated trigger evidence."
+        },
+        {
+          "recorded_at": "2026-09-27T06:01:25Z",
+          "occurred_at": "2026-09-27T06:01:25Z",
+          "actor_id": "/root",
+          "action": "progress",
+          "description": "Integrated nine certified probes, scoped original-call suppression, owned metric registration including actual same-unit local calls, and explicit backward-compatible v2 modes/profiles. Runtime and legacy AOT gates, 12,060 leaf comparisons, four CTests, and 101 Python tests passed. Both immutable original user packages still validate with five legacy fields. Baseline source/build validation and an evidence-based future user case remain pending; existing apps unchanged."
+        },
+        {
+          "recorded_at": "2026-09-27T06:06:25Z",
+          "occurred_at": "2026-09-27T06:06:25Z",
+          "actor_id": "/root",
+          "action": "published_integration_checkpoint",
+          "description": "Integration and paired-build gates passed at 399754a: nine probes, scoped original-call suppression, owned registration including actual same-unit calls, and explicit backward-compatible v2 modes/profiles. Runtime, 12,060 metric comparisons, both 1,280-call legacy AOT gates, four CTests, 101 Python tests and 33 real-binary paired preflights passed. B0 and candidate share identical generated metric object and observer revision. Immutable binaries/build manifests are archived. VEC-003 remains in progress pending real gameplay triggers and finite related user cases; current apps unchanged. Published draft PR #18 stacked on #17; no merge."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {

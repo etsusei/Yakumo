@@ -1,5 +1,6 @@
 #include "native/vector_metrics_bridge.hpp"
 #include "native/bridge_contracts.hpp"
+#include "testing/probes.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -112,6 +113,7 @@ bool VectorMetricBridge::original(psprecomp::Runtime &runtime, psprecomp::Allegr
     // sentinel only for this certified RA-independent leaf to bound one call.
     // Calling the original wrapper directly also avoids adapter recursion.
     const auto return_address = context.gpr[31];
+    testing::NativeProbeAotSuppression observation(runtime, context, leaf_.entry);
     context.gpr[31] = 0u;
     try { original_(runtime, context); }
     catch (...) { context.gpr[31] = return_address; throw; }
@@ -125,16 +127,24 @@ bool VectorMetricBridge::original(psprecomp::Runtime &runtime, psprecomp::Allegr
 }
 
 bool VectorMetricBridge::execute(psprecomp::Runtime &runtime, psprecomp::AllegrexContext &context) {
-    if (runtime_ != &runtime || !original_ || context.pc != leaf_.entry ||
-        runtime.stopped() || !fingerprint(runtime.memory())) {
+    if (runtime_ != &runtime || !original_ || context.pc != leaf_.entry) {
         ++stats_.errors;
         return false;
     }
+    testing::NativeProbeScope probe(runtime, context, leaf_.entry);
+    if (runtime.stopped() || !fingerprint(runtime.memory())) {
+        ++stats_.errors;
+        probe.finish(testing::ProbeVariant::Fallback, false);
+        return false;
+    }
     ++stats_.calls;
+    auto variant = mode_ == NativeMode::Off ? testing::ProbeVariant::Aot :
+                   mode_ == NativeMode::Verify ? testing::ProbeVariant::Verify : testing::ProbeVariant::Native;
     try {
         if (mode_ == NativeMode::Off) {
             const bool ok = original(runtime, context);
             if (!ok) ++stats_.errors;
+            probe.finish(variant, ok);
             return ok;
         }
         const auto &memory = runtime.memory();
@@ -143,9 +153,11 @@ bool VectorMetricBridge::execute(psprecomp::Runtime &runtime, psprecomp::Allegre
             (!metric_uses_distance(leaf_.kind) || data_range(memory, context.gpr[5], 16u)) &&
             data_range(memory, context.gpr[29] - 16u, 4u);
         if (!admitted || mismatch_latched_) {
+            variant = testing::ProbeVariant::Fallback;
             ++stats_.fallbacks;
             const bool ok = original(runtime, context);
             if (!ok) ++stats_.errors;
+            probe.finish(variant, ok);
             return ok;
         }
         const auto prediction = predict(memory, context, leaf_.kind);
@@ -153,16 +165,25 @@ bool VectorMetricBridge::execute(psprecomp::Runtime &runtime, psprecomp::Allegre
             runtime.memory().store32(prediction.scratch, prediction.result);
             context = prediction.context;
             ++stats_.native;
+            probe.finish(variant);
             return true;
         }
-        if (!original(runtime, context)) { ++stats_.errors; return false; }
+        if (!original(runtime, context)) {
+            ++stats_.errors;
+            probe.finish(variant, false);
+            return false;
+        }
         ++stats_.verified;
         if (!same_context(prediction.context, context) || !prediction.memory.matches(memory)) {
             ++stats_.mismatches;
             mismatch_latched_ = true;
+            testing::native_probe_verification_mismatch(runtime, context, leaf_.entry);
+            probe.finish(variant, false);
+        } else {
+            probe.finish(variant);
         }
         return true;
-    } catch (...) { ++stats_.errors; throw; }
+    } catch (...) { ++stats_.errors; probe.finish(variant, false); throw; }
 }
 
 } // namespace mhp3rd::native

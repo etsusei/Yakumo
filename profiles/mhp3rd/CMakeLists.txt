@@ -63,6 +63,28 @@ if(MHP3RD_GENERATED)
                             "host/camera/game_camera.cpp if the helper has moved")
     endif()
     message(STATUS "mhp3rd: camera rotation helper in ${MHP3RD_CAMERA_HELPER_UNIT}")
+    # The metric adapter calls a bounded original leaf through its unit wrapper.
+    # Resolve that wrapper from the corpus instead of relying on file numbering.
+    set(MHP3RD_VECTOR_METRICS_UNIT "")
+    foreach(metric_entry 08877244 08877264 08877280 088772A8)
+        set(metric_units)
+        foreach(unit IN LISTS MHP3RD_GENERATED)
+            file(STRINGS "${unit}" hit REGEX "register_function\\(0x${metric_entry}u, &recomp_unit_[0-9]+,")
+            foreach(registration IN LISTS hit)
+                string(REGEX MATCH "recomp_unit_[0-9]+" metric_unit "${registration}")
+                list(APPEND metric_units "${metric_unit}")
+            endforeach()
+        endforeach()
+        list(LENGTH metric_units metric_unit_count)
+        if(NOT metric_unit_count EQUAL 1)
+            message(FATAL_ERROR "mhp3rd: metric ${metric_entry} must have one generated registration")
+        endif()
+        list(GET metric_units 0 metric_unit)
+        if(MHP3RD_VECTOR_METRICS_UNIT AND NOT MHP3RD_VECTOR_METRICS_UNIT STREQUAL metric_unit)
+            message(FATAL_ERROR "mhp3rd: vector metrics moved across generated units; re-audit the original wrapper")
+        endif()
+        set(MHP3RD_VECTOR_METRICS_UNIT "${metric_unit}")
+    endforeach()
     # A regenerated corpus with the same file names must be read again.
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MHP3RD_GENERATED})
 else()
@@ -313,6 +335,10 @@ if(MHP3RD_CAMERA_HELPER_UNIT)
     set_property(SOURCE host/main.cpp APPEND PROPERTY COMPILE_DEFINITIONS
         MHP3RD_CAMERA_HELPER_UNIT=${MHP3RD_CAMERA_HELPER_UNIT})
 endif()
+if(MHP3RD_VECTOR_METRICS_UNIT AND NOT MHP3RD_BASELINE_B0)
+    set_property(SOURCE host/main.cpp APPEND PROPERTY COMPILE_DEFINITIONS
+        MHP3RD_VECTOR_METRICS_UNIT=${MHP3RD_VECTOR_METRICS_UNIT})
+endif()
 # The NID table is compiled in, so the program reads nothing from the checkout
 # it was built in.
 set(MHP3RD_NIDS_CSV "${PROJECT_SOURCE_DIR}/configs/nids.csv")
@@ -549,6 +575,9 @@ add_library(mhp3rd_game_observation STATIC
 file(GLOB MHP3RD_RECORDING_REVISION_INPUTS CONFIGURE_DEPENDS
     "${MHP3RD_PROFILE_DIR}/host/testing/*.cpp" "${MHP3RD_PROFILE_DIR}/host/testing/*.hpp")
 list(APPEND MHP3RD_RECORDING_REVISION_INPUTS
+    "${MHP3RD_PROFILE_DIR}/host/native/mode_registry.hpp"
+    "${MHP3RD_PROFILE_DIR}/host/native/vector_metric_dispatch.hpp"
+    "${MHP3RD_PROFILE_DIR}/host/native/vector_metric_dispatch.cpp"
     "${MHP3RD_PROFILE_DIR}/tools/instrument_probes.py"
     "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.hpp"
     "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.cpp"
@@ -579,6 +608,12 @@ if(NOT MHP3RD_BASELINE_B0)
     endif()
     add_library(mhp3rd_vector_metrics_bridge STATIC host/native/vector_metrics_bridge.cpp)
     target_link_libraries(mhp3rd_vector_metrics_bridge PUBLIC mhp3rd_vector_metrics psprecomp_core)
+    add_library(mhp3rd_vector_metrics_runtime STATIC host/native/vector_metrics_runtime.cpp)
+    target_link_libraries(mhp3rd_vector_metrics_runtime PUBLIC mhp3rd_vector_metrics_bridge)
+    if(MHP3RD_PROBE_INSTRUMENTED_SOURCES)
+        target_compile_definitions(mhp3rd_vector_metrics_runtime PRIVATE MHP3RD_VECTOR_METRIC_ENTRY_BOUNDARIES=1)
+    endif()
+    target_link_libraries(Yakumo PRIVATE mhp3rd_vector_metrics_runtime)
     add_executable(mhp3rd_vector_metrics_core_tests tests/vector_metrics_core_tests.cpp)
     target_link_libraries(mhp3rd_vector_metrics_core_tests PRIVATE mhp3rd_vector_metrics)
     set_target_properties(mhp3rd_vector_metrics_core_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -616,8 +651,11 @@ endif()
 add_library(mhp3rd_overlay_observation STATIC host/testing/overlay_observation.cpp)
 target_include_directories(mhp3rd_overlay_observation PUBLIC "${MHP3RD_PROFILE_DIR}/host")
 target_link_libraries(mhp3rd_overlay_observation PUBLIC psprecomp_core)
-add_library(mhp3rd_native_probes STATIC host/testing/probes.cpp)
+add_library(mhp3rd_native_probes STATIC host/testing/probes.cpp host/native/vector_metric_dispatch.cpp)
 target_link_libraries(mhp3rd_native_probes PUBLIC psprecomp_core mhp3rd_game_observation)
+if(TARGET mhp3rd_vector_metrics_bridge)
+    target_link_libraries(mhp3rd_vector_metrics_bridge PUBLIC mhp3rd_native_probes)
+endif()
 add_library(mhp3rd_state_observation STATIC host/testing/state_observation.cpp)
 target_link_libraries(mhp3rd_state_observation PUBLIC mhp3rd_overlay_observation mhp3rd_game_observation)
 add_library(mhp3rd_runtime_diagnostics STATIC host/testing/runtime_diagnostics.cpp)
@@ -728,6 +766,11 @@ if(MHP3RD_PROBE_INSTRUMENTED_SOURCES)
             target_compile_options(mhp3rd_native_vector_metrics_tests PRIVATE -ffp-contract=off)
         endif()
         set_target_properties(mhp3rd_native_vector_metrics_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+        add_executable(mhp3rd_vector_metrics_runtime_tests EXCLUDE_FROM_ALL
+            tests/vector_metrics_runtime_tests.cpp $<TARGET_OBJECTS:mhp3rd_generated>)
+        target_include_directories(mhp3rd_vector_metrics_runtime_tests PRIVATE "${MHP3RD_PROFILE_DIR}/generated")
+        target_link_libraries(mhp3rd_vector_metrics_runtime_tests PRIVATE mhp3rd_vector_metrics_runtime)
+        set_target_properties(mhp3rd_vector_metrics_runtime_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
     endif()
 endif()
 add_library(mhp3rd_control_delivery STATIC host/hle/control_delivery.cpp)

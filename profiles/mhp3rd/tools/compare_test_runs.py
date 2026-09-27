@@ -15,21 +15,19 @@ import statistics
 import sys
 
 if __package__:
+    from . import native_modes
     from .native_batch import load_profile, validate_profile, profile_sha256
     from .run_cases import collect_cases, load_case_catalog, validate_case_catalog
     from .run_package import load_package
 else:
+    import native_modes
     from native_batch import load_profile, validate_profile, profile_sha256
     from run_cases import collect_cases, load_case_catalog, validate_case_catalog
     from run_package import load_package
 
 SCHEMA = "yakumo-comparison-v1"
-NATIVE_MODES = (
-    "MHP3RD_NATIVE_ANGLE_STEP", "MHP3RD_NATIVE_SCALE_MATRIX",
-    "MHP3RD_NATIVE_TRANSLATION_MATRIX", "MHP3RD_NATIVE_VECTOR_CONSTRUCT",
-    "MHP3RD_NATIVE_MATRIX_COPY",
-)
-CERTIFIED_ENTRIES = {0x088775AC, 0x08878B28, 0x08878B4C, 0x08877818, 0x08879D08}
+NATIVE_MODES = native_modes.LEGACY_FIELDS
+CERTIFIED_ENTRIES = set(native_modes.V2_BY_ENTRY)
 IDENTITY_KEYS = ("batch_id", "baseline_id", "baseline_commit", "recorder_revision",
                  "observer_schema", "recording_mode")
 CONTEXT_KEYS = ("game_sha256", "elf_sha256", "overlay_sha256", "starting_save_sha256", "config_sha256",
@@ -50,7 +48,8 @@ def canonical_hash(value: object) -> str:
 
 def comparison_revision() -> str:
     directory = Path(__file__).resolve().parent
-    files = ("compare_test_runs.py", "run_package.py", "run_cases.py", "native_batch.py")
+    files = ("compare_test_runs.py", "run_package.py", "run_cases.py", "native_batch.py",
+             "native_modes.py")
     return "source-sha256:" + canonical_hash({name: hashlib.sha256((directory / name).read_bytes()).hexdigest()
                                               for name in files})
 
@@ -74,6 +73,20 @@ def compatibility(baseline: dict, candidate: dict, catalog: dict) -> list[str]:
         if type(declared_catalog) is not str or declared_catalog.lower() != canonical_hash(catalog):
             issues.append(role + ":case_catalog_differs")
     b, c = baseline["manifest"], candidate["manifest"]
+    left_schema = b.get("identity", {}).get("native_mode_schema")
+    right_schema = c.get("identity", {}).get("native_mode_schema")
+    if left_schema != right_schema:
+        issues.append("identity:native_mode_schema")
+    try:
+        expected_modes = native_modes.fields(left_schema)
+        expected_entries = native_modes.entries(left_schema)
+        for spec in catalog["cases"]:
+            if any(probe["entry"] not in expected_entries for probe in spec["required_probes"]):
+                issues.append("catalog:probe_outside_native_mode_schema")
+                break
+    except ValueError:
+        issues.append("identity:unknown_native_mode_schema")
+        expected_modes = native_modes.LEGACY_FIELDS
     for key in IDENTITY_KEYS:
         left, right = b.get("identity", {}).get(key), c.get("identity", {}).get(key)
         if not left or not right or left != right:
@@ -87,9 +100,9 @@ def compatibility(baseline: dict, candidate: dict, catalog: dict) -> list[str]:
             issues.append("context:" + key)
     if b.get("identity", {}).get("run_id") == c.get("identity", {}).get("run_id"):
         issues.append("same_run_id")
-    native_modes = b.get("identity", {}).get("native_modes", {})
-    for key in NATIVE_MODES:
-        if native_modes.get(key) not in ("off", "0"):
+    baseline_modes = b.get("identity", {}).get("native_modes", {})
+    for key in expected_modes:
+        if baseline_modes.get(key) not in ("off", "0"):
             issues.append("baseline_replacement_not_off:" + key)
     return issues
 
@@ -227,7 +240,7 @@ def performance(case: dict) -> dict:
 
 
 def compare_case(b: dict | None, c: dict | None, spec: dict, pair_issues: list[str],
-                 recordings_complete: bool) -> dict:
+                 recordings_complete: bool, certified_entries: frozenset[int]) -> dict:
     present = b or c
     result = {"case_id": spec["id"], "title": spec["title"], "case_version": spec["version"],
               "attempt": present["attempt"] if present else 1,
@@ -259,7 +272,7 @@ def compare_case(b: dict | None, c: dict | None, spec: dict, pair_issues: list[s
     result["diagnostics_omitted"] = {role: max(0, len(rows) - 128) for role, rows in errors.items()}
     mismatch = [r for r in all_errors if r["fields"].get("event") == "native.verification_mismatch" and
                 r["fields"].get("evidence") == "same_input_reference" and r["fields"].get("certified") is True and
-                unsigned(r["fields"].get("entry")) and r["fields"].get("entry") in CERTIFIED_ENTRIES]
+                unsigned(r["fields"].get("entry")) and r["fields"].get("entry") in certified_entries]
     result["reference_mismatch_sequences"] = [r["sequence"] for r in mismatch]
     if not recordings_complete or not b["lifecycle_complete"] or not c["lifecycle_complete"]:
         result["outcome"] = "incomplete"
@@ -340,8 +353,12 @@ def native_execution(report: dict, profile: dict) -> dict:
               "outcome": "not_covered", "scope": "declared_native_paths_in_finite_cases_not_same_input_proof",
               "issues": [], "cases": []}
     for role in ("baseline", "candidate"):
-        actual = report["runs"][role].get("native_modes", {})
-        expected = {key: "off" for key in NATIVE_MODES} if role == "baseline" else profile["candidate_modes"]
+        identity = report["runs"][role]
+        actual = identity.get("native_modes", {})
+        required_schema = None if profile["schema"] == "yakumo-native-batch-v1" else native_modes.V2_SCHEMA
+        if identity.get("native_mode_schema") != required_schema:
+            result["issues"].append(role + ":execution_mode_schema_differs_from_profile")
+        expected = {key: "off" for key in native_modes.fields(required_schema)} if role == "baseline" else profile["candidate_modes"]
         if actual != expected:
             result["issues"].append(role + ":execution_modes_differ_from_profile")
     if report["compatibility_issues"] or result["issues"]:
@@ -395,12 +412,18 @@ def native_execution(report: dict, profile: dict) -> dict:
         if issues:
             all_cases_eligible = False
         result["cases"].append({"case_id": case["case_id"], "attempt": case.get("attempt"),
-                                "outcome": "observed" if not issues else "needs_review",
+                                "outcome": "observed" if targets and not issues else
+                                           "not_covered" if not targets and not issues else "needs_review",
                                 "targets": targets, "issues": issues})
     missing = set(profile["required_native_entries"]) - seen
     if missing:
         result["issues"].append("native_targets_not_covered:" + ",".join(f"0x{x:08X}" for x in sorted(missing)))
-    if not missing and all_cases_eligible and not result["issues"]:
+    no_native_targets = not profile["required_native_entries"]
+    if no_native_targets:
+        result["issues"].append("profile_requests_no_native_execution")
+    if no_native_targets and all_cases_eligible and result["issues"] == ["profile_requests_no_native_execution"]:
+        result["outcome"] = "not_covered"
+    elif not missing and all_cases_eligible and not result["issues"]:
         result["outcome"] = "observed"
     elif not missing:
         result["outcome"] = "needs_review"
@@ -412,6 +435,13 @@ def compare_loaded(baseline: dict, candidate: dict, catalog: dict, execution_pro
     if execution_profile is not None:
         execution_profile = validate_profile(execution_profile, catalog)
     issues = compatibility(baseline, candidate, catalog)
+    baseline_schema = baseline["manifest"].get("identity", {}).get("native_mode_schema")
+    candidate_schema = candidate["manifest"].get("identity", {}).get("native_mode_schema")
+    try:
+        certified_entries = (native_modes.entries(baseline_schema) if baseline_schema == candidate_schema
+                             else frozenset())
+    except ValueError:
+        certified_entries = frozenset()
     reconstructed = {"baseline": collect_cases(baseline["records"], catalog),
                      "candidate": collect_cases(candidate["records"], catalog)}
     expected_ids = {spec["id"] for spec in catalog["cases"]}
@@ -443,7 +473,8 @@ def compare_loaded(baseline: dict, candidate: dict, catalog: dict, execution_pro
             cases.append({"case_id": spec["id"], "title": spec["title"], "case_version": spec["version"],
                           "attempt": None, "outcome": "not_covered", "findings": ["case_not_performed"]})
         for key in keys:
-            cases.append(compare_case(indexed["baseline"].get(key), indexed["candidate"].get(key), spec, issues, complete))
+            cases.append(compare_case(indexed["baseline"].get(key), indexed["candidate"].get(key),
+                                      spec, issues, complete, certified_entries))
     precedence = ("incomplete", "incomparable", "confirmed_mismatch", "not_covered", "inconclusive",
                   "observed_difference", "observational_match", "same_input_match")
     outcomes = {case["outcome"] for case in cases}

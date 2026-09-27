@@ -10,9 +10,12 @@ namespace mhp3rd::testing {
 std::uint32_t parse_probe_selection(std::string_view names) {
     if (names.empty() || names == "off") return 0;
     if (names == "all") return kProbeAll;
-    constexpr std::array<std::pair<std::string_view, std::uint32_t>, 5> choices{{
+    if (names == "legacy") return kProbeLegacy;
+    constexpr std::array<std::pair<std::string_view, std::uint32_t>, kProbeLeafCount> choices{{
         {"angle", kProbeAngle}, {"scale", kProbeScale}, {"translation", kProbeTranslation},
-        {"vector", kProbeVector}, {"copy", kProbeCopy}}};
+        {"vector", kProbeVector}, {"copy", kProbeCopy}, {"norm", kProbeNorm},
+        {"norm_squared", kProbeNormSquared}, {"distance", kProbeDistance},
+        {"distance_squared", kProbeDistanceSquared}}};
     std::uint32_t result{};
     for (;;) {
         const auto comma = names.find(',');

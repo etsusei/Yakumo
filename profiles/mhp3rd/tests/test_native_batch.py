@@ -12,6 +12,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import native_batch  # noqa: E402
+import native_modes  # noqa: E402
 
 
 def catalog() -> dict:
@@ -35,7 +36,59 @@ def profile(cases: dict) -> dict:
             "required_native_entries": list(native_batch.REQUIRED_NATIVE_ENTRIES)}
 
 
+def vector_profile(cases: dict, *, native: tuple[int, ...] = (0x08877244,),
+                   verify: tuple[int, ...] = (0x08877280,)) -> dict:
+    modes = {key: "off" for key in native_modes.V2_FIELDS}
+    for entry in native:
+        modes[native_modes.VECTOR_BY_ENTRY[entry]] = "native"
+    for entry in verify:
+        modes[native_modes.VECTOR_BY_ENTRY[entry]] = "verify"
+    return {"schema": native_batch.V2_SCHEMA, "id": "vector-mode-test",
+            "case_catalog_sha256": native_batch._digest(cases),
+            "candidate_modes": modes, "required_native_entries": sorted(native)}
+
+
 class NativeBatchTests(unittest.TestCase):
+    def test_vector_profile_requires_exact_nine_modes_and_bound_native_probes(self) -> None:
+        cases = catalog()
+        cases["cases"][0]["required_probes"].append({"entry": 0x08877244, "min_calls": 1})
+        value = vector_profile(cases)
+        self.assertEqual(native_batch.validate_profile(value, cases), value)
+        wrong = vector_profile(cases)
+        wrong["candidate_modes"].pop(native_modes.VECTOR_FIELDS[0])
+        with self.assertRaises(native_batch.NativeBatchError):
+            native_batch.validate_profile(wrong, cases)
+        wrong = vector_profile(cases)
+        wrong["candidate_modes"][native_modes.LEGACY_FIELDS[0]] = "verify"
+        with self.assertRaises(native_batch.NativeBatchError):
+            native_batch.validate_profile(wrong, cases)
+        wrong = vector_profile(cases)
+        wrong["required_native_entries"] = []
+        with self.assertRaises(native_batch.NativeBatchError):
+            native_batch.validate_profile(wrong, cases)
+        wrong = vector_profile(cases, native=(0x08877280,), verify=(0x08877244,))
+        with self.assertRaisesRegex(native_batch.NativeBatchError, "lacks required native probe"):
+            native_batch.validate_profile(wrong, cases)
+        cases["cases"][0]["required_probes"].append({"entry": 0x08877280, "min_calls": 1})
+        multiple = vector_profile(cases, native=(0x08877280, 0x08877244), verify=())
+        self.assertEqual(multiple["required_native_entries"], [0x08877244, 0x08877280])
+        self.assertEqual(native_batch.validate_profile(multiple, cases), multiple)
+        multiple["required_native_entries"].reverse()
+        with self.assertRaises(native_batch.NativeBatchError):
+            native_batch.validate_profile(multiple, cases)
+        cases["cases"][0]["required_probes"].append({"entry": 0x08870000, "min_calls": 1})
+        outside = vector_profile(cases)
+        with self.assertRaisesRegex(native_batch.NativeBatchError, "outside the v2 native registry"):
+            native_batch.validate_profile(outside, cases)
+
+    def test_vector_all_verify_profile_is_valid_without_native_targets(self) -> None:
+        cases = catalog()
+        value = vector_profile(cases, native=(), verify=(0x08877244,))
+        self.assertEqual(native_batch.validate_profile(value, cases)["required_native_entries"], [])
+        value["candidate_modes"][native_modes.VECTOR_FIELDS[0]] = "off"
+        with self.assertRaisesRegex(native_batch.NativeBatchError, "verify or native"):
+            native_batch.validate_profile(value, cases)
+
     def test_profile_binds_catalog_and_native_probe_union(self) -> None:
         cases = catalog()
         value = profile(cases)

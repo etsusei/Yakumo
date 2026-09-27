@@ -53,7 +53,8 @@ void lifecycle(bool supported) {
     }
     check(configurations == 1, "one session configuration");
     check(states == 1, "state sampling is bounded to one host second");
-    check(probes == (supported ? 10u : 0u), "supported session emits periodic and final zero-coverage rows");
+    check(probes == (supported ? 2u * kProbeLeafCount : 0u),
+          "supported session emits periodic and final zero-coverage rows");
     check(performance == 0, "close suppresses later performance emission");
 }
 
@@ -77,7 +78,11 @@ void case_selection_preserves_batch_probes() {
 int main() {
     check(parse_probe_selection("") == 0 && parse_probe_selection("off") == 0, "selection disabled by default");
     check(parse_probe_selection("all") == kProbeAll, "all leaves selectable");
+    check(parse_probe_selection("legacy") == kProbeLegacy, "legacy selects the original five leaves");
     check(parse_probe_selection("vector,angle") == (kProbeVector | kProbeAngle), "finite case selection");
+    check(parse_probe_selection("norm,norm_squared,distance,distance_squared") ==
+          (kProbeNorm | kProbeNormSquared | kProbeDistance | kProbeDistanceSquared),
+          "vector metric names select the four added leaves");
     for (const char *bad : {"unknown", "angle,angle", "all,angle", "vector,", ",copy", " vector", "OFF"}) {
         bool threw{};
         try { (void)parse_probe_selection(bad); } catch (const std::invalid_argument &) { threw = true; }

@@ -18,6 +18,7 @@ import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from profiles.mhp3rd.tools import run_package as package  # noqa: E402
+from profiles.mhp3rd.tools import native_modes  # noqa: E402
 
 
 FILE_HEADER = struct.pack("<8sHHI", b"YKMJNL1\0", 1, 16, 0)
@@ -186,6 +187,41 @@ class JournalTests(unittest.TestCase):
 
 
 class PackageTests(unittest.TestCase):
+    def test_native_mode_schema_requires_exact_declared_switches(self):
+        raw = package._read_journal_bytes(journal(self.ctx))
+        begin = raw["records"][0]["fields"]
+        self.assertNotIn("native_mode_schema", package._identity(begin))
+        self.assertEqual(set(package._native_modes(begin)), set(native_modes.LEGACY_FIELDS))
+        begin["MHP3RD_NATIVE_VECTOR_NORM"] = "off"
+        validation = package._validate(raw, self.ctx, supervisor())
+        self.assertIn("undeclared_native_mode:MHP3RD_NATIVE_VECTOR_NORM", validation["issues"])
+        self.assertFalse(validation["metadata_complete"])
+        begin["native_mode_schema"] = native_modes.V2_SCHEMA
+        validation = package._validate(raw, self.ctx, supervisor())
+        self.assertIn("missing_native_mode:MHP3RD_NATIVE_VECTOR_DISTANCE", validation["issues"])
+        for name in native_modes.VECTOR_FIELDS:
+            begin[name] = "off"
+        self.assertTrue(package._validate(raw, self.ctx, supervisor())["metadata_complete"])
+        self.assertEqual(package._identity(begin)["native_mode_schema"], native_modes.V2_SCHEMA)
+        begin["native_mode_schema"] = "unknown-v3"
+        validation = package._validate(raw, self.ctx, supervisor())
+        self.assertIn("unknown_native_mode_schema", validation["issues"])
+        self.assertFalse(validation["metadata_complete"])
+
+    def test_v2_package_persists_schema_and_all_nine_modes(self):
+        records = package._read_journal_bytes(journal(self.ctx))["records"]
+        begin = records[0]["fields"]
+        begin["native_mode_schema"] = native_modes.V2_SCHEMA
+        begin.update({name: "off" for name in native_modes.VECTOR_FIELDS})
+        raw = FILE_HEADER + b"".join(frame(row["kind"], index, row["fields"])
+                                       for index, row in enumerate(records, 1))
+        self.write_inputs(raw=raw)
+        manifest = self.build()
+        self.assertTrue(manifest["validation"]["metadata_complete"])
+        self.assertEqual(manifest["identity"]["native_mode_schema"], native_modes.V2_SCHEMA)
+        self.assertEqual(set(manifest["native_modes"]), set(native_modes.V2_FIELDS))
+        self.assertEqual(package.load_package(self.output)["validation"]["issues"], [])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="yakumo-package-")
         self.addCleanup(self.temp.cleanup)

@@ -17,6 +17,7 @@ TOOLS = Path(__file__).resolve().parents[1] / "tools"
 sys.path.insert(0, str(TOOLS))
 import launch_test_run  # noqa: E402
 import native_batch  # noqa: E402
+import native_modes  # noqa: E402
 import package_test_pair as pair  # noqa: E402
 import register_baseline  # noqa: E402
 
@@ -156,6 +157,20 @@ class PairPackagingTests(unittest.TestCase):
             with mock.patch.dict("os.environ", {"MHP3RD_INPUT_SCRIPT": "unwanted",
                                  "PSPRECOMP_NO_CHAIN": "1", "DYLD_INSERT_LIBRARIES": "unwanted"}):
                 self.assertEqual(pair._preflight(build, settings=settings, runner=run)["configuration_sha256"], "d" * 64)
+            def versioned(command: list[str], **options: object) -> subprocess.CompletedProcess[str]:
+                result = run(command, **options)
+                value = json.loads(result.stdout)
+                value["native_mode_schema"] = native_modes.V2_SCHEMA
+                return subprocess.CompletedProcess(command, 0, json.dumps(value), "")
+            self.assertEqual(pair._preflight(build, settings=settings, runner=versioned)["native_mode_schema"],
+                             native_modes.V2_SCHEMA)
+            def unknown_schema(command: list[str], **options: object) -> subprocess.CompletedProcess[str]:
+                result = versioned(command, **options)
+                value = json.loads(result.stdout)
+                value["native_mode_schema"] = "future"
+                return subprocess.CompletedProcess(command, 0, json.dumps(value), "")
+            with self.assertRaisesRegex(pair.PairError, "Unknown native mode schema"):
+                pair._preflight(build, settings=settings, runner=unknown_schema)
             reported = build["baseline_source_content_sha256"]
             build["baseline_source_content_sha256"] = "e" * 64
             self.assertNotEqual(reported, build["baseline_source_content_sha256"])
@@ -233,7 +248,8 @@ class PairPackagingTests(unittest.TestCase):
                 config = pair._bundle_app(
                     stage / "Yakumo Baseline.app", role="baseline", build=build,
                     launcher=launcher, scripts=[TOOLS / "run_package.py", TOOLS / "run_cases.py",
-                                               TOOLS / "native_batch.py", TOOLS / "compare_test_runs.py",
+                                               TOOLS / "native_batch.py", TOOLS / "native_modes.py",
+                                               TOOLS / "compare_test_runs.py",
                                                TOOLS / "launch_test_run.py"],
                     cases=cases, python=python, overlays=overlays,
                     libraries={"libMoltenVK.dylib": moltenvk}, font=font,
@@ -255,7 +271,8 @@ class PairPackagingTests(unittest.TestCase):
                 candidate = pair._bundle_app(
                     stage / "Yakumo Candidate.app", role="candidate", build=build,
                     launcher=launcher, scripts=[TOOLS / "run_package.py", TOOLS / "run_cases.py",
-                                               TOOLS / "native_batch.py", TOOLS / "compare_test_runs.py",
+                                               TOOLS / "native_batch.py", TOOLS / "native_modes.py",
+                                               TOOLS / "compare_test_runs.py",
                                                TOOLS / "launch_test_run.py"],
                     cases=cases, python=python, overlays=overlays,
                     libraries={"libMoltenVK.dylib": moltenvk}, font=font,
@@ -265,6 +282,27 @@ class PairPackagingTests(unittest.TestCase):
                     overlay_tree=overlay_tree, overlay_id=register_baseline._tree_id(overlay_tree),
                     work_root=root / "runs", output=published, batch_id="test-pair", runner=signed,
                     execution_profile=profile)
+                vector_modes = {name: "off" for name in native_modes.V2_FIELDS}
+                vector_modes["MHP3RD_NATIVE_VECTOR_NORM"] = "verify"
+                vector_profile = native_batch.validate_profile({
+                    "schema": native_batch.V2_SCHEMA, "id": "vector-test",
+                    "case_catalog_sha256": catalog_hash,
+                    "candidate_modes": vector_modes, "required_native_entries": [],
+                }, pair.run_cases.load_case_catalog(cases))
+                vector_candidate = pair._bundle_app(
+                    stage / "Yakumo Candidate V2.app", role="candidate",
+                    build={**build, "baseline_source_content_sha256": ""},
+                    launcher=launcher, scripts=[TOOLS / "run_package.py", TOOLS / "run_cases.py",
+                                               TOOLS / "native_batch.py", TOOLS / "native_modes.py",
+                                               TOOLS / "compare_test_runs.py", TOOLS / "launch_test_run.py"],
+                    cases=cases, python=python, overlays=overlays,
+                    libraries={"libMoltenVK.dylib": moltenvk}, font=font,
+                    settings_hash="e" * 64,
+                    settings={"ui.language": "zh-CN", "text.font": str(font)}, registration=registration,
+                    sources={"iso": str(iso), "elf": str(elf), "snapshot": str(snapshot_files.parent)},
+                    overlay_tree=overlay_tree, overlay_id=register_baseline._tree_id(overlay_tree),
+                    work_root=root / "runs", output=published, batch_id="test-pair", runner=signed,
+                    execution_profile=vector_profile, mode_schema=native_modes.V2_SCHEMA)
             stage.rename(published)
             app = published / "Yakumo Baseline.app"
             self.assertEqual(config["binary"]["sha256"], pair._hash(app / "Contents/MacOS/YakumoGame"))
@@ -282,6 +320,43 @@ class PairPackagingTests(unittest.TestCase):
             self.assertEqual(loaded["role"], "baseline")
             self.assertEqual(loaded["settings"]["text.font"], str(font))
             self.assertEqual(loaded["overlays"]["tree_id"], config["overlays"]["tree_id"])
+            v2 = dict(candidate)
+            v2["native_mode_schema"] = native_modes.V2_SCHEMA
+            v2["baseline_provenance_sha256"] = ""
+            v2["native_modes"] = {**candidate["native_modes"],
+                                  **{name: "off" for name in native_modes.VECTOR_FIELDS}}
+            v2_path = root / "v2-launch.json"
+            def load_v2(value):
+                v2_path.write_text(json.dumps(value))
+                with mock.patch.object(launch_test_run.run_package, "SUPPORTED_ELF_SHA256", sha(b"ELF")):
+                    return launch_test_run._load_config(v2_path)
+            normalized_v2 = load_v2(v2)
+            self.assertEqual(normalized_v2["native_mode_schema"], native_modes.V2_SCHEMA)
+            self.assertEqual(set(normalized_v2["native_modes"]), set(native_modes.V2_FIELDS))
+            for wrong in (dict(v2, native_mode_schema="future-mode-schema"),
+                          dict(v2, native_modes={name: value for name, value in v2["native_modes"].items()
+                                                 if name != native_modes.VECTOR_FIELDS[-1]}),
+                          {key: value for key, value in v2.items() if key != "native_mode_schema"}):
+                with self.assertRaises(launch_test_run.LaunchError):
+                    load_v2(wrong)
+            preflight = {"schema": launch_test_run.PREFLIGHT_SCHEMA,
+                         "recorder_revision": normalized_v2["recorder_revision"],
+                         "configuration_sha256": normalized_v2["configuration_sha256"],
+                         "build_config_sha256": normalized_v2["build_config_sha256"],
+                         "gameplay_source_commit": normalized_v2["source_commit"],
+                         "baseline_sealed": False, "renderer_compiled": True,
+                         "aot_probes_compiled": True,
+                         "baseline_provenance_sha256": normalized_v2["baseline_provenance_sha256"],
+                         "native_mode_schema": native_modes.V2_SCHEMA}
+            preflight_path = root / "v2-preflight.json"
+            preflight_path.write_text(json.dumps(preflight))
+            self.assertEqual(launch_test_run._read_preflight(preflight_path, 0, False, normalized_v2), preflight)
+            with self.assertRaises(launch_test_run.LaunchError):
+                launch_test_run._read_preflight(preflight_path, 0, False, loaded)
+            preflight.pop("native_mode_schema")
+            preflight_path.write_text(json.dumps(preflight))
+            with self.assertRaises(launch_test_run.LaunchError):
+                launch_test_run._read_preflight(preflight_path, 0, False, normalized_v2)
             candidate_app = published / "Yakumo Candidate.app"
             self.assertEqual(candidate["native_modes"], profile["candidate_modes"])
             self.assertEqual(candidate["batch_id"], "test-pair")
@@ -290,6 +365,9 @@ class PairPackagingTests(unittest.TestCase):
                              profile)
             self.assertTrue((candidate_app / "Contents/Resources/testing/native_batch.py").is_file())
             self.assertFalse((app / "Contents/Resources/testing/execution-profile.json").exists())
+            self.assertEqual(vector_candidate["native_mode_schema"], native_modes.V2_SCHEMA)
+            self.assertEqual(vector_candidate["native_modes"], vector_profile["candidate_modes"])
+            self.assertTrue((published / "Yakumo Candidate V2.app/Contents/Resources/testing/native_modes.py").is_file())
 
 
 if __name__ == "__main__":
