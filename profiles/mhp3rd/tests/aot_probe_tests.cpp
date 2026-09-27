@@ -239,6 +239,101 @@ void overhead(Runtime &aot) {
     }
 }
 #if !defined(MHP3RD_BASELINE_B0)
+void native_chained_paths(Runtime &oracle, Runtime &candidate) {
+    using namespace mhp3rd::native;
+    constexpr std::array<std::size_t, 2> leaves{1, 4};
+    struct Sample {
+        AllegrexContext initial, expected;
+        std::array<std::uint8_t, 192> input, output;
+    };
+    std::array<Sample, leaves.size()> samples{};
+    std::mt19937 random(0x43484149);
+    for (std::size_t i = 0; i < leaves.size(); ++i) {
+        auto &sample = samples[i];
+        sample.initial = context(random, entries[leaves[i]]);
+        if (leaves[i] == 1) {
+            sample.initial.set_fpr_bits(12, 0x80000000u);
+            sample.initial.set_fpr_bits(13, 0x7fc01234u);
+            sample.initial.set_fpr_bits(14, 0x3f800000u);
+        }
+        for (auto &byte : sample.input) byte = static_cast<std::uint8_t>(random());
+        oracle.memory().copy_in(scratch, sample.input);
+        sample.expected = sample.initial;
+        check(original(oracle, sample.expected, leaves[i]), "native-chain interpreter oracle returns");
+        oracle.memory().copy_out(scratch, sample.output);
+    }
+
+    // These are the direct-entry templates emitted by real generated callers
+    // for both leaves in unit 29. A stale PC is normal on that fast path.
+    const auto chain = [](Runtime &runtime, AllegrexContext &ctx, std::size_t leaf) {
+        auto view = runtime.memory().aot_fast_view();
+        if (leaf == 1) {
+            return runtime.invoke_chained_direct<&psprecomp::recomp_unit_0029_entry, 29,
+                (0x08878B28 - 0x08878000) / 4 + 1, 0x08878B28>(ctx, &view);
+        }
+        return runtime.invoke_chained_direct<&psprecomp::recomp_unit_0029_entry, 29,
+            (0x08879D08 - 0x08878000) / 4 + 1, 0x08879D08>(ctx, &view);
+    };
+
+    {
+        Recording recording;
+        for (std::size_t i = 0; i < leaves.size(); ++i) {
+            candidate.memory().copy_in(scratch, samples[i].input);
+            auto actual = samples[i].initial;
+            actual.pc = 0x08812344u;
+            check(chain(candidate, actual, leaves[i]), "unhooked compiled caller chains into original AOT");
+            std::array<std::uint8_t, 192> output{};
+            candidate.memory().copy_out(scratch, output);
+            check(same_context(samples[i].expected, actual) && samples[i].output == output,
+                  "unhooked direct chain matches interpreter CPU and surrounding memory");
+        }
+        const auto journal = recording.finish();
+        for (auto leaf : leaves) {
+            const auto row = summary(journal, entries[leaf]);
+            check(number(row, "aot_calls") == 1 && number(row, "native_calls") == 0,
+                  "unhooked direct chain records one original AOT call");
+        }
+    }
+
+    check(install_scale_matrix(candidate, NativeMode::Native), "native scale installs before chained call");
+    check(install_matrix_copy(candidate, NativeMode::Native), "native copy installs before chained call");
+    {
+        Recording recording;
+        for (std::size_t i = 0; i < leaves.size(); ++i) {
+            candidate.memory().copy_in(scratch, samples[i].input);
+            auto actual = samples[i].initial;
+            actual.pc = 0x08812344u;
+            auto pending = actual;
+            pending.pc = entries[leaves[i]];
+            const bool chained = chain(candidate, actual, leaves[i]);
+            check(!chained && same_context(pending, actual),
+                  "installed override makes compiled caller yield at the exact target PC");
+            std::array<std::uint8_t, 192> before_dispatch{};
+            candidate.memory().copy_out(scratch, before_dispatch);
+            check(before_dispatch == samples[i].input, "poisoned direct chain does not run original AOT stores");
+            if (!chained && actual.pc == entries[leaves[i]]) {
+                check(candidate.invoke_isolated_aot(actual.pc, actual),
+                      "outer dispatch invokes installed native override");
+            }
+            std::array<std::uint8_t, 192> output{};
+            candidate.memory().copy_out(scratch, output);
+            check(same_context(samples[i].expected, actual) && samples[i].output == output,
+                  "native chained-call fallback matches interpreter CPU and surrounding memory");
+        }
+        const auto journal = recording.finish();
+        for (auto leaf : leaves) {
+            const auto row = summary(journal, entries[leaf]);
+            check(number(row, "entry_hits") == 1 && number(row, "completed") == 1 &&
+                  number(row, "certified_entries") == 1 && number(row, "uncertified_entries") == 0 &&
+                  number(row, "incomplete") == 0 && number(row, "orphan_exits") == 0,
+                  "native chained-call scope is certified and complete");
+            check(number(row, "native_calls") == 1 && number(row, "verify_calls") == 0 &&
+                  number(row, "aot_calls") == 0 && number(row, "fallback_calls") == 0,
+                  "compiled caller reaches native only, without AOT bypass or verification");
+        }
+    }
+}
+
 void native_paths(Runtime &oracle, Runtime &candidate) {
     using namespace mhp3rd::native;
     using Install = bool (*)(Runtime &, NativeMode);
@@ -306,6 +401,7 @@ int main(int argc, char **argv) {
         guard_and_interruption(aot);
         overhead(aot);
 #if !defined(MHP3RD_BASELINE_B0)
+        native_chained_paths(oracle, aot);
         native_paths(oracle, aot);
 #endif
     } catch (const std::exception &error) {

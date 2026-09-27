@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 54,
+  "revision": 58,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T04:13:46Z",
+  "updated_at": "2026-09-27T04:46:45Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -298,6 +298,38 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/uncalled_leaf_audit",
+      "type": "agent",
+      "role": "Static call-site and coherent native-module candidate audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/native_rollout_audit",
+      "type": "agent",
+      "role": "Native execution rollout and guest-boundary audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/native_batch_policy",
+      "type": "agent",
+      "role": "Declared native profile and packaging/readiness integration",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/native_chain_checks",
+      "type": "agent",
+      "role": "Production AOT scale/copy native chained-dispatch tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -337,9 +369,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "ITER-001",
-    "next_task_id": "ITER-002",
-    "next_action": "Proceed with a source-based module/dependency inventory and finite next-batch tasks. Distinguish already native host services, guest-ABI-bound helpers and original game logic. Select bounded units with offline original-code comparison or validated samples; retain actual native-mode rollout and untriggered helper coverage as separate obligations. No new user gameplay batch is needed merely to create the inventory.",
+    "current_task_id": "NAT-002",
+    "next_task_id": "NAT-003",
+    "next_action": "Prepare the one-case scale/copy native pilot with an explicit execution profile, both-role matched observer builds, pinned game font and distinct app identities. Exercise signed preparation-only readiness before user handoff; do not launch or navigate the game automatically. VEC-001 remains a ready independent offline contract audit for the new vector-metric module.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": []
   },
@@ -366,7 +398,8 @@
     "first_acceptance_report": "docs/FIRST_PAIRED_ACCEPTANCE.md",
     "first_acceptance_pr": "https://github.com/etsusei/Yakumo/pull/13",
     "game_font_regression_report": "docs/GAME_FONT_REGRESSION.md",
-    "game_font_fix_pr": "https://github.com/etsusei/Yakumo/pull/14"
+    "game_font_fix_pr": "https://github.com/etsusei/Yakumo/pull/14",
+    "native_inventory_and_execution_pr": "https://github.com/etsusei/Yakumo/pull/15"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -3996,13 +4029,17 @@
       "title": "Maintain migration inventory and finite batch specifications",
       "phase": "milestone_4",
       "kind": "workstream",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "in_progress",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/uncalled_leaf_audit",
+        "/root/native_rollout_audit"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-27T03:26:47Z",
-      "started_at": null,
+      "updated_at": "2026-09-27T04:32:05Z",
+      "started_at": "2026-09-27T04:19:28Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Track actual residual guest dependencies; create finite child tasks as research resolves boundaries.",
@@ -4010,12 +4047,12 @@
         "CASE-002",
         "FONT-001"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Initial finite inventory INV-001 is complete; the workstream continues as contracts and modules are researched. Next new-module audit is VEC-001.",
       "deliverables": [
         {
           "path": "docs/NATIVE_MODULES.md",
           "kind": "documentation",
-          "state": "planned",
+          "state": "existing",
           "local_only": false
         },
         {
@@ -4045,6 +4082,24 @@
           "from_status": "not_started",
           "to_status": "not_started",
           "description": "User requested resolving the shared game-text defect before the next migration step; FONT-001 is a prerequisite."
+        },
+        {
+          "recorded_at": "2026-09-27T04:19:28Z",
+          "occurred_at": "2026-09-27T04:19:28Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Auditing current host modules, residual guest boundaries, static callers of untriggered leaves and genuine native-mode rollout requirements. Existing NATIVE_MODULES.md contains leaf contracts only and will be expanded without discarding earlier evidence. No game launch or app replacement."
+        },
+        {
+          "recorded_at": "2026-09-27T04:32:05Z",
+          "occurred_at": "2026-09-27T04:32:05Z",
+          "actor_id": "/root",
+          "action": "initial_inventory_complete",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Initial finite inventory INV-001 is complete; the workstream continues as contracts and modules are researched. Next new-module audit is VEC-001."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -4054,20 +4109,22 @@
       "title": "User-led gameplay and resource migration batches",
       "phase": "milestone_4",
       "kind": "workstream",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "in_progress",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root"
+      ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-26T14:31:18Z",
-      "started_at": null,
+      "updated_at": "2026-09-27T04:32:05Z",
+      "started_at": "2026-09-27T04:32:05Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Repeat implementation, automatic checks, paired user cases, analysis and targeted regressions.",
       "depends_on": [
-        "ITER-001"
+        "INV-001"
       ],
-      "work_summary": "Not started. Scope and expected deliverables are planned only.",
+      "work_summary": "Finite scale/copy native execution tasks NAT-001 through NAT-004 and vector-module tasks VEC-002/003 are defined. Implementation begins with NAT-001; no user game launch requested yet.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/testing/cases",
@@ -4092,6 +4149,526 @@
         "Related changes delivered together with independent switches.",
         "Animation/AI/combat claims require relevant observed cases and user acceptance.",
         "New finite task IDs created for each batch; no speculative whole-game completion."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T04:43:43Z",
+          "occurred_at": "2026-09-27T04:32:05Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Finite scale/copy native execution tasks NAT-001 through NAT-004 and vector-module tasks VEC-002/003 are defined. Implementation begins with NAT-001; no user game launch requested yet."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "INV-001",
+      "title": "Initial module inventory and finite next-batch contracts",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-001",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root",
+        "/root/uncalled_leaf_audit",
+        "/root/native_rollout_audit"
+      ],
+      "created_at": "2026-09-27T04:32:05Z",
+      "updated_at": "2026-09-27T04:46:45Z",
+      "started_at": "2026-09-27T04:19:28Z",
+      "completed_at": "2026-09-27T04:32:05Z",
+      "timestamp_note": "Finite task split from the already-running inventory audit; start time records that actual audit start.",
+      "scope": "Audit actual host/guest boundaries, untriggered leaf callers and two bounded next batches.",
+      "depends_on": [
+        "CASE-002",
+        "FONT-001"
+      ],
+      "work_summary": "Expanded the existing five-leaf inventory into 15 source-anchored architecture areas, audited native rollout hardcodings, proved untriggered leaves have static callers, independently rehashed four vector-metric candidate spans and defined seven finite follow-up tasks.",
+      "deliverables": [
+        {
+          "path": "docs/NATIVE_MODULES.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/NEXT_NATIVE_BATCHES.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/inventory/uncalled_leaf_audit.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Source anchors distinguish host-native services, portable leaves/adapters and original gameplay.",
+        "Static references do not become live coverage; candidate spans have verified hashes.",
+        "Finite execution/validation/dependency tasks are recorded."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "Static audit and primary source verification",
+            "status": "passed",
+            "evidence": "out/testing/inventory/uncalled_leaf_audit.json",
+            "candidate_spans_rehashed": 4,
+            "overlay_spans_scanned": 355,
+            "game_launched": false
+          }
+        ],
+        "limitations": [
+          "Static matches do not prove reachability or gameplay triggers.",
+          "No module completion percentage or whole-game independence is inferred."
+        ]
+      },
+      "implementation_commits": [
+        "2aa245d"
+      ],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T04:32:05Z",
+          "occurred_at": "2026-09-27T04:32:05Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "not_started",
+          "to_status": "completed",
+          "description": "Expanded the existing five-leaf inventory into15 source-anchored architecture areas, audited native rollout hardcodings, proved untriggered leaves have static callers, independently rehashed four vector-metric candidate spans and defined seven finite follow-up tasks."
+        },
+        {
+          "recorded_at": "2026-09-27T04:46:45Z",
+          "occurred_at": "2026-09-27T04:46:45Z",
+          "actor_id": "/root",
+          "action": "published",
+          "from_status": "completed",
+          "to_status": "completed",
+          "description": "Published audited inventory and native execution policy in draft PR #15, stacked on #14. Actual native-mode paired delivery remains NAT-002."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "NAT-001",
+      "title": "Declare and verify scale/copy native execution",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root",
+        "/root/native_batch_policy",
+        "/root/native_chain_checks"
+      ],
+      "created_at": "2026-09-27T04:32:05Z",
+      "updated_at": "2026-09-27T04:46:45Z",
+      "started_at": "2026-09-27T04:32:05Z",
+      "completed_at": "2026-09-27T04:43:43Z",
+      "timestamp_note": null,
+      "scope": "Implement explicit mode-aware packaging/readiness policy, native execution evidence gate and production chained-call regression checks.",
+      "depends_on": [
+        "INV-001"
+      ],
+      "work_summary": "Implemented a bounded scale/copy native profile, mode-aware packaging and signed-readiness validation, and a separate native_execution comparison verdict that never claims same-input verification for native-only calls. Added actual generated direct-chain interception checks against a bounded original oracle. Nine integrated CTests and the production AOT harness passed. No apps were repackaged and no game was launched; NAT-002 owns actual native-mode delivery.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/tools/native_batch.py",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/compare_test_runs.py",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/aot_probe_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_native_batch.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/native-mode-policy-ctest.log",
+          "kind": "log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/native-mode-aot.log",
+          "kind": "log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/native-mode-validation.json",
+          "kind": "report",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Baseline all off; candidate scale/copy native and others off; probes all.",
+        "Require certified native variant coverage separately from same-input verify evidence.",
+        "Existing verify behavior remains valid; native-only never claims same-input reference success.",
+        "Production direct/chained override behavior matches original state/memory for scale and copy."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "Integrated native-mode policy/regression checks",
+            "status": "passed",
+            "evidence": "out/testing/native-mode-policy-ctest.log",
+            "ctest_count": 9
+          },
+          {
+            "name": "Production native chained-call oracle and probe checks",
+            "status": "passed",
+            "evidence": "out/testing/native-mode-aot.log",
+            "aot_differential_calls": 1280,
+            "native_chain_targets": [
+              "scale_matrix",
+              "matrix_copy"
+            ]
+          }
+        ],
+        "limitations": [
+          "Actual signed native-mode app assembly and user execution remain NAT-002/003.",
+          "Post-install code mutation is outside the controlled no-mod pilot; per-entry probes reject its evidence but do not stop native execution.",
+          "The new vector-metric family remains a contract candidate, not implemented or live-verified."
+        ]
+      },
+      "implementation_commits": [
+        "2aa245d"
+      ],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T04:43:43Z",
+          "occurred_at": "2026-09-27T04:32:05Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Started the finite mode-policy and chained-dispatch implementation after INV-001."
+        },
+        {
+          "recorded_at": "2026-09-27T04:43:43Z",
+          "occurred_at": "2026-09-27T04:43:43Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented a bounded scale/copy native profile, mode-aware packaging and signed-readiness validation, and a separate native_execution comparison verdict that never claims same-input verification for native-only calls. Added actual generated direct-chain interception checks against a bounded original oracle. Nine integrated CTests and the production AOT harness passed. No apps were repackaged and no game was launched; NAT-002 owns actual native-mode delivery."
+        },
+        {
+          "recorded_at": "2026-09-27T04:46:45Z",
+          "occurred_at": "2026-09-27T04:46:45Z",
+          "actor_id": "/root",
+          "action": "published",
+          "from_status": "completed",
+          "to_status": "completed",
+          "description": "Published audited inventory and native execution policy in draft PR #15, stacked on #14. Actual native-mode paired delivery remains NAT-002."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "NAT-002",
+      "title": "Deliver one matched native execution case",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-27T04:32:05Z",
+      "updated_at": "2026-09-27T04:32:05Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Assemble versioned B0/candidate apps with matched observers, verified game font and one finite village case requiring scale and copy.",
+      "depends_on": [
+        "NAT-001"
+      ],
+      "work_summary": "Planned finite task; no execution claimed.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/testing/cases/native_data_batch.json",
+          "kind": "case_catalog",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/dist/native-data",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Fresh catalog and both-role native-mode identities bound.",
+        "Signed preparation-only readiness passes.",
+        "Original apps/records preserved; no automatic gameplay."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "NAT-003",
+      "title": "User executes the native data batch",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": "project-owner",
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-27T04:32:05Z",
+      "updated_at": "2026-09-27T04:32:05Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "User performs one short paired village case and reports outcomes.",
+      "depends_on": [
+        "NAT-002"
+      ],
+      "work_summary": "Planned finite task; no execution claimed.",
+      "deliverables": [
+        {
+          "path": "out/testing/runs",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Both roles produce actual complete packages.",
+        "User observations retained without treating zero calls or a clean exit as acceptance."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "NAT-004",
+      "title": "Review actual native execution evidence",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-27T04:32:05Z",
+      "updated_at": "2026-09-27T04:32:05Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Assess native-mode counters, human observations and starting conditions; accept bounded behavior or retain off default.",
+      "depends_on": [
+        "NAT-003"
+      ],
+      "work_summary": "Planned finite task; no execution claimed.",
+      "deliverables": [
+        {
+          "path": "out/testing/reports/native-data",
+          "kind": "directory",
+          "state": "planned",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Candidate native_calls equal completed with no other path for each required helper; baseline AOT coverage complete.",
+        "No same-input or speedup claim inferred from native-only runs.",
+        "Incomplete/uncertified/configuration-changed results remain explicit."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "VEC-001",
+      "title": "Certify four vector metric contracts",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-001",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-27T04:32:05Z",
+      "updated_at": "2026-09-27T04:32:05Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Audit three-lane norm/norm-squared/distance/distance-squared spans and oracle feasibility before portable implementation.",
+      "depends_on": [
+        "INV-001"
+      ],
+      "work_summary": "Planned finite task; no execution claimed.",
+      "deliverables": [
+        {
+          "path": "docs/VECTOR_METRICS_CONTRACT.md",
+          "kind": "documentation",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/vector-metrics-contract.json",
+          "kind": "report",
+          "state": "planned",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "Full spans and return delay slots fingerprinted.",
+        "Inputs, scratch bytes, CPU/VFPU/prefix/rounding effects and side effects documented.",
+        "Supported/unsupported edge cases and independent-oracle limits are explicit."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "VEC-002",
+      "title": "Implement a portable vector metric module",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-27T04:32:05Z",
+      "updated_at": "2026-09-27T04:32:05Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Implement four related portable data operations with separate guest adapters and original-code differential tests.",
+      "depends_on": [
+        "VEC-001"
+      ],
+      "work_summary": "Planned finite task; no execution claimed.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/native/vector_metrics.hpp",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/vector_metrics.cpp",
+          "kind": "source",
+          "state": "planned",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/native_vector_metrics_tests.cpp",
+          "kind": "test",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Core owns no Runtime/GuestMemory/CPU context.",
+        "Full CPU/memory/canary, alias/prefix and numerical edge behavior checked against bounded originals.",
+        "Defaults off; unknown fingerprints refused; unsupported conditions explicit."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "VEC-003",
+      "title": "Add vector-metric observations and finite acceptance cases",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-27T04:32:05Z",
+      "updated_at": "2026-09-27T04:32:05Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Extend certified observation/mode policy and prepare a related batch after actual trigger evidence is available.",
+      "depends_on": [
+        "VEC-002",
+        "NAT-001"
+      ],
+      "work_summary": "Planned finite task; no execution claimed.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/testing/cases/vector_metrics_batch.json",
+          "kind": "case_catalog",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "No static-reference count used as runtime coverage.",
+        "Bounded same-revision probes/catalog and independent save/configuration identities.",
+        "Only demonstrated triggers become required user-case coverage."
       ],
       "validation": {
         "checks": [],

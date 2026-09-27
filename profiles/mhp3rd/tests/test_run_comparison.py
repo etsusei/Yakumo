@@ -121,6 +121,71 @@ class ComparisonTests(unittest.TestCase):
         c = self.packaged("candidate", **(candidate or {}))
         return compare.compare_runs(b, c, cases or catalog())
 
+    def native_pilot_report(self, edit=None):
+        cases = catalog()
+        cases["cases"][0]["required_probes"] = [
+            {"entry": 0x08878B28, "min_calls": 1}, {"entry": 0x08879D08, "min_calls": 1}]
+        modes = {name: "off" for name in compare.NATIVE_MODES}
+        modes["MHP3RD_NATIVE_SCALE_MATRIX"] = modes["MHP3RD_NATIVE_MATRIX_COPY"] = "native"
+        profile = {"schema": "yakumo-native-batch-v1", "id": "native-data-test",
+                   "case_catalog_sha256": compare.canonical_hash(cases),
+                   "candidate_modes": modes, "required_native_entries": [0x08878B28, 0x08879D08]}
+
+        def prepare(role, rows):
+            rows[0][1].update(modes if role == "candidate" else {name: "off" for name in modes})
+            expanded = []
+            for kind, fields in rows:
+                if fields.get("event") == "probe.summary":
+                    for entry in profile["required_native_entries"]:
+                        expanded.append((kind, {**fields, "entry": entry}))
+                else:
+                    expanded.append((kind, fields))
+            rows[:] = expanded
+            if role == "candidate" and edit:
+                edit(rows)
+
+        baseline = self.packaged("baseline", cases=cases, calls=3,
+                                 edit=lambda rows: prepare("baseline", rows))
+        candidate = self.packaged("candidate", cases=cases, calls=3, mode="native",
+                                  edit=lambda rows: prepare("candidate", rows))
+        return compare.compare_runs(baseline, candidate, cases, execution_profile=profile)
+
+    def test_native_profile_proves_execution_without_claiming_reference_match(self):
+        report = self.native_pilot_report()
+        self.assertEqual(report["native_execution"]["outcome"], "observed")
+        self.assertEqual(report["cases"][0]["reference_verification"]["outcome"], "not_covered")
+        self.assertEqual(len(report["native_execution"]["cases"][0]["targets"]), 2)
+        self.assertIn("Requested native execution", compare.render_html(report))
+
+    def test_native_profile_rejects_wrong_declared_mode(self):
+        report = self.native_pilot_report(
+            lambda rows: rows[0][1].update(MHP3RD_NATIVE_SCALE_MATRIX="verify"))
+        self.assertEqual(report["native_execution"]["outcome"], "incomparable")
+
+    def test_native_profile_rejects_verify_fallback_and_zero_native_calls(self):
+        for variant in ("verify_calls", "fallback_calls", "aot_calls"):
+            with self.subTest(variant=variant):
+                def wrong(rows):
+                    for _, fields in rows:
+                        if (fields.get("event") == "probe.summary" and fields["entry"] == 0x08878B28
+                                and fields["boundary"] == "case_end"):
+                            fields["native_calls"] = 0
+                            fields[variant] = fields["completed"]
+                self.assertEqual(self.native_pilot_report(wrong)["native_execution"]["outcome"], "not_covered")
+
+    def test_native_profile_keeps_configuration_and_outside_errors_for_review(self):
+        def changed(rows):
+            end = next(i for i, (kind, _) in enumerate(rows) if kind == 4)
+            rows.insert(end, (8, {"event": "config.effective", "settings_sha256": "d" * 64}))
+        self.assertEqual(self.native_pilot_report(changed)["native_execution"]["outcome"], "needs_review")
+        def outside_error(rows):
+            rows.insert(-1, (11, {"event": "synthetic.outside_error"}))
+        self.assertEqual(self.native_pilot_report(outside_error)["native_execution"]["outcome"], "needs_review")
+
+    def test_native_profile_rejects_unfinished_case(self):
+        def interrupted(rows): rows[:] = [row for row in rows if row[0] != 4]
+        self.assertEqual(self.native_pilot_report(interrupted)["native_execution"]["outcome"], "incomplete")
+
     def test_reference_matches_do_not_require_identical_manual_input_or_call_totals(self):
         report = self.report(candidate={"calls": 3, "input_button": 2, "before": 40}, baseline={"before": 9})
         self.assertEqual(report["outcome"], "observed_difference")

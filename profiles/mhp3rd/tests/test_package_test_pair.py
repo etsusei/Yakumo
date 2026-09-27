@@ -16,6 +16,7 @@ from unittest import mock
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
 sys.path.insert(0, str(TOOLS))
 import launch_test_run  # noqa: E402
+import native_batch  # noqa: E402
 import package_test_pair as pair  # noqa: E402
 import register_baseline  # noqa: E402
 
@@ -33,7 +34,8 @@ def put(path: Path, data: bytes) -> Path:
 def catalog(path: Path) -> Path:
     return put(path, json.dumps({"schema": "yakumo-case-catalog-v1", "cases": [{
         "id": "REC-01", "version": 1, "title": "Start", "steps": ["Begin"],
-        "checkpoints": ["ready"], "required_probes": [],
+        "checkpoints": ["ready"], "required_probes": [
+            {"entry": entry, "min_calls": 1} for entry in native_batch.REQUIRED_NATIVE_ENTRIES],
         "required_state_fields": [], "human_acceptance": True,
     }]}).encode())
 
@@ -231,7 +233,8 @@ class PairPackagingTests(unittest.TestCase):
                 config = pair._bundle_app(
                     stage / "Yakumo Baseline.app", role="baseline", build=build,
                     launcher=launcher, scripts=[TOOLS / "run_package.py", TOOLS / "run_cases.py",
-                                               TOOLS / "compare_test_runs.py", TOOLS / "launch_test_run.py"],
+                                               TOOLS / "native_batch.py", TOOLS / "compare_test_runs.py",
+                                               TOOLS / "launch_test_run.py"],
                     cases=cases, python=python, overlays=overlays,
                     libraries={"libMoltenVK.dylib": moltenvk}, font=font,
                     settings_hash="e" * 64,
@@ -239,6 +242,29 @@ class PairPackagingTests(unittest.TestCase):
                     sources={"iso": str(iso), "elf": str(elf), "snapshot": str(snapshot_files.parent)},
                     overlay_tree=overlay_tree, overlay_id=register_baseline._tree_id(overlay_tree),
                     work_root=root / "runs", output=published, batch_id="test-pair", runner=signed)
+                catalog_hash = sha(json.dumps(pair.run_cases.load_case_catalog(cases), sort_keys=True,
+                                              separators=(",", ":"), ensure_ascii=False).encode())
+                profile = native_batch.validate_profile({
+                    "schema": native_batch.SCHEMA, "id": "native-data-1",
+                    "case_catalog_sha256": catalog_hash,
+                    "candidate_modes": {
+                        switch: ("native" if entry in native_batch.REQUIRED_NATIVE_ENTRIES else "off")
+                        for entry, switch in native_batch.NATIVE_SWITCH_BY_ENTRY.items()},
+                    "required_native_entries": list(native_batch.REQUIRED_NATIVE_ENTRIES),
+                }, pair.run_cases.load_case_catalog(cases))
+                candidate = pair._bundle_app(
+                    stage / "Yakumo Candidate.app", role="candidate", build=build,
+                    launcher=launcher, scripts=[TOOLS / "run_package.py", TOOLS / "run_cases.py",
+                                               TOOLS / "native_batch.py", TOOLS / "compare_test_runs.py",
+                                               TOOLS / "launch_test_run.py"],
+                    cases=cases, python=python, overlays=overlays,
+                    libraries={"libMoltenVK.dylib": moltenvk}, font=font,
+                    settings_hash="e" * 64,
+                    settings={"ui.language": "zh-CN", "text.font": str(font)}, registration=registration,
+                    sources={"iso": str(iso), "elf": str(elf), "snapshot": str(snapshot_files.parent)},
+                    overlay_tree=overlay_tree, overlay_id=register_baseline._tree_id(overlay_tree),
+                    work_root=root / "runs", output=published, batch_id="test-pair", runner=signed,
+                    execution_profile=profile)
             stage.rename(published)
             app = published / "Yakumo Baseline.app"
             self.assertEqual(config["binary"]["sha256"], pair._hash(app / "Contents/MacOS/YakumoGame"))
@@ -256,6 +282,14 @@ class PairPackagingTests(unittest.TestCase):
             self.assertEqual(loaded["role"], "baseline")
             self.assertEqual(loaded["settings"]["text.font"], str(font))
             self.assertEqual(loaded["overlays"]["tree_id"], config["overlays"]["tree_id"])
+            candidate_app = published / "Yakumo Candidate.app"
+            self.assertEqual(candidate["native_modes"], profile["candidate_modes"])
+            self.assertEqual(candidate["batch_id"], "test-pair")
+            self.assertNotEqual(candidate["batch_id"], profile["id"])
+            self.assertEqual(json.loads((candidate_app / "Contents/Resources/testing/execution-profile.json").read_text()),
+                             profile)
+            self.assertTrue((candidate_app / "Contents/Resources/testing/native_batch.py").is_file())
+            self.assertFalse((app / "Contents/Resources/testing/execution-profile.json").exists())
 
 
 if __name__ == "__main__":

@@ -155,6 +155,16 @@ calls, valid spans and complete scopes are required separately for both roles.
 
 ## Evidence interpretation
 
+For a declared native-execution batch, pass `--execution-profile` to the
+comparison command. `native_batch.py` validates the bounded scale/copy pilot
+against the canonical catalog. The report adds `native_execution`, checking
+the actual recorded mode map, certified complete case windows, exclusive
+Baseline AOT/candidate native counts, clean diagnostics/settings and normal
+user marks. Its `observed` result establishes that the requested native paths
+ran under those conditions; `reference_verification` remains `not_covered`
+without an in-process reference. Manual-stream differences stay visible in
+the ordinary comparison. See [the finite next batches](NEXT_NATIVE_BATCHES.md).
+
 Package prerequisites include matching game, overlay, save, configuration,
 build flags, catalog, recorder semantics, platform and Baseline identity. Run,
 source revision and binary identities remain distinct where expected. Every

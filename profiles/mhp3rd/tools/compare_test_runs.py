@@ -15,9 +15,11 @@ import statistics
 import sys
 
 if __package__:
+    from .native_batch import load_profile, validate_profile, profile_sha256
     from .run_cases import collect_cases, load_case_catalog, validate_case_catalog
     from .run_package import load_package
 else:
+    from native_batch import load_profile, validate_profile, profile_sha256
     from run_cases import collect_cases, load_case_catalog, validate_case_catalog
     from run_package import load_package
 
@@ -48,7 +50,7 @@ def canonical_hash(value: object) -> str:
 
 def comparison_revision() -> str:
     directory = Path(__file__).resolve().parent
-    files = ("compare_test_runs.py", "run_package.py", "run_cases.py")
+    files = ("compare_test_runs.py", "run_package.py", "run_cases.py", "native_batch.py")
     return "source-sha256:" + canonical_hash({name: hashlib.sha256((directory / name).read_bytes()).hexdigest()
                                               for name in files})
 
@@ -332,8 +334,83 @@ def compare_case(b: dict | None, c: dict | None, spec: dict, pair_issues: list[s
     return result
 
 
-def compare_loaded(baseline: dict, candidate: dict, catalog: dict) -> dict:
+def native_execution(report: dict, profile: dict) -> dict:
+    """Prove requested native execution, separately from reference equivalence."""
+    result = {"profile_id": profile["id"], "profile_sha256": profile_sha256(profile),
+              "outcome": "not_covered", "scope": "declared_native_paths_in_finite_cases_not_same_input_proof",
+              "issues": [], "cases": []}
+    for role in ("baseline", "candidate"):
+        actual = report["runs"][role].get("native_modes", {})
+        expected = {key: "off" for key in NATIVE_MODES} if role == "baseline" else profile["candidate_modes"]
+        if actual != expected:
+            result["issues"].append(role + ":execution_modes_differ_from_profile")
+    if report["compatibility_issues"] or result["issues"]:
+        result["outcome"] = "incomparable"
+        result["issues"].extend(report["compatibility_issues"])
+        return result
+    if (any(not value.get("recording_complete") for value in report["recording_validation"].values()) or
+            any(report["case_lifecycle_issues"].values()) or
+            any(case["outcome"] == "incomplete" for case in report["cases"])):
+        result["outcome"] = "incomplete"
+        result["issues"].append("recording_or_case_lifecycle_incomplete")
+        return result
+    if (any(report["outside_case_diagnostics"].values()) or
+            any(report["outside_case_diagnostics_omitted"].values())):
+        result["issues"].append("outside_case_diagnostics_require_review")
+
+    seen = set()
+    all_cases_eligible = True
+    for case in report["cases"]:
+        issues = []
+        if case["outcome"] not in ("observational_match", "observed_difference"):
+            issues.append("case_requires_review:" + case["outcome"])
+        if case.get("user_outcomes") != {"baseline": "normal", "candidate": "normal"}:
+            issues.append("normal_user_outcomes_missing")
+        if case.get("state_differences"):
+            issues.append("checkpoint_state_differs")
+        if any(case.get("configuration_events", {}).values()):
+            issues.append("configuration_changed_during_case")
+        if any(case.get("diagnostics", {}).values()) or any(case.get("diagnostics_omitted", {}).values()):
+            issues.append("case_diagnostics_require_review")
+        targets = []
+        for probe in case.get("probes", []):
+            if probe["entry"] not in profile["required_native_entries"]:
+                continue
+            target_issues = []
+            for role, variant in (("baseline", "aot_calls"), ("candidate", "native_calls")):
+                window = probe[role]
+                counts = window["delta"]
+                completed = counts.get("completed")
+                if (window["status"] != "covered" or not unsigned(completed) or completed == 0 or
+                        counts.get(variant) != completed or
+                        any(counts.get(key) != 0 for key in
+                            ("aot_calls", "native_calls", "verify_calls", "fallback_calls") if key != variant)):
+                    target_issues.append(role + ":requested_execution_path_not_exclusive")
+            targets.append({"entry": probe["entry"], "outcome": "observed" if not target_issues else "not_covered",
+                            "issues": target_issues})
+            if not target_issues:
+                seen.add(probe["entry"])
+            else:
+                issues.extend(target_issues)
+        if issues:
+            all_cases_eligible = False
+        result["cases"].append({"case_id": case["case_id"], "attempt": case.get("attempt"),
+                                "outcome": "observed" if not issues else "needs_review",
+                                "targets": targets, "issues": issues})
+    missing = set(profile["required_native_entries"]) - seen
+    if missing:
+        result["issues"].append("native_targets_not_covered:" + ",".join(f"0x{x:08X}" for x in sorted(missing)))
+    if not missing and all_cases_eligible and not result["issues"]:
+        result["outcome"] = "observed"
+    elif not missing:
+        result["outcome"] = "needs_review"
+    return result
+
+
+def compare_loaded(baseline: dict, candidate: dict, catalog: dict, execution_profile: dict | None = None) -> dict:
     catalog = validate_case_catalog(catalog)
+    if execution_profile is not None:
+        execution_profile = validate_profile(execution_profile, catalog)
     issues = compatibility(baseline, candidate, catalog)
     reconstructed = {"baseline": collect_cases(baseline["records"], catalog),
                      "candidate": collect_cases(candidate["records"], catalog)}
@@ -374,7 +451,7 @@ def compare_loaded(baseline: dict, candidate: dict, catalog: dict) -> dict:
         next((value for value in precedence if value in outcomes), "not_covered")
     if any(outside_diagnostics.values()) and outcome in ("observational_match", "same_input_match", "observed_difference"):
         outcome = "inconclusive"
-    return {"schema": SCHEMA, "tool_revision": comparison_revision(),
+    report = {"schema": SCHEMA, "tool_revision": comparison_revision(),
             "generated_at": datetime.now(timezone.utc).isoformat(), "outcome": outcome,
             "scope": "finite_cases_not_whole_game_acceptance",
             "case_catalog_sha256": canonical_hash(catalog), "compatibility_issues": issues,
@@ -389,10 +466,14 @@ def compare_loaded(baseline: dict, candidate: dict, catalog: dict) -> dict:
                             "Same-input matches refer to in-process helper reference checks, not identical manual sessions.",
                             "Periodic state and timing differences require investigation; neither automatically proves a regression.",
                             "Missing or incomplete evidence never counts as acceptance."]}
+    if execution_profile is not None:
+        report["native_execution"] = native_execution(report, execution_profile)
+        report["limitations"].append("Observed native execution is not an in-process same-input verification or whole-game acceptance.")
+    return report
 
 
-def compare_runs(baseline: Path, candidate: Path, catalog: dict) -> dict:
-    return compare_loaded(load_package(baseline), load_package(candidate), catalog)
+def compare_runs(baseline: Path, candidate: Path, catalog: dict, execution_profile: dict | None = None) -> dict:
+    return compare_loaded(load_package(baseline), load_package(candidate), catalog, execution_profile)
 
 
 def render_html(report: dict) -> str:
@@ -427,6 +508,14 @@ def render_html(report: dict) -> str:
         sections.append(f'<section><h2>{escape(case["case_id"])} · {escape(case["title"])}</h2>'
                         f'<p class="status">{escape(labels.get(case["outcome"], "Needs review"))}</p><ul>{findings}</ul>'
                         f'<details><summary>Evidence and observations</summary><pre>{details}</pre></details></section>')
+    execution_html = ""
+    if "native_execution" in report:
+        execution = report["native_execution"]
+        execution_html = ('<section><h2>Requested native execution</h2><p>' +
+                          escape(execution["outcome"]) +
+                          '</p><p>This checks which implementation ran. It does not establish same-input equivalence or whole-game acceptance.</p>' +
+                          '<details><summary>Mode and coverage evidence</summary><pre>' +
+                          escape(json.dumps(execution, indent=2)) + '</pre></details></section>')
     warnings = "".join("<li>" + escape(x) + "</li>" for x in report["limitations"])
     compatibility_text = escape(json.dumps(report["compatibility_issues"], indent=2))
     health = escape(json.dumps(report["recording_validation"], indent=2))
@@ -446,7 +535,7 @@ def render_html(report: dict) -> str:
             f'<section><h2>Recording and starting conditions</h2><p>{"Review is required before relying on the comparison." if report["compatibility_issues"] else "No starting-condition differences were found in the supplied identities."}</p>'
             f'<details><summary>Identity details</summary><pre>{compatibility_text}</pre></details><details><summary>Recording health</summary><pre>{health}</pre></details>'
             f'<details><summary>Run diagnostics and unmatched cases</summary><pre>{run_findings}</pre></details></section>'
-            + "".join(sections) + '</main></html>')
+            + execution_html + "".join(sections) + '</main></html>')
 
 
 def write_report(report: dict, output: Path) -> None:
@@ -476,6 +565,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--candidate", required=True, type=Path)
     parser.add_argument("--cases", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--execution-profile", type=Path)
     args = parser.parse_args(argv)
     try:
         if args.cases.is_symlink() or not args.cases.is_file():
@@ -485,7 +575,8 @@ def main(argv: list[str] | None = None) -> int:
         for source in (args.baseline.resolve(), args.candidate.resolve()):
             if destination == source or source in destination.parents:
                 raise ValueError("report output must be outside source packages")
-        report = compare_runs(args.baseline, args.candidate, catalog)
+        profile = load_profile(args.execution_profile, catalog) if args.execution_profile is not None else None
+        report = compare_runs(args.baseline, args.candidate, catalog, profile)
         write_report(report, args.output)
         print(json.dumps({"outcome": report["outcome"], "counts": report["counts"]}))
         return 0  # Finding a mismatch is a successful analysis, not an I/O error.
