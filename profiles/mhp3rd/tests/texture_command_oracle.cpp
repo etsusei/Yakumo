@@ -1,4 +1,5 @@
 #include "resources/tmh.hpp"
+#include "resources/texture_commands.hpp"
 #include "native/bridge_contracts.hpp"
 #include "psprecomp/elf32.hpp"
 #include "recomp_units.hpp"
@@ -109,6 +110,23 @@ public:
         const std::uint32_t mirror = mirrored ? 0x40000000u : 0u;
         const auto raw_source = kSource | mirror, object = (kObject + 32u) | mirror;
         const auto commands = (kCommands + 64u) | mirror, sp = (kStack + 128u) | mirror;
+        std::vector<TextureCommandDescriptor> native_descriptors;
+        if (iterations) {
+            const auto count = synthetic_descriptors ? synthetic_descriptors->size() : view->records().size();
+            native_descriptors.reserve(count);
+            for (std::size_t i = 0; i < count; ++i) {
+                const auto d = synthetic_descriptors ? synthetic_descriptors->at(i) : view->descriptor(i);
+                native_descriptors.push_back({raw_source + d.image_offset, d.image_format, d.width, d.height,
+                    d.palette_offset ? raw_source + *d.palette_offset : 0u, d.palette_format, d.palette_count});
+            }
+        }
+        const TextureCommandRequest request{raw_source, commands, declared, first_record,
+            destination_slot, override_count, std::size_t(destination + iterations + 2u)};
+        const auto native = build_texture_commands(native_descriptors, request);
+        require(native.ok() && native.patches.size() == iterations, "Portable command core rejected a certified input");
+        require(native.state.source_token == raw_source && native.state.command_base_token == commands &&
+                native.state.declared_count == declared && native.state.count_byte == static_cast<std::uint8_t>(declared),
+                "Portable state metadata differs from the original contract");
         auto object_before = random_bytes(96u), stack_before = random_bytes(224u);
         auto commands_before = random_bytes(128u + std::size_t(destination + iterations + 2u) * 36u);
         auto object_expected = object_before, stack_expected = stack_before, commands_expected = commands_before;
@@ -139,6 +157,9 @@ public:
         for (std::uint32_t i = 0; i < iterations; ++i) {
             const auto d = synthetic_descriptors ? synthetic_descriptors->at(first + i) : view->descriptor(first + i);
             const auto words = command_words(d, raw_source);
+            require(native.patches[i].source_record == first + i &&
+                    native.patches[i].destination_slot == destination + i && native.patches[i].words == words,
+                    "Portable command patch differs from independent packet model");
             for (std::size_t j = 0; j < words.size(); ++j)
                 store32(commands_expected, 64u + std::size_t(destination + i) * 36u + j * 4u, words[j]);
             if (i + 1u == iterations) {
@@ -230,20 +251,31 @@ void synthetic_gate(Oracle &oracle) {
     std::vector<std::uint8_t> negative(empty.bytes().begin(), empty.bytes().end());
     store32(negative, 8u, 0x800001abu);
     (void)oracle.check(SharedBytes::take(std::move(negative)), 0x1111u, 0x2222u, 0u, true);
-    // Exercise the helper's other observed no-palette branches separately
-    // from the file corpus. Their metadata is synthetic; this does not widen
+    // Exercise the remaining known format branches separately from the file
+    // corpus. Their metadata is synthetic; this does not widen
     // the production TMH reader's established file-format domain.
-    for (const std::uint32_t format : {1u, 3u, 9u, 10u}) {
-        const std::size_t payload = format == 1u ? 512u : format == 3u ? 1024u : 256u;
-        std::vector<std::uint8_t> data(48u + payload, 0x57u);
+    for (const std::uint32_t format : {0u, 1u, 2u, 3u, 6u, 7u, 9u, 10u}) {
+        const bool has_palette = format == 0u || format == 2u || format == 6u || format == 7u;
+        const std::size_t payload = format >= 9u ? 256u : (format == 3u || format == 7u ? 1024u : 512u);
+        const std::uint32_t palette_format = format == 2u || format == 7u ? 2u : 0u;
+        const std::uint32_t palette_count = 17u, palette_bytes = palette_count * 2u;
+        std::vector<std::uint8_t> data(48u + payload + (has_palette ? 16u + palette_bytes : 0u), 0x57u);
         const std::array<std::uint8_t, 8> marker{'.','T','M','H','0','.','1','4'};
         std::copy(marker.begin(), marker.end(), data.begin()); store32(data, 8u, 1u);
-        store32(data, 16u, 32u + static_cast<std::uint32_t>(payload));
+        store32(data, 16u, static_cast<std::uint32_t>(data.size() - 16u));
         store32(data, 24u, 1u); store32(data, 32u, 16u + static_cast<std::uint32_t>(payload));
         store32(data, 40u, format); store32(data, 44u, 32u | (8u << 16u));
+        const auto palette_offset = static_cast<std::uint32_t>(64u + payload);
+        if (has_palette) {
+            store32(data, palette_offset - 16u, 16u + palette_bytes);
+            store32(data, palette_offset - 8u, palette_format);
+            store32(data, palette_offset - 4u, palette_count);
+        }
         auto source = SharedBytes::take(std::move(data));
-        const std::vector<TmhDescriptor> expected{{48u, format, 32u, 8u, std::nullopt,
-                                                  0u, 0, source.slice(48u, payload), std::nullopt}};
+        const std::vector<TmhDescriptor> expected{{48u, format, 32u, 8u,
+            has_palette ? std::optional(palette_offset) : std::nullopt,
+            has_palette ? palette_format : 0u, has_palette ? static_cast<std::int32_t>(palette_count) : 0,
+            source.slice(48u, payload), has_palette ? std::optional(source.slice(palette_offset, palette_bytes)) : std::nullopt}};
         for (bool mirror : {false, true})
             (void)oracle.check(source, 0xaabb0001u, 0xeeff0000u, 0u, mirror, &expected);
     }
@@ -302,6 +334,7 @@ int main(int argc, char **argv) {
         }
         report << "],\"input_count\":" << inputs << ",\"descriptor_records\":" << descriptors
                << ",\"builder_calls\":" << oracle.calls << ",\"emitted_command_slots\":" << oracle.slots
+               << ",\"portable_core_compared\":true,\"portable_calls\":" << oracle.calls
                << ",\"max_interpreter_slices\":" << oracle.max_slices
                << ",\"synthetic_cases\":" << (synthetic_only ? oracle.calls : 0u) << ",\"success\":true}\n";
         std::ofstream output(output_path); require(bool(output), "Cannot create report"); output << report.str(); output.close();

@@ -39,6 +39,14 @@ The built-in server (`server.cpp`, used by *Host a session* and `--adhoc-server`
 
 ## Profile code
 
+The texture-command value module in
+`profiles/mhp3rd/host/resources/texture_commands.cpp` was independently written
+from the functional input/output contract of the local original consumer.
+`TEXTURE_COMMAND_BUILDER_CONTRACT.md` records the code/table identities,
+register protocol and validation domain. Only format facts, constants and
+independently expressed value transformations are included; original code
+bytes, generated instruction bodies and resource payloads remain local.
+
 The portable pixel kernels in `profiles/mhp3rd/host/resources/pixel_decode.cpp`
 adapt this repository's existing MIT-licensed
 `profiles/mhp3rd/host/gpu/texture_decode.cpp`. The latter remains unchanged and
