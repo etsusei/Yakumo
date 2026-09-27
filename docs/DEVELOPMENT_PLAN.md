@@ -2,7 +2,7 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-27T12:02:43Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-27T12:54:25Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -159,7 +159,8 @@ Finite work beneath these ongoing workstreams:
 - [x] **ASSET-010** — Implement a portable texture-command module against the certified original consumer contract.
 - [x] **ASSET-011** — Implement and offline-certify a bounded guest adapter, preserving CPU/memory effects and rejecting unsupported inputs before mutation.
 - [x] **ASSET-012** — Certify a real caller's source/command allocation bounds and lifetime before production integration.
-- [ ] **ASSET-013** — Implement bounded source authority from original transfer/lifecycle receipts, including late-writer invalidation and exact fragment completion.
+- [x] **ASSET-013** — Implement bounded source authority from original transfer/lifecycle receipts, including late-writer invalidation and exact fragment completion.
+- [ ] **ASSET-014** — Connect actual original observations and guarded off/verify/native command dispatch, with bounded production-path tests before user delivery.
 
 The initial inventory is [NATIVE_MODULES.md](NATIVE_MODULES.md); finite requirements are in [NEXT_NATIVE_BATCHES.md](NEXT_NATIVE_BATCHES.md). ITER-001/002 stay in progress as workstreams. Finite tasks depend on INV-001 or other finite prerequisites, not on treating an ongoing workstream as already finished.
 

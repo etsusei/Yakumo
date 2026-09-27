@@ -176,3 +176,31 @@ new generation even when its completion is otherwise stale. Model integrity
 generation separately from actual comparison. Production event capture,
 intra-unit AOT coverage, alternate-file paths and live acceptance remain later
 work; no extra manual test is requested for this offline module.
+
+
+ASSET-013 is complete in its offline metadata scope. The portable source
+authority passes50 cases/101 checks under CTest and memory sanitizers; see
+[SOURCE_AUTHORITY_MODULE.md](SOURCE_AUTHORITY_MODULE.md) for its API and limits.
+
+**ASSET-014 — Original observation and guarded dispatch integration.** Connect
+the certified factory, allocation, descriptor, transfer, reset/free and code
+epoch events to the authority with bounded provenance records. Prove actual
+AOT entry/return and intra-unit observation coverage instead of assuming
+registration sees every original transfer. Preserve pending writer hazards
+across cancellation and unsupported paths, serialize metadata access and keep
+original fallback whenever a permit is unavailable.
+
+Refactor the texture command guest bridge into bounded preparation and commit
+so Verify can prepare native results without changing guest memory, run the
+original once and compare its certified CPU/memory effects. Native mode may
+commit only while the authority permit, code identity and execution context
+remain current. Default remains Off; Baseline keeps original gameplay and
+matched observational metadata. Exercise actual production registration and
+chained calls in offline original-code harnesses, including rejection/loss,
+code changes, mismatches and fallback.
+
+Only after those checks should a new related paired delivery be prepared.
+Use a fresh current gameplay source commit in build metadata; never relabel
+the existing applications or historical user records. Retain positive-only
+authority, alternate-file, live multi-fragment and broader gameplay limitations
+until their own evidence exists.
