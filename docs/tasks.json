@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 77,
+  "revision": 80,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T06:55:38Z",
+  "updated_at": "2026-09-27T07:31:39Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -410,6 +410,22 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/tmh_consumer_contract",
+      "type": "agent",
+      "role": "Original TMH consumer and field contract audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/tmh_owned_views",
+      "type": "agent",
+      "role": "Portable owned encoded TMH views and synthetic/sanitizer checks",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -449,9 +465,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "ASSET-003",
+    "current_task_id": "ASSET-005",
     "next_task_id": "NAT-004",
-    "next_action": "Recover the repeated TMH-marked child layout using owned parent-relative views and original consumer evidence. Do not assume semantics from magic or drop unknown tails. Analyze NAT-004/vector user records if they arrive; both user pairs remain unchanged.",
+    "next_action": "Establish explicit pixel layout/stride/extent contract and reuse boundary for existing texture decoding. Start from corrected GEbuilder C2 indexed1/DXT0 and independently checked ceil(log2) table; do not confuse raw dimensions withvisibleextent. NAT-003/VEC-003 awaituser records; appsunchanged.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": [
@@ -495,7 +511,9 @@
     "vector_discovery_pr": "https://github.com/etsusei/Yakumo/pull/19",
     "resource_bundle_contract": "docs/RESOURCE_BUNDLE_CONTRACT.md",
     "indexed_resource_views": "docs/INDEXED_RESOURCE_VIEWS.md",
-    "indexed_resource_views_pr": "https://github.com/etsusei/Yakumo/pull/20"
+    "indexed_resource_views_pr": "https://github.com/etsusei/Yakumo/pull/20",
+    "tmh_resource_contract": "docs/TMH_RESOURCE_CONTRACT.md",
+    "owned_tmh_views": "docs/OWNED_TMH_VIEWS.md"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -5752,24 +5770,39 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-001",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "completed",
+      "owner_agent_id": "/root",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root",
+        "/root/tmh_consumer_contract"
+      ],
       "created_at": "2026-09-27T06:53:56Z",
-      "updated_at": "2026-09-27T06:53:56Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-27T07:31:39Z",
+      "started_at": "2026-09-27T06:58:20Z",
+      "completed_at": "2026-09-27T07:10:07Z",
       "scope": "Recover one repeated child-format layout from decoded-parent views and original consumers; identify internal record spans, references, transformations and image semantics only where supported.",
       "depends_on": [
         "ASSET-002"
       ],
-      "work_summary": "Planned next resource boundary; no child decoder or semantic interpretation claimed.",
+      "work_summary": "Recovered TMH record/image/palette descriptor semantics from original helper08876A10 and GE builder0889E5C0. Root independently verified ELF/full spans and structural inventory, including12standalone entries missed by child-only discovery. Corpus2256inputs/8866records; swizzle and rawreserved/tag meanings remain explicit unknowns. No pixels or game run.",
       "deliverables": [
         {
           "path": "docs/TMH_RESOURCE_CONTRACT.md",
           "kind": "documentation",
-          "state": "planned",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/tmh-consumer-contract.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/tools/inspect_tmh_layout.py",
+          "kind": "tool",
+          "state": "existing",
           "local_only": false
         }
       ],
@@ -5777,6 +5810,229 @@
         "Input parent/child identities and coordinate spaces retained.",
         "Independent consumer evidence for each claimed layout/type field; unknowns and variants retained.",
         "No full game or derived payload committed; contract establishes a bounded next native decoder scope."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "Original descriptor and GE builder contract",
+            "status": "passed",
+            "evidence_path": "out/testing/tmh-consumer-contract.json",
+            "details": "24-byte output ABI, record/subblock strides, formats/dimensions/palette count and payload references independently fingerprinted; no stored swizzle flag verified."
+          },
+          {
+            "name": "Whole entry and child structural inventory",
+            "status": "passed",
+            "evidence_path": "out/testing/tmh-layout-complete-inventory.json",
+            "details": "2244indexedchildren plus12standalone entries,8866records. Unknown outertails retained; two indexed68x68format4payloads have8 extra alignmentbytes."
+          }
+        ],
+        "limitations": [
+          "Descriptor execution gate belongs to ASSET-004; this contract is static original-code and byte-layout evidence.",
+          "Pixel layout/swizzle context, visual meaning and live source-ID mappings remain unresolved."
+        ]
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T06:58:20Z",
+          "occurred_at": "2026-09-27T06:58:20Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Recovering TMH-marked child records and their original consumers. Initial samples suggest sequential image/palette blocks, but field meanings and flags are unverified until code and corpus checks agree. Existing apps/raw assets stay unchanged."
+        },
+        {
+          "recorded_at": "2026-09-27T07:10:07Z",
+          "occurred_at": "2026-09-27T07:10:07Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Recovered TMH record/image/palette descriptor semantics from original helper08876A10 and GE builder0889E5C0. Root independently verified ELF/full spans and structural inventory, including12standalone entries missed by child-only discovery. Corpus2256inputs/8866records; swizzle and rawreserved/tag meanings remain explicit unknowns. No pixels or game run."
+        },
+        {
+          "recorded_at": "2026-09-27T07:31:39Z",
+          "occurred_at": "2026-09-27T07:31:39Z",
+          "actor_id": "/root",
+          "action": "branch_review",
+          "description": "Before publication, independent branch review corrected the C2 command summary: this builder sets swizzle1 for indexed4/5 and0 for compressed8..10. Root checked the branch/register initialization and all1025 dimension-table words. A8 uses raw width; B8 selects ceil(log2) power-of-two extents. No encoded reader behavior depended on the earlier wording."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ASSET-004",
+      "title": "Implement owned encoded TMH resource views",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "completed",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root",
+        "/root/tmh_owned_views"
+      ],
+      "created_at": "2026-09-27T07:10:07Z",
+      "updated_at": "2026-09-27T07:31:39Z",
+      "started_at": "2026-09-27T07:10:07Z",
+      "completed_at": "2026-09-27T07:31:39Z",
+      "scope": "Implement a checked TMH reader retaining encoded image/palette slices and raw words, with bounded original descriptor and corpus tests; no guessed swizzle or pixel conversion.",
+      "depends_on": [
+        "ASSET-003"
+      ],
+      "work_summary": "Implemented portable shared-storage encoded TMH views with checked record/block bounds, image/palette descriptors, retained raw fields and padding/tails. All2256 inputs (2244indexedchildren+12standalone) and8866descriptors match productionAOT and boundedinterpreter with fullCPU/outputcanaries/source-byte preservation; max336slices. Core27 tests passstrictwarnings andASan/UBSan; five structuraltests/twoCTests pass. Pixel decoding/swizzle/visible extent remains separate; game loader/renderer/apps unchanged.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/resources/tmh.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/resources/tmh.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/tmh_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/tmh_descriptor_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/inspect_tmh_layout.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_tmh_views.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_tmh_layout.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/OWNED_TMH_VIEWS.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/tmh-layout-complete-inventory.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/tmh-owned-view-original-gate.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/tmh-native-validation.json",
+          "kind": "build_identity",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/tmh-sanitizers.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "No guest CPU/memory dependency in resource API; child views retain whole storage.",
+        "Known corpus variants, padding/tails and malformed bounds tested.",
+        "Original compiled/interpreted descriptor and full corpus agree; unresolved pixel layout not guessed."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "Owned TMH core and structural tests",
+            "status": "passed",
+            "evidence_path": "out/testing/tmh-sanitizers.log",
+            "details": "27corechecks understrictcompiler andASan/UBSan, five structuralchecks, twoCTests. Includeslifetimes, alternatepaletteselector, unknownwords,tails,padding,truncation andoverflow-safe bounds."
+          },
+          {
+            "name": "Full native/AOT/interpreter descriptor gate",
+            "status": "passed",
+            "evidence_path": "out/testing/tmh-owned-view-original-gate.json",
+            "details": "2256inputs,8866records;8813withpalette/53withoutpalette. Exact24-byte descriptors,64-byte outputwithcanaries,fullCPU and unchangedsourcebytes. Palette selector0, largestinterpreterpath336slices of8192budget."
+          }
+        ],
+        "limitations": [
+          "Encoded payload and metadata only; no decoded pixels, graphics sampling or visual acceptance.",
+          "Original helper runs with separate source/output buffers and palette selectorzero; command builder and GPU do not execute.",
+          "Raw TMH dimensions are not sufficient to infer visible power-of-two GE extents or universal layout.",
+          "Full game source-ID-to-object mapping remains unobserved; existinguserpairs unchanged."
+        ]
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T07:31:39Z",
+          "occurred_at": "2026-09-27T07:31:39Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Implemented portable shared-storage encoded TMH views with checked record/block bounds, image/palette descriptors, retained raw fields and padding/tails. All2256 inputs (2244indexedchildren+12standalone) and8866descriptors match productionAOT and boundedinterpreter with fullCPU/outputcanaries/source-byte preservation; max336slices. Core27 tests passstrictwarnings andASan/UBSan; five structuraltests/twoCTests pass. Pixel decoding/swizzle/visible extent remains separate; game loader/renderer/apps unchanged."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ASSET-005",
+      "title": "Establish explicit texture layout and pixel decode boundary",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-001",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-27T07:31:39Z",
+      "updated_at": "2026-09-27T07:31:39Z",
+      "started_at": null,
+      "completed_at": null,
+      "scope": "Recover the relevant layout/stride/extent and palette state needed to decode TMH pixels, reuse existing native codec logic where supported, and define a portable interface with explicit context instead of a guessed file-wide swizzle.",
+      "depends_on": [
+        "ASSET-004"
+      ],
+      "work_summary": "Planned after encoded TMH view validation. One builder has static C2 and ceil-dimension evidence; alternate callers and nonstandard dimensions require care.",
+      "deliverables": [
+        {
+          "path": "docs/TEXTURE_LAYOUT_CONTRACT.md",
+          "kind": "documentation",
+          "state": "planned",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Rawbufferstride, encodedspan, GEextent and intendedpixelview distinguished.",
+        "Original consumer/renderer evidence supports explicit layout inputs; unsupported or unproven cases remainvisible.",
+        "No speculative game behavior or pixel-fidelity claim from a metadata-only gate."
       ],
       "validation": {
         "checks": [],

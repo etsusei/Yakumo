@@ -147,7 +147,9 @@ Finite work beneath these ongoing workstreams:
 - [ ] **VEC-003** — Add bounded observations and evidence-based user cases for that module.
 - [x] **ASSET-001** — Certify nested indexed resource-bundle boundaries from original consumers.
 - [x] **ASSET-002** — Implement a portable bundle view and provenance-preserving offline validation.
-- [ ] **ASSET-003** — Certify the internal layout of TMH-marked children using original consumers.
+- [x] **ASSET-003** — Certify the internal layout of TMH-marked children using original consumers.
+- [x] **ASSET-004** — Implement owned encoded TMH views and the original descriptor/corpus gate.
+- [ ] **ASSET-005** — Establish explicit texture layout, stride/extent and pixel-decoder inputs.
 
 The initial inventory is [NATIVE_MODULES.md](NATIVE_MODULES.md); finite requirements are in [NEXT_NATIVE_BATCHES.md](NEXT_NATIVE_BATCHES.md). ITER-001/002 stay in progress as workstreams. Finite tasks depend on INV-001 or other finite prerequisites, not on treating an ongoing workstream as already finished.
 
@@ -311,3 +313,17 @@ Signatures remain annotations: 11 candidate nodes have only bounds evidence,
 and no child semantics or live loader replacement is claimed. Implementation `903b0f3` is published in draft PR [#20](https://github.com/etsusei/Yakumo/pull/20). See
 [INDEXED_RESOURCE_VIEWS.md](INDEXED_RESOURCE_VIEWS.md). Continue ASSET-003 while
 NAT-003/VEC-003 await user operation; preserve all delivered apps and raw assets.
+
+
+### Encoded TMH checkpoint
+
+ASSET-003/004 completed the static TMH consumer contract and portable owned
+encoded views. Discovery includes 2,244 indexed children and 12 standalone
+entries; all 8,866 descriptors match the production AOT and bounded interpreter.
+The 27 core checks, five structural checks, two CTests and sanitizers pass.
+Padding, standalone tails and unknown words remain intact. No pixels or game
+were rendered. During review, the GE C2 branch was corrected before publication:
+this builder selects swizzle1 for indexed4/5 and0 for DXT formats. A8 keeps the
+raw width while B8 uses a verified ceil(log2) table. ASSET-005 must preserve the
+stride/extent distinction and explicit context instead of guessing file layout.
+See [OWNED_TMH_VIEWS.md](OWNED_TMH_VIEWS.md). Both user test pairs stay unchanged.
