@@ -17,6 +17,7 @@ import subprocess
 import tempfile
 
 import native_modes
+import texture_decode_policy
 
 
 def fingerprint(path: Path) -> str:
@@ -63,10 +64,16 @@ def check_pair(baseline: Path, candidate: Path, audit_path: Path) -> dict:
                             "build_config_sha256", "gameplay_source_commit",
                             "baseline_provenance_sha256", "baseline_sealed",
                             "renderer_compiled", "aot_probes_compiled"}
-                if set(value) not in (required, required | {"native_mode_schema"}) or value["schema"] != "yakumo-test-preflight-v1":
+                allowed = required | {"native_mode_schema"} | texture_decode_policy.FIELDS
+                if (type(value) is not dict or not required <= set(value) or
+                        set(value) - allowed or value["schema"] != "yakumo-test-preflight-v1"):
                     raise ValueError(f"{role}/{label}: wrong preflight schema")
                 if "native_mode_schema" in value and value["native_mode_schema"] != native_modes.V2_SCHEMA:
                     raise ValueError(f"{role}/{label}: unknown native mode schema")
+                try:
+                    texture_decode_policy.mode(value)
+                except ValueError as error:
+                    raise ValueError(f"{role}/{label}: {error}") from error
             if settings.read_bytes() != seed or sorted(p.name for p in data.iterdir()) != ["settings.ini"]:
                 raise ValueError(f"{role}/{label}: preflight mutated the isolated directory")
             records.append({"role": role, "check": label, "exit_code": child.returncode,
@@ -82,6 +89,8 @@ def check_pair(baseline: Path, candidate: Path, audit_path: Path) -> dict:
                 raise ValueError(f"Pair differs in {key}")
         if reference.get("native_mode_schema") != changed.get("native_mode_schema"):
             raise ValueError("Pair differs in native mode schema")
+        if reference.get(texture_decode_policy.SCHEMA_FIELD) != changed.get(texture_decode_policy.SCHEMA_FIELD):
+            raise ValueError("Pair differs in texture decode schema")
         for role, identity in identities.items():
             if identity["baseline_sealed"] is not (role == "baseline"):
                 raise ValueError(f"{role}: wrong baseline seal")
@@ -101,6 +110,22 @@ def check_pair(baseline: Path, candidate: Path, audit_path: Path) -> dict:
                      {name: "off" for name in mode_fields})
         if off != reference:
             raise ValueError("Explicit off changed baseline identity")
+        if texture_decode_policy.SCHEMA_FIELD in reference:
+            for mode in ("verify", "native", "invalid", ""):
+                invoke("baseline", f"reject_texture_{mode or 'empty'}",
+                       {texture_decode_policy.ENVIRONMENT: mode}, rejected=True)
+            texture_off = invoke("baseline", "explicit_texture_off",
+                                 {texture_decode_policy.ENVIRONMENT: "off"})
+            if texture_off != reference:
+                raise ValueError("Explicit texture off changed baseline identity")
+            for mode in ("invalid", ""):
+                invoke("candidate", f"reject_texture_{mode or 'empty'}",
+                       {texture_decode_policy.ENVIRONMENT: mode}, rejected=True)
+            for mode in ("verify", "native"):
+                selected = invoke("candidate", f"accept_texture_{mode}",
+                                  {texture_decode_policy.ENVIRONMENT: mode})
+                if selected[texture_decode_policy.MODE_FIELD] != mode:
+                    raise ValueError("Candidate texture mode was not reported canonically")
         # Read a different setting, proving the hash is effective configuration.
         other = invoke("candidate", "configuration_change", {"MHP3RD_UI_LANGUAGE": "en"})
         if other["configuration_sha256"] == changed["configuration_sha256"]:

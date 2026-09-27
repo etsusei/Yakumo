@@ -62,5 +62,8 @@ CTests, 21 real-binary preflight checks, both production AOT harnesses and the
 actual native launchers' preparation-only flow passed. Both prepared settings
 also passed all 43 game-font glyph checks. `out/testing/native-data-readiness.json`
 binds the declared execution profile and delivered catalog. No game was
-launched; actual native-mode case execution remains NAT-003, and analysis must
-retain the mode-specific evidence limits above.
+launched during preparation. The user subsequently completed both cases;
+[the acceptance review](NATIVE_DATA_ACCEPTANCE.md) records exclusive native
+execution and a pre-case resolution mismatch. NAT-004 awaits only a matched
+Baseline rerun, retaining the existing Candidate record and the mode-specific
+evidence limits above.

@@ -26,9 +26,10 @@ import zlib
 from typing import Any, Dict, List, Optional, Tuple
 
 if __package__:
-    from . import native_modes
+    from . import native_modes, texture_decode_policy
 else:
     import native_modes
+    import texture_decode_policy
 
 
 FILE_HEADER = struct.Struct("<8sHHI")
@@ -354,6 +355,9 @@ def _identity(begin: Dict[str, Any]) -> Dict[str, Any]:
     identity["native_modes"] = _native_modes(begin)
     if "native_mode_schema" in begin:
         identity["native_mode_schema"] = begin["native_mode_schema"]
+    for name in texture_decode_policy.FIELDS:
+        if name in begin:
+            identity[name] = begin[name]
     return identity
 
 
@@ -430,6 +434,17 @@ def _validate(journal: Dict[str, Any], context: Dict[str, Any],
             issues.append("missing_native_mode:" + name)
         elif begin[name] not in ("off", "0", "verify", "native"):
             issues.append("invalid_native_mode:" + name)
+    texture_fields = texture_decode_policy.FIELDS & begin.keys()
+    if texture_fields and texture_fields != texture_decode_policy.FIELDS:
+        issues.append("incomplete_texture_decode_policy")
+    elif texture_fields:
+        if begin[texture_decode_policy.SCHEMA_FIELD] != texture_decode_policy.SCHEMA:
+            issues.append("unknown_texture_decode_schema")
+        texture_mode = begin[texture_decode_policy.MODE_FIELD]
+        if type(texture_mode) is not str or texture_mode not in texture_decode_policy.MODES:
+            issues.append("invalid_texture_decode_mode")
+        elif begin.get("role") == "baseline" and texture_mode != "off":
+            issues.append("baseline_texture_decode_not_off")
 
     if "case_catalog_sha256" in begin or "prerequisite_basis_sha256" in begin:
         catalog_hash = begin.get("case_catalog_sha256")
@@ -567,6 +582,8 @@ def _validate(journal: Dict[str, Any], context: Dict[str, Any],
         "runtime_elf_profile_mismatch", "runtime_elf_context_mismatch",
         "runtime_inputs_contradiction",
         "unknown_native_mode_schema",
+        "incomplete_texture_decode_policy", "unknown_texture_decode_schema",
+        "invalid_texture_decode_mode", "baseline_texture_decode_not_off",
     }
     metadata_complete = not any(item.startswith(metadata_only_prefixes) or
                                 item in metadata_only_issues for item in issues)

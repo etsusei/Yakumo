@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from check_pair_readiness import ReadinessError, check_contract
 import native_batch
 import native_modes
+import texture_decode_policy
 from run_package import NATIVE_MODE_FIELDS
 
 
@@ -74,6 +75,21 @@ class ReadinessContractTests(unittest.TestCase):
 
     def test_same_prerequisites_with_distinct_role_binaries(self):
         self.check()
+
+    def test_texture_policy_is_separate_and_baseline_stays_off(self):
+        self.pair.update({texture_decode_policy.SCHEMA_FIELD: texture_decode_policy.SCHEMA,
+                          texture_decode_policy.MODE_FIELD: "verify"})
+        for role, config in self.configs.items():
+            config.update({texture_decode_policy.SCHEMA_FIELD: texture_decode_policy.SCHEMA,
+                           texture_decode_policy.MODE_FIELD: "off" if role == "baseline" else "verify"})
+        self.check()
+        self.configs["baseline"][texture_decode_policy.MODE_FIELD] = "native"
+        with self.assertRaisesRegex(ReadinessError, "texture decode mode"):
+            self.check()
+        self.configs["baseline"][texture_decode_policy.MODE_FIELD] = "off"
+        del self.configs["candidate"][texture_decode_policy.SCHEMA_FIELD]
+        with self.assertRaises(ReadinessError):
+            self.check()
 
     def test_reject_stale_catalog_despite_matching_pair_claims(self):
         self.configs["candidate"]["cases"]["sha256"] = "5" * 64

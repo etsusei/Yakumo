@@ -430,6 +430,7 @@ set_property(SOURCE host/main.cpp APPEND PROPERTY COMPILE_DEFINITIONS
     MHP3RD_BASELINE_PROVENANCE_SHA256="${MHP3RD_BASELINE_PROVENANCE_SHA256}")
 if(MHP3RD_BASELINE_B0)
     set_property(SOURCE host/main.cpp APPEND PROPERTY COMPILE_DEFINITIONS MHP3RD_BASELINE_B0=1)
+    set_property(SOURCE host/gpu/vulkan_renderer.cpp APPEND PROPERTY COMPILE_DEFINITIONS MHP3RD_BASELINE_B0=1)
 endif()
 
 # Offline byte comparison against the runtime's DATA.BIN implementation.
@@ -454,7 +455,7 @@ if(PSPRECOMP_BUILD_TESTS)
                 ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
         endforeach()
         if(NOT MHP3RD_BASELINE_B0)
-            foreach(suite observed_baseline package_test_pair test_launcher pair_readiness initial_case_pack native_batch native_data_case vector_discovery_case resource_bundle_inspection tmh_layout)
+            foreach(suite observed_baseline package_test_pair test_launcher pair_readiness verify_pair_preflight texture_policy_comparison initial_case_pack native_batch native_data_case vector_discovery_case resource_bundle_inspection tmh_layout)
                 add_test(NAME mhp3rd_${suite}_tests
                     COMMAND "${Python3_EXECUTABLE}" -m unittest discover
                         -s "${MHP3RD_PROFILE_DIR}/tests" -p "test_${suite}.py" -v)
@@ -579,6 +580,7 @@ list(APPEND MHP3RD_RECORDING_REVISION_INPUTS
     "${MHP3RD_PROFILE_DIR}/host/native/vector_metric_dispatch.hpp"
     "${MHP3RD_PROFILE_DIR}/host/native/vector_metric_dispatch.cpp"
     "${MHP3RD_PROFILE_DIR}/tools/instrument_probes.py"
+    "${MHP3RD_PROFILE_DIR}/host/gpu/texture_decode_policy.hpp"
     "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.hpp"
     "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.cpp"
     "${MHP3RD_PROFILE_DIR}/host/settings/settings.cpp"
@@ -606,6 +608,9 @@ if(NOT MHP3RD_BASELINE_B0)
     target_link_libraries(mhp3rd_tmh PUBLIC mhp3rd_indexed_bundle)
     add_library(mhp3rd_pixel_decode STATIC host/resources/pixel_decode.cpp)
     target_include_directories(mhp3rd_pixel_decode PUBLIC "${MHP3RD_PROFILE_DIR}/host")
+    add_library(mhp3rd_portable_texture_dispatch STATIC host/gpu/portable_texture_dispatch.cpp)
+    target_link_libraries(mhp3rd_portable_texture_dispatch PUBLIC mhp3rd_pixel_decode psprecomp_core)
+    target_link_libraries(Yakumo PRIVATE mhp3rd_portable_texture_dispatch)
     add_library(mhp3rd_tmh_pixel_plan STATIC host/resources/tmh_pixel_plan.cpp)
     target_link_libraries(mhp3rd_tmh_pixel_plan PUBLIC mhp3rd_tmh mhp3rd_pixel_decode)
     add_executable(mhp3rd_tmh_pixel_plan_tests tests/tmh_pixel_plan_tests.cpp)
@@ -619,6 +624,10 @@ if(NOT MHP3RD_BASELINE_B0)
     add_library(mhp3rd_legacy_texture_oracle STATIC EXCLUDE_FROM_ALL host/gpu/texture_decode.cpp)
     target_include_directories(mhp3rd_legacy_texture_oracle PUBLIC "${MHP3RD_PROFILE_DIR}/host")
     target_link_libraries(mhp3rd_legacy_texture_oracle PUBLIC psprecomp_core)
+    add_executable(mhp3rd_portable_texture_dispatch_tests tests/portable_texture_dispatch_tests.cpp)
+    target_link_libraries(mhp3rd_portable_texture_dispatch_tests PRIVATE
+        mhp3rd_portable_texture_dispatch mhp3rd_legacy_texture_oracle Threads::Threads)
+    set_target_properties(mhp3rd_portable_texture_dispatch_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
     add_executable(mhp3rd_pixel_decode_legacy_tests EXCLUDE_FROM_ALL tests/pixel_decode_legacy_tests.cpp)
     target_link_libraries(mhp3rd_pixel_decode_legacy_tests PRIVATE mhp3rd_pixel_decode mhp3rd_legacy_texture_oracle)
     set_target_properties(mhp3rd_pixel_decode_legacy_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -627,6 +636,7 @@ if(NOT MHP3RD_BASELINE_B0)
     set_target_properties(mhp3rd_tmh_pixel_oracle PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
     if(PSPRECOMP_BUILD_TESTS)
         add_test(NAME mhp3rd_pixel_decode_tests COMMAND mhp3rd_pixel_decode_tests)
+        add_test(NAME mhp3rd_portable_texture_dispatch_tests COMMAND mhp3rd_portable_texture_dispatch_tests)
         add_test(NAME mhp3rd_tmh_pixel_plan_tests COMMAND mhp3rd_tmh_pixel_plan_tests)
     endif()
     add_executable(mhp3rd_tmh_tests tests/tmh_tests.cpp)

@@ -26,11 +26,12 @@ import uuid
 from typing import Any
 
 try:
-    from . import native_modes, run_cases, run_package
+    from . import native_modes, run_cases, run_package, texture_decode_policy
 except ImportError:
     import native_modes  # type: ignore[no-redef]
     import run_cases  # type: ignore[no-redef]
     import run_package  # type: ignore[no-redef]
+    import texture_decode_policy  # type: ignore[no-redef]
 
 
 LAUNCH_SCHEMA = "yakumo-test-launch-v1"
@@ -255,7 +256,9 @@ def _load_config(config_path: os.PathLike[str] | str) -> dict[str, Any]:
         config = run_package._parse_json(raw)
     except (run_package.PackageError, ValueError, UnicodeError, RecursionError) as error:
         raise LaunchError("invalid launch configuration JSON") from error
-    if set(config) not in (_LAUNCH_FIELDS, _LAUNCH_FIELDS | {"native_mode_schema"}) or config.get("schema") != LAUNCH_SCHEMA:
+    fields = set(config)
+    optional = {"native_mode_schema"} | texture_decode_policy.FIELDS
+    if not _LAUNCH_FIELDS <= fields or fields - _LAUNCH_FIELDS - optional or config.get("schema") != LAUNCH_SCHEMA:
         raise LaunchError("invalid launch configuration schema or fields")
     mode_schema = config.get("native_mode_schema")
     if "native_mode_schema" in config and mode_schema is None:
@@ -264,9 +267,15 @@ def _load_config(config_path: os.PathLike[str] | str) -> dict[str, Any]:
         mode_fields = native_modes.fields(mode_schema)
     except ValueError as error:
         raise LaunchError("unknown native mode schema") from error
+    try:
+        texture_mode = texture_decode_policy.mode(config)
+    except ValueError as error:
+        raise LaunchError(str(error)) from error
     role = config["role"]
     if role not in ("baseline", "candidate"):
         raise LaunchError("role must be baseline or candidate")
+    if role == "baseline" and texture_mode != "off":
+        raise LaunchError("Baseline portable texture decoding must be off")
     batch_id = _id(config["batch_id"], "batch_id")
     baseline_id = _id(config["baseline_id"], "baseline_id")
     baseline_commit = _commit(config["baseline_commit"], "baseline_commit")
@@ -341,6 +350,9 @@ def _load_config(config_path: os.PathLike[str] | str) -> dict[str, Any]:
     }
     if mode_schema is not None:
         normalized["native_mode_schema"] = mode_schema
+    if texture_decode_policy.SCHEMA_FIELD in config:
+        normalized[texture_decode_policy.SCHEMA_FIELD] = texture_decode_policy.SCHEMA
+        normalized[texture_decode_policy.MODE_FIELD] = texture_mode
     return normalized
 
 
@@ -414,6 +426,7 @@ def _environment(config: dict[str, Any], data: Path, run_id: str,
     env["MHP3RD_OVERLAY_DIR"] = str(config["overlays"]["path"])
     env["MHP3RD_RECORD_PROBES"] = config["probe_selection"]
     env.update(config["native_modes"])
+    env[texture_decode_policy.ENVIRONMENT] = config.get(texture_decode_policy.MODE_FIELD, "off")
     env["MHP3RD_WINDOW_TITLE"] = f"Yakumo {config['role'].title()} {config['batch_id']} {run_id[:12]}"
     if record_dir is not None:
         assert context_sha256 is not None and basis_sha256 is not None and cases_path is not None
@@ -502,10 +515,17 @@ def _read_preflight(path: Path, returncode: int | None, timed_out: bool,
         raise LaunchError("binary preflight did not emit one bounded JSON object") from error
     mode_schema = config.get("native_mode_schema")
     expected_fields = _PREFLIGHT_FIELDS | ({"native_mode_schema"} if mode_schema is not None else set())
+    texture_schema = config.get(texture_decode_policy.SCHEMA_FIELD)
+    if texture_schema is not None:
+        expected_fields |= texture_decode_policy.FIELDS
     if set(value) != expected_fields or value["schema"] != PREFLIGHT_SCHEMA:
         raise LaunchError("binary preflight schema or fields differ")
     if mode_schema is not None and value["native_mode_schema"] != mode_schema:
         raise LaunchError("binary preflight native mode schema differs from the launch manifest")
+    if texture_schema is not None and (
+            value[texture_decode_policy.SCHEMA_FIELD] != texture_schema or
+            value[texture_decode_policy.MODE_FIELD] != config[texture_decode_policy.MODE_FIELD]):
+        raise LaunchError("binary preflight texture decode policy differs from the launch manifest")
     expected = {
         "recorder_revision": config["recorder_revision"],
         "configuration_sha256": config["configuration_sha256"],

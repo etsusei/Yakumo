@@ -2,7 +2,7 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-27T08:11:00Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-27T08:26:11Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -140,7 +140,7 @@ Finite work beneath these ongoing workstreams:
 - [x] **INV-001** — Complete the initial source-based module inventory and finite batch contracts.
 - [x] **NAT-001** — Implement explicit scale/copy native execution profiles, gates and production chained-call checks.
 - [x] **NAT-002** — Deliver the matched one-case native execution pair.
-- [ ] **NAT-003** — User executes the paired native data case.
+- [x] **NAT-003** — User executes the paired native data case.
 - [ ] **NAT-004** — Analyze actual native execution and retain scoped acceptance or off defaults.
 - [x] **VEC-001** — Certify the four vector-metric contracts and numerical/state behavior offline.
 - [x] **VEC-002** — Implement a portable vector-metric core, adapters and differential tests.

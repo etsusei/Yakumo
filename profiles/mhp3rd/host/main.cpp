@@ -3,6 +3,11 @@
 #include "native/scale_matrix.hpp"
 #include "native/contracts.hpp"
 #include "native/mode_registry.hpp"
+#include "gpu/texture_decode_policy.hpp"
+#if defined(MHP3RD_HAS_RENDERER)
+#include "gpu/vulkan_renderer.hpp"
+#include "hle/hle_common.hpp"
+#endif
 #if !defined(MHP3RD_BASELINE_B0)
 #include "native/translation_matrix.hpp"
 #include "native/vector_construct.hpp"
@@ -71,6 +76,19 @@ void MHP3RD_VECTOR_METRICS_UNIT(Runtime &, AllegrexContext &);
 namespace {
 
 void require_sealed_baseline_modes() {
+    const auto texture_mode = mhp3rd::gpu::parse_texture_decode_mode(
+        std::getenv(mhp3rd::gpu::kTextureDecodeSwitch));
+    mhp3rd::gpu::require_texture_decode_policy(texture_mode,
+#if defined(MHP3RD_BASELINE_B0)
+        true,
+#else
+        false,
+#endif
+#if defined(MHP3RD_HAS_RENDERER)
+        true);
+#else
+        false);
+#endif
 #if defined(MHP3RD_BASELINE_B0)
     for (const auto *name : mhp3rd::native::kNativeModeSwitches)
         if (mhp3rd::native::parse_native_mode(std::getenv(name)) != mhp3rd::native::NativeMode::Off)
@@ -87,6 +105,9 @@ int test_preflight() {
     mhp3rd::testing::Fields fields{
         {"schema", std::string("yakumo-test-preflight-v1")},
         {"native_mode_schema", std::string(mhp3rd::native::kNativeModeSchema)},
+        {"texture_decode_schema", std::string(mhp3rd::gpu::kTextureDecodeSchema)},
+        {"texture_decode_mode", std::string(mhp3rd::gpu::texture_decode_mode_name(
+            mhp3rd::gpu::parse_texture_decode_mode(std::getenv(mhp3rd::gpu::kTextureDecodeSwitch))))},
         {"recorder_revision", std::string(mhp3rd::testing::recording_revision())},
         {"configuration_sha256", mhp3rd::settings::case_configuration_sha256()},
         {"build_config_sha256", std::string(MHP3RD_BUILD_CONFIG_SHA256)},
@@ -435,6 +456,12 @@ int main(int argc, char **argv) {
                     "MHP3RD_INPUT_LIVE", "PSPRECOMP_NO_CHAIN", "PSPRECOMP_COUNT_PC"})
                 metadata.push_back({std::string(name) + "_present", std::getenv(name) != nullptr});
             metadata.push_back({"native_mode_schema", std::string(mhp3rd::native::kNativeModeSchema)});
+            const auto texture_mode = mhp3rd::gpu::parse_texture_decode_mode(
+                std::getenv(mhp3rd::gpu::kTextureDecodeSwitch));
+            if (recording_options->role == "baseline" && texture_mode != mhp3rd::gpu::TextureDecodeMode::Off)
+                throw std::runtime_error("Baseline recording requires portable texture decoding off");
+            metadata.push_back({"texture_decode_schema", std::string(mhp3rd::gpu::kTextureDecodeSchema)});
+            metadata.push_back({"texture_decode_mode", std::string(mhp3rd::gpu::texture_decode_mode_name(texture_mode))});
             for (const char *name : mhp3rd::native::kNativeModeSwitches) {
                 const char *value = std::getenv(name);
                 const auto mode = mhp3rd::native::parse_native_mode(value);
@@ -555,6 +582,9 @@ int main(int argc, char **argv) {
         // Quit from the menu, a closed window or the game ending: the network
         // threads stop here, while everything they use still exists.
         mhp3rd::adhoc_shutdown();
+#if defined(MHP3RD_HAS_RENDERER)
+        if (auto *renderer = mhp3rd::active_renderer()) renderer->flush_texture_decode_observation();
+#endif
         mhp3rd::testing::close_case_session(cases, runtime.stop_reason().empty() ? "guest_finished" : runtime.stop_reason());
         if (diagnostics) diagnostics->close();
         if (recording) {
@@ -583,6 +613,9 @@ int main(int argc, char **argv) {
 #endif
         return runtime.stop_reason().empty() ? 0 : 4;
     } catch (const std::exception &e) {
+#if defined(MHP3RD_HAS_RENDERER)
+        if (auto *renderer = mhp3rd::active_renderer()) renderer->flush_texture_decode_observation();
+#endif
         mhp3rd::testing::close_case_session(cases, "host_exception");
         if (diagnostics) diagnostics->close();
         if (recording) {
