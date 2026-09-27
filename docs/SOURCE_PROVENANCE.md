@@ -120,3 +120,11 @@ and the matching extracted entry; neither is tracked. The existing public
 DATA.BIN transform description and locally loaded original table supply the
 independent synthetic expected-byte model. No original instruction bodies or
 payload bytes are added to the repository.
+
+### Bounded source-authority state machine
+
+`host/resources/source_authority.hpp/.cpp` and its tests are independently
+written from the documented lifecycle and transfer contract. They contain
+metadata, interval rules and constructed event sequences, with no original
+resource bytes or instruction bodies. Code identity values are caller
+attestations, not a substitute for the later original-code observation adapter.
