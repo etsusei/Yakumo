@@ -1,0 +1,70 @@
+{
+  "schema": "yakumo-case-catalog-v1",
+  "cases": [
+    {
+      "id": "REC-01",
+      "version": 1,
+      "title": "Confirm loaded village",
+      "steps": [
+        "Before this case, load the first occupied hunter from the supplied save copy and wait for the village.",
+        "Use that same hunter slot and the same input device in both roles.",
+        "Leave controls idle for two seconds. Open Yakumo's menu with Esc or L3+R3, choose Test session, and begin this case.",
+        "Check that the hunter and village remain visible. Do not move, change equipment, or enter a quest.",
+        "Open Test session, record Village visible, then reopen it and mark your outcome."
+      ],
+      "checkpoints": ["village_visible"],
+      "required_probes": [],
+      "required_state_fields": ["character_loaded"],
+      "human_acceptance": true
+    },
+    {
+      "id": "REC-02",
+      "version": 1,
+      "title": "Village input and menu",
+      "steps": [
+        "Start in the village after REC-01; begin this case in Test session.",
+        "Hold W or left stick up for two seconds, then release for two.",
+        "Hold A or left stick left for one second, then release. Stop early at a wall or door; do not retry or enter it.",
+        "Hold J or right stick left for one second, then release. Observe the camera.",
+        "Open Yakumo's menu with Esc or L3+R3; record Movement and camera done in Test session.",
+        "Open Yakumo's menu again; press Down then Up once with arrow keys or D-pad, then close it.",
+        "Reopen Test session; record Menu round trip. Reopen it again to mark your outcome."
+      ],
+      "checkpoints": ["movement_camera_done", "menu_round_trip"],
+      "required_probes": [],
+      "required_state_fields": [],
+      "human_acceptance": true
+    },
+    {
+      "id": "NATIVE-01",
+      "version": 1,
+      "title": "Village native helper coverage",
+      "steps": [
+        "Begin in the village where REC-02 ended, with the same hunter and unchanged equipment.",
+        "Look at the hunter's model and outfit or weapon. Do not change equipment or enter a quest.",
+        "Hold W or left stick up for two seconds, then release for two.",
+        "Hold D or left stick right for one second, release, then wait three seconds. Stop early at a wall or door; do not retry or enter it.",
+        "Open Test session; record Native route finished, then reopen it and mark your outcome."
+      ],
+      "checkpoints": ["native_route_finished"],
+      "required_probes": [{"entry": 143100712, "min_calls": 1}],
+      "required_state_fields": ["character_loaded"],
+      "human_acceptance": true
+    },
+    {
+      "id": "REC-03",
+      "version": 1,
+      "title": "Complete recording and close",
+      "steps": [
+        "After NATIVE-01 has an outcome, begin this case in Test session while the village remains visible.",
+        "Stay still and do not change settings. Reopen Test session and record Ready to close.",
+        "Reopen Test session and mark your outcome.",
+        "Only after this case has ended, close the game window normally and wait for collection."
+      ],
+      "checkpoints": ["ready_to_close"],
+      "required_probes": [],
+      "required_state_fields": ["character_loaded"],
+      "human_acceptance": true
+    }
+  ]
+}

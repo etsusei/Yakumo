@@ -61,3 +61,9 @@ After an ordinary run, the launcher offers a results-folder action. The supervis
 On 2026-09-27, implementation commit `4759d99` was built and checked on Apple Silicon macOS 27.0. Both actual signed applications were assembled; their native entry points completed `--headless --prepare-only` against the registered inputs. Their initial save contents matched, their writable files/directories were independent, and original inputs were unchanged. The supervisor retains `result.json` beside each run's evidence after the launcher's temporary handoff is removed.
 
 The gate passed 32 component tests, 21 real-binary preflight checks and both 1,280-call production AOT leaf checks. Local evidence is in `out/testing/paired-preflight-validation.json`, `out/testing/paired-preparation-validation.json`, and `out/testing/dist/pair-manifest.json`. No game was launched and no dialog was displayed. PAIR-003 still owns the final concrete case catalog and user handoff; the current packaged catalog is provisional.
+
+The subsequent formal handoff at commit `75ca5ff` completed PAIR-003. Its apps
+are under `out/testing/dist/initial-batch/`, with the local Chinese guide
+`START_HERE.md`. The final readiness report is `out/testing/readiness.json`.
+Use [the formal case pack](TEST_CASES.md) for CASE-001; the earlier pair above
+is retained as provisional delivery evidence. Gameplay acceptance is pending.

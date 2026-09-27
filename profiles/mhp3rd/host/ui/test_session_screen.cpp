@@ -32,8 +32,8 @@ Selection &selection() {
     return state;
 }
 
-// Only the reviewed, stable first-pack strings are translated. Catalog text
-// outside this list is displayed verbatim and never used as a format string.
+// Only enumerated case strings are translated. Catalog text outside
+// this list is displayed verbatim and never used as a format string.
 std::string_view case_text(const std::string &value) {
     if (value == "Load the agreed character") return tr("Load the agreed character");
     if (value == "Movement and camera") return tr("Movement and camera");
@@ -58,6 +58,50 @@ std::string_view case_text(const std::string &value) {
         return tr("Finish the active case before closing the window.");
     if (value == "Close the game window normally after this case ends.")
         return tr("Close the game window normally after this case ends.");
+    if (value == "Confirm loaded village") return tr("Confirm loaded village");
+    if (value == "Village input and menu") return tr("Village input and menu");
+    if (value == "Village native helper coverage") return tr("Village native helper coverage");
+    if (value == "Complete recording and close") return tr("Complete recording and close");
+    if (value == "Before this case, load the first occupied hunter from the supplied save copy and wait for the village.")
+        return tr("Before this case, load the first occupied hunter from the supplied save copy and wait for the village.");
+    if (value == "Use that same hunter slot and the same input device in both roles.")
+        return tr("Use that same hunter slot and the same input device in both roles.");
+    if (value == "Leave controls idle for two seconds. Open Yakumo's menu with Esc or L3+R3, choose Test session, and begin this case.")
+        return tr("Leave controls idle for two seconds. Open Yakumo's menu with Esc or L3+R3, choose Test session, and begin this case.");
+    if (value == "Check that the hunter and village remain visible. Do not move, change equipment, or enter a quest.")
+        return tr("Check that the hunter and village remain visible. Do not move, change equipment, or enter a quest.");
+    if (value == "Open Test session, record Village visible, then reopen it and mark your outcome.")
+        return tr("Open Test session, record Village visible, then reopen it and mark your outcome.");
+    if (value == "Start in the village after REC-01; begin this case in Test session.")
+        return tr("Start in the village after REC-01; begin this case in Test session.");
+    if (value == "Hold W or left stick up for two seconds, then release for two.")
+        return tr("Hold W or left stick up for two seconds, then release for two.");
+    if (value == "Hold A or left stick left for one second, then release. Stop early at a wall or door; do not retry or enter it.")
+        return tr("Hold A or left stick left for one second, then release. Stop early at a wall or door; do not retry or enter it.");
+    if (value == "Hold J or right stick left for one second, then release. Observe the camera.")
+        return tr("Hold J or right stick left for one second, then release. Observe the camera.");
+    if (value == "Open Yakumo's menu with Esc or L3+R3; record Movement and camera done in Test session.")
+        return tr("Open Yakumo's menu with Esc or L3+R3; record Movement and camera done in Test session.");
+    if (value == "Open Yakumo's menu again; press Down then Up once with arrow keys or D-pad, then close it.")
+        return tr("Open Yakumo's menu again; press Down then Up once with arrow keys or D-pad, then close it.");
+    if (value == "Reopen Test session; record Menu round trip. Reopen it again to mark your outcome.")
+        return tr("Reopen Test session; record Menu round trip. Reopen it again to mark your outcome.");
+    if (value == "Begin in the village where REC-02 ended, with the same hunter and unchanged equipment.")
+        return tr("Begin in the village where REC-02 ended, with the same hunter and unchanged equipment.");
+    if (value == "Look at the hunter's model and outfit or weapon. Do not change equipment or enter a quest.")
+        return tr("Look at the hunter's model and outfit or weapon. Do not change equipment or enter a quest.");
+    if (value == "Hold D or left stick right for one second, release, then wait three seconds. Stop early at a wall or door; do not retry or enter it.")
+        return tr("Hold D or left stick right for one second, release, then wait three seconds. Stop early at a wall or door; do not retry or enter it.");
+    if (value == "Open Test session; record Native route finished, then reopen it and mark your outcome.")
+        return tr("Open Test session; record Native route finished, then reopen it and mark your outcome.");
+    if (value == "After NATIVE-01 has an outcome, begin this case in Test session while the village remains visible.")
+        return tr("After NATIVE-01 has an outcome, begin this case in Test session while the village remains visible.");
+    if (value == "Stay still and do not change settings. Reopen Test session and record Ready to close.")
+        return tr("Stay still and do not change settings. Reopen Test session and record Ready to close.");
+    if (value == "Reopen Test session and mark your outcome.")
+        return tr("Reopen Test session and mark your outcome.");
+    if (value == "Only after this case has ended, close the game window normally and wait for collection.")
+        return tr("Only after this case has ended, close the game window normally and wait for collection.");
     return value;
 }
 
@@ -65,6 +109,10 @@ std::string_view checkpoint_text(const std::string &value) {
     if (value == "village_ready") return tr("Village ready");
     if (value == "route_complete") return tr("Route finished");
     if (value == "ready_to_close") return tr("Ready to close");
+    if (value == "village_visible") return tr("Village visible");
+    if (value == "movement_camera_done") return tr("Movement and camera done");
+    if (value == "menu_round_trip") return tr("Menu round trip");
+    if (value == "native_route_finished") return tr("Native route finished");
     return value;
 }
 

@@ -30,8 +30,9 @@ only the reviewed first-pack instruction literals and checkpoint IDs have
 Chinese translations. Unrecognized catalog text is preserved verbatim.
 
 No cheat controls, file editing, terminal commands, or manual log assembly are
-part of the panel flow. The initial user case pack and application packaging
-remain PAIR-003 and PAIR-002; this implementation alone is not a manual handoff.
+part of the panel flow. PAIR-002 and PAIR-003 now provide the signed local pair
+and [finite first-case instructions](TEST_CASES.md). CASE-001 is the pending
+user-led gameplay acceptance; the panel's offline checks do not replace it.
 
 ## Configuration and binding
 

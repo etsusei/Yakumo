@@ -4,6 +4,8 @@
 #include "psprecomp/guest_memory.hpp"
 #include "psprecomp/sha256.hpp"
 
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -27,9 +29,13 @@ int main(int argc, char **argv) {
             std::cout << "{\"sha256\":\"" << catalog.sha256 << "\",\"case_count\":" << catalog.cases.size() << "}\n";
             return 0;
         }
-        if (argc != 10 || std::string_view(argv[1]) != "--run") return 2;
+        if (argc != 10 || (std::string_view(argv[1]) != "--run" &&
+                           std::string_view(argv[1]) != "--run-all")) return 2;
+        const bool all_cases = std::string_view(argv[1]) == "--run-all";
         const std::string mode = argv[9];
-        require(mode == "normal" || mode == "interrupt" || mode == "changed_config" || mode == "skip", "unknown fixture mode");
+        require(all_cases ? (mode == "normal" || mode == "interrupt") :
+                (mode == "normal" || mode == "interrupt" || mode == "changed_config" || mode == "skip"),
+                "unknown fixture mode");
         RecordingOptions options;
         options.directory = argv[2]; options.role = argv[3]; options.run_id = argv[4];
         options.batch_id = "batch-1"; options.context_sha256 = argv[5]; options.case_catalog = argv[6];
@@ -46,7 +52,7 @@ int main(int argc, char **argv) {
 
         Fields metadata{{"recording_mode", std::string("observational-summary")},
                         {"binary_sha256", std::string(64, 'a')},
-                        {"test_context", std::string("synthetic_case_runtime")}};
+                        {"test_context", std::string(all_cases ? "synthetic_all_case_pipeline" : "synthetic_case_runtime")}};
         for (const auto *key : {"MHP3RD_NATIVE_ANGLE_STEP", "MHP3RD_NATIVE_SCALE_MATRIX", "MHP3RD_NATIVE_TRANSLATION_MATRIX",
                                "MHP3RD_NATIVE_VECTOR_CONSTRUCT", "MHP3RD_NATIVE_MATRIX_COPY"})
             metadata.push_back({key, std::string("off")});
@@ -62,19 +68,69 @@ int main(int argc, char **argv) {
         auto diagnostics = std::make_shared<RuntimeDiagnostics>(observer, memory, true, 0);
         auto controller = start_case_session(options, observer, diagnostics, "synthetic-build");
         require(controller && active_case_controller() == controller, "case controller not published");
-        require(controller->begin(0), "case did not start");
-        observer->pad({100000, 3, 1, 1, 128, 128, 128, 128});
-        if (mode == "changed_config") {
-            settings.mute = !settings.mute;
-            require(!controller->checkpoint(), "changed settings did not interrupt the case");
-        } else if (mode == "skip") {
-            require(controller->finish(CaseOutcome::Skipped), "explicit skip failed");
-        } else if (mode == "normal") {
-            require(controller->checkpoint(), "checkpoint failed");
-            require(controller->finish(CaseOutcome::Normal), "normal finish failed");
+        if (all_cases) {
+            const auto &cases = controller->catalog().cases;
+            require(!cases.empty(), "all-case catalog is empty");
+            std::size_t interrupted_index = cases.size();
+            if (mode == "interrupt") {
+                for (std::size_t index = 0; index < cases.size(); ++index) {
+                    if (cases[index].checkpoints.size() > 1) {
+                        interrupted_index = index;
+                        break;
+                    }
+                }
+                require(interrupted_index < cases.size(), "no multi-checkpoint case to interrupt");
+            }
+            std::uint64_t virtual_us = 100000;
+            std::uint64_t vblank = 3;
+            for (std::size_t index = 0; index < cases.size(); ++index) {
+                require(controller->begin(index), "catalog case did not start");
+                // These samples exercise journal ordering only. They do not
+                // claim physical input or any native helper invocation.
+                const auto advance = [&] {
+                    virtual_us += 33333;
+                    ++vblank;
+                    observer->frame(virtual_us, vblank);
+                    observer->pad({virtual_us, vblank, 1, 1, 128, 128, 128, 128});
+                };
+                advance();
+                for (std::size_t checkpoint = 0; checkpoint < cases[index].checkpoints.size(); ++checkpoint) {
+                    advance();
+                    require(controller->checkpoint(), "catalog checkpoint failed");
+                    if (index == interrupted_index) break;
+                }
+                if (index == interrupted_index) {
+                    require(controller->active_case() == index, "interrupted case is not active");
+                    break;
+                }
+                require(controller->finish(CaseOutcome::Normal), "catalog normal finish failed");
+                require(controller->progress()[index].state == CaseProgressState::Normal,
+                        "catalog case did not finish normally");
+            }
+            if (mode == "normal")
+                for (const auto &progress : controller->progress())
+                    require(progress.state == CaseProgressState::Normal, "catalog case was not completed");
+        } else {
+            require(controller->begin(0), "case did not start");
+            observer->pad({100000, 3, 1, 1, 128, 128, 128, 128});
+            if (mode == "changed_config") {
+                settings.mute = !settings.mute;
+                require(!controller->checkpoint(), "changed settings did not interrupt the case");
+            } else if (mode == "skip") {
+                require(controller->finish(CaseOutcome::Skipped), "explicit skip failed");
+            } else if (mode == "normal") {
+                require(controller->checkpoint(), "checkpoint failed");
+                require(controller->finish(CaseOutcome::Normal), "normal finish failed");
+            }
         }
         close_case_session(controller, "window closed");
         require(!active_case_controller(), "closed controller remains published");
+        if (all_cases && mode == "interrupt") {
+            require(!controller->active_case(), "interrupted case remains active");
+            require(std::any_of(controller->progress().begin(), controller->progress().end(),
+                    [](const CaseProgress &progress) { return progress.state == CaseProgressState::Interrupted; }),
+                    "closing the run did not interrupt the active case");
+        }
         diagnostics->close();
         require(before == psprecomp::sha256_bytes({bytes, memory.size()}), "case actions changed guest memory");
         return recording.close("window closed", true) ? 4 : 5;
