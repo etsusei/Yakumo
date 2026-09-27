@@ -1,0 +1,16 @@
+{
+  "schema": "yakumo-native-batch-v1",
+  "id": "native-data-v1",
+  "case_catalog_sha256": "a1f1aa5cabf652fc2bd150ec205483c3d39d61e4dfd455bb288263ee41d94b76",
+  "candidate_modes": {
+    "MHP3RD_NATIVE_ANGLE_STEP": "off",
+    "MHP3RD_NATIVE_VECTOR_CONSTRUCT": "off",
+    "MHP3RD_NATIVE_SCALE_MATRIX": "native",
+    "MHP3RD_NATIVE_TRANSLATION_MATRIX": "off",
+    "MHP3RD_NATIVE_MATRIX_COPY": "native"
+  },
+  "required_native_entries": [
+    143100712,
+    143105288
+  ]
+}

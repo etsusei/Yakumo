@@ -428,7 +428,7 @@ if(PSPRECOMP_BUILD_TESTS)
                 ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
         endforeach()
         if(NOT MHP3RD_BASELINE_B0)
-            foreach(suite observed_baseline package_test_pair test_launcher pair_readiness initial_case_pack native_batch)
+            foreach(suite observed_baseline package_test_pair test_launcher pair_readiness initial_case_pack native_batch native_data_case)
                 add_test(NAME mhp3rd_${suite}_tests
                     COMMAND "${Python3_EXECUTABLE}" -m unittest discover
                         -s "${MHP3RD_PROFILE_DIR}/tests" -p "test_${suite}.py" -v)
@@ -577,6 +577,16 @@ if(NOT MHP3RD_BASELINE_B0)
     target_link_libraries(mhp3rd_game_font_coverage PRIVATE psprecomp_core mhp3rd_game_observation)
     set_target_properties(mhp3rd_game_font_coverage PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    if(APPLE)
+        add_executable(mhp3rd_vector_metrics_contract_probe EXCLUDE_FROM_ALL
+            tests/vector_metrics_contract_probe.cpp)
+        target_link_libraries(mhp3rd_vector_metrics_contract_probe PRIVATE psprecomp_core)
+        # Keep the probe's ordinary scalar comparison unfused. The linked
+        # interpreter keeps its normal production build flags.
+        target_compile_options(mhp3rd_vector_metrics_contract_probe PRIVATE -ffp-contract=off)
+        set_target_properties(mhp3rd_vector_metrics_contract_probe PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    endif()
 endif()
 add_executable(mhp3rd_run_package_fixture tests/run_package_fixture.cpp)
 target_link_libraries(mhp3rd_run_package_fixture PRIVATE mhp3rd_game_observation)
@@ -644,6 +654,9 @@ if(PSPRECOMP_BUILD_TESTS)
         add_test(NAME mhp3rd_initial_case_screen_tests COMMAND mhp3rd_test_session_screen_tests
             "${MHP3RD_PROFILE_DIR}/testing/cases/initial_batch.json")
         set_tests_properties(mhp3rd_initial_case_screen_tests PROPERTIES TIMEOUT 30)
+        add_test(NAME mhp3rd_native_data_screen_tests COMMAND mhp3rd_test_session_screen_tests
+            "${MHP3RD_PROFILE_DIR}/testing/cases/native_data_batch.json")
+        set_tests_properties(mhp3rd_native_data_screen_tests PROPERTIES TIMEOUT 30)
     endif()
 endif()
 if(MHP3RD_PROBE_INSTRUMENTED_SOURCES)
