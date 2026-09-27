@@ -68,3 +68,17 @@ not acceptance. Evaluate whether pending vector discovery can share this
 related observation route before asking the user to repeat another village
 case. Keep existing applications and user records unchanged, and finish the
 current native-data Baseline rerun before requesting the next manual batch.
+
+The combined pair is prepared at `f61ae34`; see
+[the finite case contract](RENDER_DISCOVERY_CASE.md). RENDER-001/002 track its
+actual user execution and analysis. Its preparation does not complete VEC-003
+or establish live texture acceptance.
+
+While those user records are pending, ASSET-009 can investigate the original
+texture-state command builder at `0x0889E5C0` without booting the game. Recover
+its full input/output, CPU and memory footprint from the supported original
+code, and compare bounded original execution with the existing typed TMH
+descriptors. The goal is a concrete next native resource-consumer boundary;
+do not replace a guessed ABI, assume all TMH files reach this builder, or
+mistake command-byte equality for rendered appearance. A later implementation
+task depends on the actual contract and retained dependency inventory.

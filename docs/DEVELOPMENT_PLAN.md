@@ -2,7 +2,7 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-27T09:02:55Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-27T09:20:10Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -152,7 +152,10 @@ Finite work beneath these ongoing workstreams:
 - [x] **ASSET-005** — Establish explicit texture layout, stride/extent and pixel-decoder inputs.
 - [x] **ASSET-006** — Implement explicit byte-window decoding and scoped pixel-oracle validation.
 - [x] **ASSET-007** — Integrate owned texture inputs and the portable decoder at the renderer boundary, with explicit modes and offline dispatch checks.
-- [ ] **ASSET-008** — Prepare the renderer-specific comparison policy, finite related case, and signed paired delivery.
+- [x] **ASSET-008** — Prepare the renderer-specific comparison policy, finite related case, and signed paired delivery.
+- [ ] **RENDER-001** — User runs the combined render/vector discovery case after the native-data rerun.
+- [ ] **RENDER-002** — Analyze actual combined observations and retain scoped acceptance or explicit coverage gaps.
+- [ ] **ASSET-009** — Certify the original texture-state command builder as an offline native data boundary.
 
 The initial inventory is [NATIVE_MODULES.md](NATIVE_MODULES.md); finite requirements are in [NEXT_NATIVE_BATCHES.md](NEXT_NATIVE_BATCHES.md). ITER-001/002 stay in progress as workstreams. Finite tasks depend on INV-001 or other finite prerequisites, not on treating an ongoing workstream as already finished.
 

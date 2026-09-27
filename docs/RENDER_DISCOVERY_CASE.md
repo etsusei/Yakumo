@@ -66,12 +66,28 @@ invalidates the combined policy; unobserved optional vector calls do not.
 
 ## Delivery state
 
-Source, catalog, profile, report and packaging tests are being completed in
-ASSET-008. Final matched builds, signed assembly and preparation-only checks
-must pass before the next handoff. Preserve all previous app bundles and
-records. The current native-data Baseline-only rerun comes first; this batch
-can then replace the need for a separate, unplayed vector-only discovery
-route. VEC-003 remains pending actual user observations.
+The matched, signed pair built from `f61ae34` is ready under the ignored
+`out/testing/dist/render-discovery/` directory, with a Chinese `START_HERE.md`.
+Both actual launchers passed headless preparation with independent copied
+saves, unchanged source inputs, matching case/configuration/observer identities,
+and the expected profile hash and modes. No recording or gameplay was started.
+Each app's prepared settings also passed all 43 game-font samples, including
+the 23 formerly missing characters. Fifty real-binary preflight checks, 123
+targeted Python tests, three related CTests, 758 translation checks and the
+compiled catalog hash check passed on Apple Silicon macOS.
+
+The renderer profile hash is
+`9be309b0a2e00a1bfa9f1e89ec16b5399eaab74fbb26806fa5273f2313ba862e`;
+the vector profile hash is
+`6677efb5d228a855d9d53be661378ad4185c2edf94ae8cd56edaeb057877e296`.
+Archived build manifests are under
+`out/testing/observed-builds/render-discovery-f61ae34/`.
+Readiness evidence is `out/testing/render-discovery-readiness.json`.
+
+All prior app bundles and records remain unchanged. The current native-data
+Baseline-only rerun comes first; this ready batch then replaces the need for
+a separate, unplayed vector-only discovery route. VEC-003 remains pending
+actual user observations. Preparation is not acceptance.
 
 No live renderer, vector-trigger, performance, animation, AI, combat, quest,
 multiplayer or whole-game acceptance is asserted by preparation tests.
