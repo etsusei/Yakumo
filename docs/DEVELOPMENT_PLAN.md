@@ -2,7 +2,7 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-27T07:33:43Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-27T08:11:00Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -149,7 +149,9 @@ Finite work beneath these ongoing workstreams:
 - [x] **ASSET-002** — Implement a portable bundle view and provenance-preserving offline validation.
 - [x] **ASSET-003** — Certify the internal layout of TMH-marked children using original consumers.
 - [x] **ASSET-004** — Implement owned encoded TMH views and the original descriptor/corpus gate.
-- [ ] **ASSET-005** — Establish explicit texture layout, stride/extent and pixel-decoder inputs.
+- [x] **ASSET-005** — Establish explicit texture layout, stride/extent and pixel-decoder inputs.
+- [x] **ASSET-006** — Implement explicit byte-window decoding and scoped pixel-oracle validation.
+- [ ] **ASSET-007** — Integrate owned texture inputs and the portable decoder at the renderer boundary, with explicit modes and offline dispatch checks.
 
 The initial inventory is [NATIVE_MODULES.md](NATIVE_MODULES.md); finite requirements are in [NEXT_NATIVE_BATCHES.md](NEXT_NATIVE_BATCHES.md). ITER-001/002 stay in progress as workstreams. Finite tasks depend on INV-001 or other finite prerequisites, not on treating an ongoing workstream as already finished.
 

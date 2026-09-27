@@ -28,3 +28,31 @@ VEC-001 can proceed independently of the user's Batch A execution once the initi
 ## Retained workstreams and exit conditions
 
 ITER-001 remains the evolving inventory and batch-definition workstream; INV-001 is its initial finite deliverable. ITER-002 contains finite implementation and user-acceptance batches rather than one unbounded rewrite task. Later animation/resource, gameplay/state, scheduler and renderer work must be selected from the dependency inventory and supported evidence. EXIT-001/002 still require eliminating residual PSP execution dependencies and the full agreed acceptance matrix. Completing either small batch does not complete the original migration objective.
+## Portable texture integration after ASSET-006
+
+ASSET-006 established a runtime-independent pixel core and passed the full
+file-backed software differential gate. The existing renderer still decodes
+through `gpu/texture_decode.cpp`; no production integration is implied by the
+offline result. See [portable pixel decoding](PORTABLE_PIXEL_DECODING.md).
+
+ASSET-007 must connect the new core to actual renderer dispatch, covering both
+the immediate guest-memory path and the asynchronous snapshot worker. Keep
+guest reads in a bounded adapter and move only owned immutable texel/palette
+data across the worker boundary. Preserve the unchanged legacy decoder as the
+comparison and fallback path. Supply explicit off/verify/native selection,
+baseline enforcement, observable comparisons/fallbacks and a way to restore
+the previous behavior. Count this as a resource/renderer architecture change,
+not another replacement of original PSP game instructions.
+
+Before gameplay handoff, offline tests must exercise actual dispatch and
+worker inputs, supported formats, aliased or unavailable guest windows,
+palette boundaries, asynchronous ownership and mismatch/fallback reporting.
+Build both roles and preserve their observer/mode identities. Performance and
+live resource-to-draw mapping remain unverified until measured. Do not replace
+the delivered native-data or vector-discovery apps in place.
+
+The ten past-root canvas windows remain an explicit future capture need;
+static file context cannot supply their neighboring bytes. Any live capture
+must retain actual bytes and effective layout from a user-run bounded case,
+with source identity where it can be demonstrated. It must not infer a file's
+visible role or original builder reachability from a matching marker.
