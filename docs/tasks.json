@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 120,
+  "revision": 121,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T13:21:54Z",
+  "updated_at": "2026-09-27T13:23:04Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -8409,7 +8409,7 @@
         "/root/texture_observation_seams"
       ],
       "created_at": "2026-09-27T12:54:25Z",
-      "updated_at": "2026-09-27T13:21:54Z",
+      "updated_at": "2026-09-27T13:23:04Z",
       "started_at": "2026-09-27T13:16:30Z",
       "completed_at": null,
       "scope": "Connect certified original owner/command allocation, descriptor, transfer and invalidation observations to the source authority. Prepare a non-mutating guest command plan for verification and guarded commit, with explicit off/verify/native behavior, original fallback and scoped recording. Prove actual production call paths offline before a new user delivery.",
@@ -8550,7 +8550,9 @@
           "No app build/replacement or game run. Existing accepted user recordings and native-data resolution waiver are preserved."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "d6680718167df04d0361dbe14f38b0613308ec44"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -8576,6 +8578,13 @@
           "actor_id": "/root",
           "action": "prepared_plan_gate_passed",
           "description": "Prepared-plan API implemented and offline-validated: preparation and comparison do not mutate guest state; commit rejects stale input and consumes one-shot ownership. Complete original AOT/interpreter corpus agrees for 2256 inputs/4512 calls. Audited original observation checkpoints and added a fixture-tested, unwired AOT injector. Actual lifecycle producers, callback controller and production dispatch remain unfinished."
+        },
+        {
+          "recorded_at": "2026-09-27T13:23:04Z",
+          "occurred_at": "2026-09-27T13:23:04Z",
+          "actor_id": "/root",
+          "action": "published_partial_integration",
+          "description": "Published prepared-plan bridge, full corpus/atomic/sanitizer evidence and unwired observation injector prototype in draft PR #32 at d668071. ASSET-014 remains in progress for actual callbacks/lifecycle producers and production-path tests. User render-discovery acceptance and native-data resolution waiver remain recorded."
         }
       ],
       "updated_by_agent_id": "/root"
