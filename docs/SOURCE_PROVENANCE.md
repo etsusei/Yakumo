@@ -81,3 +81,13 @@ Released builds carry these notices in `profiles/mhp3rd/packaging/THIRD_PARTY_NO
 ## Contribution rule
 
 Do not paste or adapt source from a project whose license is incompatible with the destination file. Reimplement required behavior from specifications, observations or independently documented semantics, and record the source of third-party material when it is intentionally included under a compatible license.
+
+### Texture command guest adapter
+
+`profiles/mhp3rd/host/native/texture_commands_bridge.cpp` independently
+implements the certified ABI and bounded metadata traversal described in
+`docs/TEXTURE_COMMAND_BUILDER_CONTRACT.md`. It reuses the independently
+implemented portable command core. Fingerprints identify local dependencies;
+no original instruction bytes, generated instruction bodies or game resource
+payloads are distributed. The differential harness uses the user's local
+executable and resources only.
