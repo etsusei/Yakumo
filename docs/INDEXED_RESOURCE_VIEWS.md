@@ -103,3 +103,10 @@ The next useful step is a separately evidenced child-format contract. The
 original source-ID-to-caller edge, child internal references and transforms,
 complete game-object ownership and live rendering/animation behavior remain
 unresolved. Existing native-data and vector-discovery test apps are unchanged.
+
+
+Implementation `903b0f3` is published in draft PR
+[#20](https://github.com/etsusei/Yakumo/pull/20). Final local evidence is
+`out/testing/indexed-resource-bundle-audit-final.json`; source, executable and
+production object hashes are in `out/testing/indexed-resource-validation.json`.
+The sanitizer log is `out/testing/indexed-bundle-sanitizers.log`.

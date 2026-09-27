@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 76,
+  "revision": 77,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T06:53:56Z",
+  "updated_at": "2026-09-27T06:55:38Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -494,7 +494,8 @@
     "vector_discovery_case": "docs/VECTOR_DISCOVERY_CASE.md",
     "vector_discovery_pr": "https://github.com/etsusei/Yakumo/pull/19",
     "resource_bundle_contract": "docs/RESOURCE_BUNDLE_CONTRACT.md",
-    "indexed_resource_views": "docs/INDEXED_RESOURCE_VIEWS.md"
+    "indexed_resource_views": "docs/INDEXED_RESOURCE_VIEWS.md",
+    "indexed_resource_views_pr": "https://github.com/etsusei/Yakumo/pull/20"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -5514,7 +5515,7 @@
         "/root/bundle_consumer_audit"
       ],
       "created_at": "2026-09-27T06:31:22Z",
-      "updated_at": "2026-09-27T06:38:48Z",
+      "updated_at": "2026-09-27T06:55:38Z",
       "started_at": "2026-09-27T06:31:22Z",
       "completed_at": "2026-09-27T06:38:48Z",
       "scope": "Recover nested count/offset/length bundle semantics from local asset spans and original consumers; do not infer model/animation meaning from signatures.",
@@ -5556,7 +5557,9 @@
           "Exact original deallocation ownership not recovered; host views must retain storage."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "903b0f392c075440e8bd4440de3ee04039cf5b45"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -5575,6 +5578,13 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Static original consumers establish LE32 count and eight-byte relative-offset/advertised-length records, zero-offset absence and unsafe signed-index behavior. Caller pointer retention proves children require parent lifetime. Root independently verified full ELF/three function spans and sample131/1489 hashes. Candidate corpus identification remains separate from semantic/runtime validation."
+        },
+        {
+          "recorded_at": "2026-09-27T06:55:38Z",
+          "occurred_at": "2026-09-27T06:55:38Z",
+          "actor_id": "/root",
+          "action": "published",
+          "description": "Published the original consumer contract and portable resource API with corpus evidence in draft PR #20, implementation903b0f3. No game data, runtime hook, app replacement or PR merge."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -5593,7 +5603,7 @@
         "/root/indexed_bundle_core"
       ],
       "created_at": "2026-09-27T06:31:22Z",
-      "updated_at": "2026-09-27T06:53:56Z",
+      "updated_at": "2026-09-27T06:55:38Z",
       "started_at": "2026-09-27T06:38:48Z",
       "completed_at": "2026-09-27T06:53:56Z",
       "scope": "Create a bounds-checked host-owned or caller-owned byte-view API with no guest state, provenance-preserving local indexing and original-consumer differential checks.",
@@ -5695,7 +5705,9 @@
           "Runtime game consumers and both delivered user pairs are unchanged."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "903b0f392c075440e8bd4440de3ee04039cf5b45"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -5723,6 +5735,13 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Implemented a portable shared immutable byte-slice and checked indexed-bundle API with no guest state. Core24 synthetic checks pass strict compiler and ASan/UBSan; six manifest checks/two CTests pass. All6043 rawentryhashes verified;2168root+28nested structural candidates/9622slots including555absent compared with25832 AOT and25832 bounded interpreter calls. Full CPU, saved-stack/canary and unchanged-table checks pass. Weak/signature annotations remain distinct from resource semantics; no game-loader replacement."
+        },
+        {
+          "recorded_at": "2026-09-27T06:55:38Z",
+          "occurred_at": "2026-09-27T06:55:38Z",
+          "actor_id": "/root",
+          "action": "published",
+          "description": "Published the original consumer contract and portable resource API with corpus evidence in draft PR #20, implementation903b0f3. No game data, runtime hook, app replacement or PR merge."
         }
       ],
       "updated_by_agent_id": "/root"

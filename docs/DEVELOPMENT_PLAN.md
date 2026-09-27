@@ -308,6 +308,6 @@ candidates yielded 9,622 slots, including 555 absent slots. AOT and bounded
 interpretation each completed 25,832 metadata queries with matching CPU/memory
 state. The 24 core tests, six manifest checks and sanitizer run passed.
 Signatures remain annotations: 11 candidate nodes have only bounds evidence,
-and no child semantics or live loader replacement is claimed. See
+and no child semantics or live loader replacement is claimed. Implementation `903b0f3` is published in draft PR [#20](https://github.com/etsusei/Yakumo/pull/20). See
 [INDEXED_RESOURCE_VIEWS.md](INDEXED_RESOURCE_VIEWS.md). Continue ASSET-003 while
 NAT-003/VEC-003 await user operation; preserve all delivered apps and raw assets.
