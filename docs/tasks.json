@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 86,
+  "revision": 87,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T08:09:36Z",
+  "updated_at": "2026-09-27T08:11:00Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -6173,7 +6173,7 @@
         "/root/pixel_core_review"
       ],
       "created_at": "2026-09-27T07:44:05Z",
-      "updated_at": "2026-09-27T08:09:36Z",
+      "updated_at": "2026-09-27T08:11:00Z",
       "started_at": "2026-09-27T07:44:05Z",
       "completed_at": "2026-09-27T08:09:36Z",
       "scope": "Adapt existing project texture algorithms to a portable span-based decoder with explicit layout/stride/palette parameters, immutable inputs and checked windows; compare software oracles and account for all corpus contexts without inventingneighbors.",
@@ -6342,7 +6342,8 @@
         ]
       },
       "implementation_commits": [
-        "f77f94bf1aff49602c056f6097dafdce36697790"
+        "f77f94bf1aff49602c056f6097dafdce36697790",
+        "5355bc88562a61a66c26f10a5ad3ffc7d5c2c1dc"
       ],
       "pause_reason": null,
       "blockers": [],
@@ -6369,6 +6370,13 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Portable explicit-window pixel core and TMH builder plans complete. All2256inputs/8866rectangles and8856file-backed canvases agree pixel-for-pixel with unchanged fast/slow renderer software. Tenpastroot contexts explicitly lackpixels; fourunaligned bypasses strictlyreject. Independent root audit verified every spec/source window and exactexceptions. Sixrealoracle syntheticchecks, fourCTests,212legacycases/176snapshots perroute and core/planASan/UBSan pass. Productionintegration remains separate."
+        },
+        {
+          "recorded_at": "2026-09-27T08:11:00Z",
+          "occurred_at": "2026-09-27T08:11:00Z",
+          "actor_id": "/root",
+          "action": "published",
+          "description": "Published complete scoped corpus gate and missing-context evidence in draft PR #22 at5355bc8, stacked on#21. Nextfinite task ASSET-007 connects portable inputs to actual renderer dispatch; existinguserpairs remainunchanged."
         }
       ],
       "updated_by_agent_id": "/root"
