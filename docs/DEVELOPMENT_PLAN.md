@@ -2,7 +2,7 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-27T09:20:10Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-27T10:20:19Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -141,10 +141,10 @@ Finite work beneath these ongoing workstreams:
 - [x] **NAT-001** — Implement explicit scale/copy native execution profiles, gates and production chained-call checks.
 - [x] **NAT-002** — Deliver the matched one-case native execution pair.
 - [x] **NAT-003** — User executes the paired native data case.
-- [ ] **NAT-004** — Analyze actual native execution and retain scoped acceptance or off defaults.
+- [x] **NAT-004** — Analyze actual native execution and retain scoped acceptance or off defaults.
 - [x] **VEC-001** — Certify the four vector-metric contracts and numerical/state behavior offline.
 - [x] **VEC-002** — Implement a portable vector-metric core, adapters and differential tests.
-- [ ] **VEC-003** — Add bounded observations and evidence-based user cases for that module.
+- [x] **VEC-003** — Add bounded observations and evidence-based user cases for that module; three metrics observed, norm-squared remains uncovered.
 - [x] **ASSET-001** — Certify nested indexed resource-bundle boundaries from original consumers.
 - [x] **ASSET-002** — Implement a portable bundle view and provenance-preserving offline validation.
 - [x] **ASSET-003** — Certify the internal layout of TMH-marked children using original consumers.
@@ -153,9 +153,10 @@ Finite work beneath these ongoing workstreams:
 - [x] **ASSET-006** — Implement explicit byte-window decoding and scoped pixel-oracle validation.
 - [x] **ASSET-007** — Integrate owned texture inputs and the portable decoder at the renderer boundary, with explicit modes and offline dispatch checks.
 - [x] **ASSET-008** — Prepare the renderer-specific comparison policy, finite related case, and signed paired delivery.
-- [ ] **RENDER-001** — User runs the combined render/vector discovery case after the native-data rerun.
-- [ ] **RENDER-002** — Analyze actual combined observations and retain scoped acceptance or explicit coverage gaps.
-- [ ] **ASSET-009** — Certify the original texture-state command builder as an offline native data boundary.
+- [x] **RENDER-001** — User runs the combined render/vector discovery case; the earlier native-data rerun was explicitly waived.
+- [x] **RENDER-002** — Analyze actual combined observations and retain scoped acceptance or explicit coverage gaps.
+- [x] **ASSET-009** — Certify the original texture-state command builder as an offline native data boundary.
+- [ ] **ASSET-010** — Implement a portable texture-command module against the certified original consumer contract.
 
 The initial inventory is [NATIVE_MODULES.md](NATIVE_MODULES.md); finite requirements are in [NEXT_NATIVE_BATCHES.md](NEXT_NATIVE_BATCHES.md). ITER-001/002 stay in progress as workstreams. Finite tasks depend on INV-001 or other finite prerequisites, not on treating an ongoing workstream as already finished.
 

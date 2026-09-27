@@ -67,18 +67,31 @@ mismatch and incomplete finalization separately; zero observed decoding is
 not acceptance. Evaluate whether pending vector discovery can share this
 related observation route before asking the user to repeat another village
 case. Keep existing applications and user records unchanged, and finish the
-current native-data Baseline rerun before requesting the next manual batch.
+current native-data review before requesting the next manual batch.
 
-The combined pair is prepared at `f61ae34`; see
-[the finite case contract](RENDER_DISCOVERY_CASE.md). RENDER-001/002 track its
-actual user execution and analysis. Its preparation does not complete VEC-003
-or establish live texture acceptance.
+The user waived the native-data resolution rerun and completed the combined
+pair at `f61ae34`. See [the actual review](RENDER_DISCOVERY_ACCEPTANCE.md):
+132 asynchronous texture comparisons and three optional vector metrics were
+verified in the recorded scope. Norm-squared, immediate texture decoding,
+Native texture execution and wider gameplay remain unobserved. RENDER-001/002
+and the VEC-003 discovery task are complete; no replay is requested to force
+the missing vector entry.
 
-While those user records are pending, ASSET-009 can investigate the original
-texture-state command builder at `0x0889E5C0` without booting the game. Recover
-its full input/output, CPU and memory footprint from the supported original
-code, and compare bounded original execution with the existing typed TMH
-descriptors. The goal is a concrete next native resource-consumer boundary;
-do not replace a guessed ABI, assume all TMH files reach this builder, or
-mistake command-byte equality for rendered appearance. A later implementation
-task depends on the actual contract and retained dependency inventory.
+ASSET-009 investigated the original texture-state command builder at
+`0x0889E5C0` without booting the game. Its full input/output, CPU and memory
+footprint was recovered from the supported original code and checked with
+bounded original execution and typed TMH descriptors. This establishes a
+concrete native resource-consumer boundary; it does not establish that all
+TMH files reach this builder or that command-byte equality proves appearance.
+
+ASSET-009 now certifies that boundary with a complete corpus AOT/interpreter
+gate and synthetic edge cases. ASSET-010 implements a runtime-independent
+command module from explicit descriptor values and address tokens, bounded
+source/destination ranges, and count semantics. It must preserve nine-word
+blocks, partial updates, full header count versus low-byte state count, and
+no-command results without inventing guest memory. Keep native data generation
+separate from the guest ABI adapter and test against the certified original
+gate. Original calls and delivered apps remain unchanged until a separately
+validated integration task. Any later native-execution handoff should group
+related validated changes, retain norm-squared's coverage gap, and avoid
+another one-feature village test.

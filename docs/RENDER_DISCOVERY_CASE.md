@@ -84,10 +84,13 @@ Archived build manifests are under
 `out/testing/observed-builds/render-discovery-f61ae34/`.
 Readiness evidence is `out/testing/render-discovery-readiness.json`.
 
-All prior app bundles and records remain unchanged. The current native-data
-Baseline-only rerun comes first; this ready batch then replaces the need for
-a separate, unplayed vector-only discovery route. VEC-003 remains pending
-actual user observations. Preparation is not acceptance.
+All prior app bundles and records remain unchanged. The user waived the
+earlier native-data rerun and completed this combined batch. See
+[the actual acceptance review](RENDER_DISCOVERY_ACCEPTANCE.md): 132 recorded
+texture comparisons and three optional vector metrics were verified; the
+norm-squared entry remains unobserved. The separate vector-only route is no
+longer needed for this discovery stage. Preparation and actual user evidence
+remain distinct.
 
 No live renderer, vector-trigger, performance, animation, AI, combat, quest,
 multiplayer or whole-game acceptance is asserted by preparation tests.
