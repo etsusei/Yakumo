@@ -28,6 +28,7 @@ import register_baseline
 import run_cases
 import native_batch
 import native_modes
+import texture_decode_policy
 
 
 PROFILE = Path(__file__).resolve().parents[1]
@@ -247,10 +248,18 @@ def _preflight(build: dict[str, Any], *, settings: dict[str, str],
     required = {"schema", "recorder_revision", "configuration_sha256", "build_config_sha256",
                 "gameplay_source_commit", "baseline_sealed", "renderer_compiled", "aot_probes_compiled"}
     required.add("baseline_provenance_sha256")
-    if type(value) is not dict or set(value) not in (required, required | {"native_mode_schema"}) or value["schema"] != PREFLIGHT_SCHEMA:
+    allowed = required | {"native_mode_schema"} | texture_decode_policy.FIELDS
+    if (type(value) is not dict or not required <= set(value) or
+            set(value) - allowed or value["schema"] != PREFLIGHT_SCHEMA):
         raise PairError("Native preflight schema differs")
     if "native_mode_schema" in value and value["native_mode_schema"] != native_modes.V2_SCHEMA:
         raise PairError("Unknown native mode schema in native preflight")
+    try:
+        texture_mode = texture_decode_policy.mode(value)
+    except ValueError as error:
+        raise PairError(str(error)) from error
+    if texture_mode != "off":
+        raise PairError("Native preflight unexpectedly enables portable texture decoding")
     for key in ("recorder_revision", "build_config_sha256", "gameplay_source_commit", "baseline_sealed"):
         if value[key] != build[key]:
             raise PairError(f"Native preflight differs from {build['role']} build manifest: {key}")
@@ -501,7 +510,8 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
                 overlay_tree: dict[str, Any], overlay_id: str,
                 work_root: Path, output: Path, batch_id: str, runner: Run,
                 execution_profile: dict[str, Any] | None = None,
-                mode_schema: str | None = None) -> dict[str, Any]:
+                mode_schema: str | None = None,
+                texture_schema: str | None = None) -> dict[str, Any]:
     contents = app / "Contents"
     macos = contents / "MacOS"
     framework = contents / "Frameworks"
@@ -562,6 +572,8 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
     installed_overlays = register_baseline._scan_tree(framework / "overlays")
     installed_overlay_id = register_baseline._tree_id(installed_overlays)
     mode_fields = native_modes.fields(mode_schema)
+    if texture_schema not in (None, texture_decode_policy.SCHEMA):
+        raise PairError("Unknown texture decode schema")
     if mode_schema == native_modes.V2_SCHEMA and execution_profile is None:
         raise PairError("Versioned native modes require an explicit execution profile")
     if execution_profile is not None:
@@ -600,6 +612,9 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
     }
     if mode_schema is not None:
         config["native_mode_schema"] = mode_schema
+    if texture_schema is not None:
+        config[texture_decode_policy.SCHEMA_FIELD] = texture_schema
+        config[texture_decode_policy.MODE_FIELD] = "off"
     _write_json(testing / "launch-config.json", config)
     _run(["codesign", "--force", "--sign", "-", "--timestamp=none", str(app)], runner=runner)
     _run(["codesign", "--verify", "--deep", "--strict", str(app)], runner=runner)
@@ -637,6 +652,9 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
     mode_schema = preflight_base.get("native_mode_schema")
     if mode_schema != preflight_candidate.get("native_mode_schema"):
         raise PairError("Paired builds have different native mode schemas")
+    texture_schema = preflight_base.get(texture_decode_policy.SCHEMA_FIELD)
+    if texture_schema != preflight_candidate.get(texture_decode_policy.SCHEMA_FIELD):
+        raise PairError("Paired builds have different texture decode schemas")
     overlays = _real_dir(inputs.overlays, "overlay directory")
     overlay_tree = register_baseline._scan_tree(overlays)
     if len(overlay_tree["files"]) != 355 or overlay_tree["dirs"] or any(
@@ -663,7 +681,8 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
     if not os.access(python, os.X_OK):
         raise PairError("External Python interpreter is not executable")
     scripts = [_real_file(PROFILE / "tools" / name, name) for name in (
-        "run_package.py", "run_cases.py", "native_batch.py", "native_modes.py", "compare_test_runs.py",
+        "run_package.py", "run_cases.py", "native_batch.py", "native_modes.py", "texture_decode_policy.py",
+        "compare_test_runs.py",
         "launch_test_run.py")]
     moltenvk = _real_file(inputs.moltenvk or Path("/opt/homebrew/lib/libMoltenVK.dylib"), "MoltenVK driver")
     font = _real_file(inputs.font or repo / "out/native-experiment/Yakumo-baseline.app/Contents/Resources/fonts/NotoSansCJKjp-Regular.otf",
@@ -691,7 +710,7 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
                 registration=registration, sources=sources, overlay_tree=overlay_tree,
                 overlay_id=overlay_id, work_root=work_root, output=output,
                 batch_id=batch_id, runner=runner, execution_profile=execution_profile,
-                mode_schema=mode_schema)
+                mode_schema=mode_schema, texture_schema=texture_schema)
         if configs["baseline"]["binary"]["sha256"] == configs["candidate"]["binary"]["sha256"]:
             raise PairError("Baseline and candidate application binaries are identical")
         if configs["baseline"]["overlays"]["tree_id"] != configs["candidate"]["overlays"]["tree_id"]:
@@ -711,6 +730,9 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
             report["execution_profile_sha256"] = native_batch.profile_sha256(execution_profile)
         if mode_schema is not None:
             report["native_mode_schema"] = mode_schema
+        if texture_schema is not None:
+            report[texture_decode_policy.SCHEMA_FIELD] = texture_schema
+            report[texture_decode_policy.MODE_FIELD] = "off"
         _write_json(stage / "pair-manifest.json", report)
         if output.exists() or output.is_symlink():
             raise PairError("Output appeared during assembly")

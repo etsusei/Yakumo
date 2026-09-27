@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 87,
+  "revision": 92,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T08:11:00Z",
+  "updated_at": "2026-09-27T08:40:29Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -466,6 +466,46 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_owned_dispatch",
+      "type": "agent",
+      "role": "Owned portable texture dispatch adapter",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_policy_audit",
+      "type": "agent",
+      "role": "Renderer policy and paired-delivery compatibility audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/native_data_acceptance",
+      "type": "agent",
+      "role": "User native-data paired-record acceptance analysis",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_dispatch_tests",
+      "type": "agent",
+      "role": "Independent production texture dispatch and ownership tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_integration_review",
+      "type": "agent",
+      "role": "Independent renderer ownership, fallback, B0 and finalization review",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -506,12 +546,12 @@
   },
   "execution_state": {
     "current_task_id": null,
-    "next_task_id": "ASSET-007",
-    "next_action": "Integrate portable pixel decoding at the actual renderer boundary with owned immutable texture inputs and explicit off/verify/native observation. NAT-004 awaits NAT-003 user records; existing paired apps remain frozen.",
+    "next_task_id": "ASSET-008",
+    "next_action": "Prepare explicit renderer comparison policy and related paired case; consider combining pending vector discovery. NAT-004 waits onlyfor Baseline rerunwith in-app Auto beforeCaseBegin, preserving existingCandidate run. Noautomaticgame/appreplacement.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": [
-      "NAT-003",
+      "NAT-004",
       "VEC-003"
     ]
   },
@@ -4753,24 +4793,44 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "awaiting_user_test",
+      "status": "completed",
       "owner_agent_id": null,
       "responsible_actor_id": "project-owner",
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/root/native_data_acceptance"
+      ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T05:09:24Z",
+      "updated_at": "2026-09-27T08:21:39Z",
       "started_at": null,
-      "completed_at": null,
+      "completed_at": "2026-09-27T08:21:39Z",
       "timestamp_note": null,
       "scope": "User performs one short paired village case and reports outcomes.",
       "depends_on": [
         "NAT-002"
       ],
-      "work_summary": "One-case native-data apps and Chinese guide are ready under out/testing/dist/native-data. User runs Baseline then Candidate and completes NATIVE-DATA-01; preparation-only runs do not count as gameplay evidence.",
+      "work_summary": "User completed real native-data Baseline run-1e209ecac64848dca9123b100258a852 and Candidate run-a0f498b6550f46c499f47df247e9a37f. Both packages complete/bound, required checkpoint and normal user outcome, no journal or lifecycle issue. Configuration mismatch remains in NAT-004; completion here is user execution, not strict acceptance.",
       "deliverables": [
         {
           "path": "out/testing/runs",
           "kind": "directory",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "docs/NATIVE_DATA_ACCEPTANCE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/native-data-user-acceptance/report-20260927-1713/report.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/native-data-user-acceptance/counter-and-settings-evidence.json",
+          "kind": "validation_report",
           "state": "existing",
           "local_only": true
         }
@@ -4795,6 +4855,15 @@
           "from_status": "not_started",
           "to_status": "awaiting_user_test",
           "description": "One-case native-data apps and Chinese guide are ready under out/testing/dist/native-data. User runs Baseline then Candidate and completes NATIVE-DATA-01; preparation-only runs do not count as gameplay evidence."
+        },
+        {
+          "recorded_at": "2026-09-27T08:21:39Z",
+          "occurred_at": "2026-09-27T08:21:39Z",
+          "actor_id": "/root",
+          "action": "user_pair_analyzed",
+          "from_status": "awaiting_user_test",
+          "to_status": "completed",
+          "description": "User completed real native-data Baseline run-1e209ecac64848dca9123b100258a852 and Candidate run-a0f498b6550f46c499f47df247e9a37f. Both packages complete/bound, required checkpoint and normal user outcome, no journal or lifecycle issue. Configuration mismatch remains in NAT-004; completion here is user execution, not strict acceptance."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -4805,25 +4874,45 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "awaiting_user_test",
       "owner_agent_id": null,
-      "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "responsible_actor_id": "project-owner",
+      "contributor_agent_ids": [
+        "/root/native_data_acceptance"
+      ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T04:32:05Z",
-      "started_at": null,
+      "updated_at": "2026-09-27T08:21:39Z",
+      "started_at": "2026-09-27T08:21:39Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Assess native-mode counters, human observations and starting conditions; accept bounded behavior or retain off default.",
       "depends_on": [
         "NAT-003"
       ],
-      "work_summary": "Planned finite task; no execution claimed.",
+      "work_summary": "Analyzed both actual packages. Candidate scale166586 andcopy3180 exclusive native; Baseline scale185039/copy3504 exclusive AOT; certified complete windows and zero fallback/mismatch. Strict profile compare is incomparable/not_covered because only video.internal_scale differs before CaseBegin (Baseline2, Candidateauto). Requested Baseline-only rerun: same unmodified app/fresh copied save; change internal scale toauto in-app before beginningcase. Existing Candidate canbe reused after matchingprerequisite gate; no native-default or speedup claim.",
       "deliverables": [
         {
           "path": "out/testing/reports/native-data",
           "kind": "directory",
           "state": "planned",
+          "local_only": true
+        },
+        {
+          "path": "docs/NATIVE_DATA_ACCEPTANCE.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/native-data-user-acceptance/report-20260927-1713/report.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/native-data-user-acceptance/counter-and-settings-evidence.json",
+          "kind": "validation_report",
+          "state": "existing",
           "local_only": true
         }
       ],
@@ -4833,13 +4922,39 @@
         "Incomplete/uncertified/configuration-changed results remain explicit."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Real paired package integrity and path coverage",
+            "status": "passed",
+            "evidence_path": "out/testing/native-data-user-acceptance/counter-and-settings-evidence.json",
+            "details": "Both complete/bound/normal; exact scoped certified path counts retained."
+          },
+          {
+            "name": "Strict native-data paired acceptance",
+            "status": "not_covered",
+            "evidence_path": "out/testing/native-data-user-acceptance/report-20260927-1713/report.json",
+            "details": "Onlyeffective settingdifference isvideo.internal_scale; caseprerequisite hashes differ. No in-caseconfigurationchange; one Baseline rerunpending."
+          }
+        ],
+        "limitations": [
+          "Native-only counts do not establish same-input equivalence or speedup.",
+          "Acceptance pending matched Baseline case; existing Candidate evidence retained."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
       "blockers": [],
-      "history": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T08:21:39Z",
+          "occurred_at": "2026-09-27T08:21:39Z",
+          "actor_id": "/root",
+          "action": "user_pair_analyzed",
+          "from_status": "not_started",
+          "to_status": "awaiting_user_test",
+          "description": "Analyzed both actual packages. Candidate scale166586 andcopy3180 exclusive native; Baseline scale185039/copy3504 exclusive AOT; certified complete windows and zero fallback/mismatch. Strict profile compare is incomparable/not_covered because only video.internal_scale differs before CaseBegin (Baseline2, Candidateauto). Requested Baseline-only rerun: same unmodified app/fresh copied save; change internal scale toauto in-app before beginningcase. Existing Candidate canbe reused after matchingprerequisite gate; no native-default or speedup claim."
+        }
+      ],
       "updated_by_agent_id": "/root"
     },
     {
@@ -6387,27 +6502,139 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
-        "/root"
+        "/root",
+        "/root/texture_owned_dispatch",
+        "/root/texture_policy_audit",
+        "/root/texture_dispatch_tests",
+        "/root/texture_integration_review"
       ],
       "created_at": "2026-09-27T08:09:36Z",
-      "updated_at": "2026-09-27T08:09:36Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-27T08:40:29Z",
+      "started_at": "2026-09-27T08:14:29Z",
+      "completed_at": "2026-09-27T08:40:29Z",
       "scope": "Connect immediate and asynchronous renderer texture decoding to an owned-byte portable core behind explicit off/verify/native policy, baseline enforcement and scoped observations. Keep bounded guest reads at an adapter, with legacy fallback and offline production dispatch tests; no automatic game or replacement of existing paired apps.",
       "depends_on": [
         "ASSET-006"
       ],
-      "work_summary": "Dependency-ready. Current renderer dispatch sites and mutable legacy snapshot behavior inspected; explicit ownership and baseline policy must be designed before integration.",
+      "work_summary": "Completed production immediate/worker portable texture dispatch with immutable owned input, route-correct legacy fallback, separate mode policy, sealed baseline exclusion and bounded journal counters. Both finalroles buildat3256619 and42realpreflights pass; symbolaudit confirms backendonlyCandidate. Core/dispatch CTests, all11formats, source-release/concurrency and paletteentry512 checks,85Pythoncompatibility checks andrealjournal rate/final/owner tests pass. Livepresentation/performance/useracceptance remains separate; existingapps preserved.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
           "kind": "contract",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "docs/PORTABLE_TEXTURE_DISPATCH.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/gpu/portable_texture_dispatch.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/gpu/portable_texture_dispatch.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/gpu/texture_decode_policy.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/portable_texture_dispatch_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/texture_decode_policy.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-dispatch-ctest.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-policy-regression.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-dispatch-paired-preflight.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-sources/B0-texture-dispatch-e154548/observed_baseline_manifest.json",
+          "kind": "source_audit",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/host/testing/texture_decode_observation.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_decode_observation_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-observation-ctest.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-dispatch-final-paired-preflight.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-dispatch-linkage.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-sources/B0-texture-dispatch-3256619/observed_baseline_manifest.json",
+          "kind": "source_audit",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/texture-dispatch-3256619/baseline.json",
+          "kind": "build_identity",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-builds/texture-dispatch-3256619/candidate.json",
+          "kind": "build_identity",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -6417,9 +6644,132 @@
         "Offline production dispatch, ownership, invalid windows and fallback checks pass; game performance and user acceptance remain separate."
       ],
       "validation": {
+        "checks": [
+          {
+            "name": "Production dispatcher and pixel core CTests",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-dispatch-ctest.log",
+            "details": "All11formats,30immediatefixtures,24workerfixtures permode, releasedsourcebuffers, concurrent264decodes permode, paletteentry512 routefallback and modepolicy."
+          },
+          {
+            "name": "Journal serialization and finalization",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-observation-ctest.log",
+            "details": "RealSessionRecorder/recovery; one-secondlimit, finalbypass/one-shot, allcounterfields and64-bit values,Offsilence, no postclose emission and no observerrebinding."
+          },
+          {
+            "name": "Paired tool policy compatibility",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-policy-regression.log",
+            "details": "80existing/extendedtests plus5dedicatedcomparisonpolicytests; historicalrecord schemas stay valid; helper-only profiles rejectactive rendererexperiment."
+          },
+          {
+            "name": "Final observed B0/Candidate build and preflight",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-dispatch-final-paired-preflight.json",
+            "details": "42actual executablechecks at3256619, identicalrecorder/build identity, B0rejects allactive/invalidmodes; no game."
+          },
+          {
+            "name": "Portable code excluded from B0",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-dispatch-linkage.json",
+            "details": "Globalsymbol audit against both finalbinaryhashes."
+          },
+          {
+            "name": "Independent integration review",
+            "status": "passed",
+            "details": "/root/texture_integration_review foundno concrete integration/lifecycle defect; identifiedjournaltestgap thenclosedby actualhelper/recorder tests."
+          }
+        ],
+        "limitations": [
+          "LiveVulkan presentation, performance and subjective user acceptance remain unverified.",
+          "Periodic counters mayincludeinflightjobs; final counters followdrain and are scoped to cachemissdecodes, notalldraws.",
+          "Renderer-specific comparison/case and signedappdelivery stillbelongtoASSET-008.",
+          "Tenfile-based missingneighbor contexts and actualsource-to-draw mapping remain unresolved; actualruntime captures are not inferred from filenames.",
+          "This is a portable resource boundary, not additionalreplacementof originalPSPgameinstructions."
+        ]
+      },
+      "implementation_commits": [
+        "e1545482e8e997150f5d25796b7f6e1a2eb10ae9",
+        "32566191182f9228284b9f8abaf074a6abd9b3a6"
+      ],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-27T08:14:29Z",
+          "occurred_at": "2026-09-27T08:14:29Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Beginning production immediate/worker integration with owned immutable texture inputs. Separate renderer policy is required so it is not misreported as a native PSP leaf. Root owns policy, renderer and observation; subagents implement bounded adapter and audit delivery compatibility."
+        },
+        {
+          "recorded_at": "2026-09-27T08:26:11Z",
+          "occurred_at": "2026-09-27T08:26:11Z",
+          "actor_id": "/root",
+          "action": "implementation_checkpoint",
+          "description": "Production immediate and async dispatch integrated with immutable owned snapshots, separate off/verify/native policy, B0 compile guard and bounded recorder counters/final job drain. Candidate builds; two CTests, five policy-comparison tests and80 targeted compatibility tests pass. Original decoder unchanged. Observed B0 build/paired preflight and observation finalization verification remain pending; no game or app replacement."
+        },
+        {
+          "recorded_at": "2026-09-27T08:33:12Z",
+          "occurred_at": "2026-09-27T08:33:12Z",
+          "actor_id": "/root",
+          "action": "paired_build_verified",
+          "description": "Published checkpoint e154548 in draft PR #23. Both observed B0 and Candidate build; all42actual binary preflights pass with identical observer/build identities and baseline rejection of active texturemodes. Independent reviewer found no concrete integration/lifecycle defect. Extracting reporter for real-journal rate/final/ownership tests before scopedcompletion; currenttest apps remainunchanged."
+        },
+        {
+          "recorded_at": "2026-09-27T08:40:29Z",
+          "occurred_at": "2026-09-27T08:40:29Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Completed production immediate/worker portable texture dispatch with immutable owned input, route-correct legacy fallback, separate mode policy, sealed baseline exclusion and bounded journal counters. Both finalroles buildat3256619 and42realpreflights pass; symbolaudit confirms backendonlyCandidate. Core/dispatch CTests, all11formats, source-release/concurrency and paletteentry512 checks,85Pythoncompatibility checks andrealjournal rate/final/owner tests pass. Livepresentation/performance/useracceptance remains separate; existingapps preserved."
+        }
+      ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ASSET-008",
+      "title": "Prepare renderer policy comparison and paired user case",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root"
+      ],
+      "created_at": "2026-09-27T08:40:29Z",
+      "updated_at": "2026-09-27T08:40:29Z",
+      "started_at": null,
+      "completed_at": null,
+      "scope": "Bind explicit supplemental renderer mode policy to case/record comparisons and prepare a finite related user-led paired batch. Account for cumulative asynchronous counters/finalization and reject absent/incomplete coverage; evaluate consolidating pending vector discovery without changing previous artifacts.",
+      "depends_on": [
+        "ASSET-007"
+      ],
+      "work_summary": "Dependency-ready. Existing helper-only comparisons intentionally rejectactive texturemodes; a dedicated policy/case and signed delivery are required before user acceptance.",
+      "deliverables": [
+        {
+          "path": "docs/NEXT_NATIVE_BATCHES.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Explicit expected renderer mode policy bound to role/source/binary/observer/config/case identities without weakening historical helper comparisons.",
+        "Counter semantics distinguish observed decoding, verification, mismatches, fallback, missing finalization and zero coverage.",
+        "Finite localized related case and signed paired preparation checks pass; existing app bundles and user records preserved.",
+        "No automatic gameplay; next userbatch requested only after currentnative-data rerun."
+      ],
+      "validation": {
         "checks": [],
         "limitations": [
-          "No live draw/source mapping or user acceptance yet."
+          "No live renderer case accepted yet."
         ]
       },
       "implementation_commits": [],

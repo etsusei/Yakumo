@@ -20,6 +20,7 @@ import subprocess
 import launch_test_run as launch
 import native_batch
 import native_modes
+import texture_decode_policy
 import run_cases
 import run_package
 
@@ -81,6 +82,10 @@ def check_contract(pair: dict, configs: dict, catalog_hash: str,
                        profile["schema"] == native_batch.V2_SCHEMA else None)
     require(pair.get("native_mode_schema") == required_schema,
             "Pair native mode schema differs from execution profile")
+    try:
+        texture_mode = texture_decode_policy.mode(pair)
+    except ValueError as error:
+        raise ReadinessError(str(error)) from error
     baseline, candidate = configs["baseline"], configs["candidate"]
     font = pair.get("game_font")
     require(type(font) is dict and bool(font.get("path")) and bool(font.get("sha256")),
@@ -94,6 +99,15 @@ def check_contract(pair: dict, configs: dict, catalog_hash: str,
         require(config["probe_selection"] == "all", "Discovery probes must remain selected")
         require(config.get("native_mode_schema") == required_schema,
                 "App native mode schema differs from paired execution policy")
+        try:
+            app_texture_mode = texture_decode_policy.mode(config)
+        except ValueError as error:
+            raise ReadinessError(str(error)) from error
+        require(config.get(texture_decode_policy.SCHEMA_FIELD) ==
+                pair.get(texture_decode_policy.SCHEMA_FIELD),
+                "App texture decode schema differs from the pair")
+        require(app_texture_mode == ("off" if role == "baseline" else texture_mode),
+                "App texture decode mode differs from the paired execution policy")
         if role == "baseline":
             expected_modes = {name: "off" for name in native_modes.fields(required_schema)}
         elif profile is not None:

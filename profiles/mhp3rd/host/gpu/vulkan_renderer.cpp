@@ -4,6 +4,10 @@
 #include "frame_pacing.hpp"
 #include "replacement_textures.hpp"
 #include "texture_decode.hpp"
+#if !defined(MHP3RD_BASELINE_B0)
+#include "portable_texture_dispatch.hpp"
+#include "testing/texture_decode_observation.hpp"
+#endif
 #include "triangle_indices.hpp"
 #include "texture_pack.hpp"
 #include "texture_pack_import.hpp"
@@ -517,6 +521,10 @@ void read_gamepad(SDL_Gamepad *device, PadState &pad, int &analog_x, int &analog
 // ahead of the frame's commands when the frame is submitted.
 struct DecodeJob {
     TextureSnapshot snapshot;
+#if !defined(MHP3RD_BASELINE_B0)
+    std::shared_ptr<const OwnedTextureInput> owned;
+    std::shared_ptr<PortableTextureDispatcher> decoder;
+#endif
     std::vector<std::uint32_t> pixels;
     bool ok{};
     std::atomic<bool> done{};
@@ -563,6 +571,10 @@ public:
 
 private:
     void run(DecodeJob &job) {
+#if !defined(MHP3RD_BASELINE_B0)
+        if (job.owned && job.decoder) job.ok = job.decoder->decode_owned(*job.owned, job.pixels);
+        else
+#endif
         job.ok = decode_snapshot(job.snapshot, job.pixels);
         {
             std::lock_guard<std::mutex> guard(lock_);
@@ -594,6 +606,13 @@ private:
 } // namespace
 
 struct VulkanRenderer::Impl {
+#if !defined(MHP3RD_BASELINE_B0)
+    std::shared_ptr<PortableTextureDispatcher> texture_decoder =
+        std::make_shared<PortableTextureDispatcher>(parse_texture_decode_mode(std::getenv(kTextureDecodeSwitch)));
+    testing::TextureDecodeObservation texture_decode_observation{
+        testing::active_observer(), texture_decoder->mode()};
+    void report_texture_decode(bool final);
+#endif
     struct Texture {
         VkImage image{};
         VkDeviceMemory memory{};
@@ -3804,11 +3823,24 @@ VulkanRenderer::Impl::Texture &VulkanRenderer::Impl::texture_for(const GuestMemo
     std::shared_ptr<DecodeJob> job;
     if (recording && async_uploads() && background_decode() && !dumper) {
         job = std::make_shared<DecodeJob>();
+#if !defined(MHP3RD_BASELINE_B0)
+        if (texture_decoder->mode() != TextureDecodeMode::Off) {
+            job->decoder = texture_decoder;
+            job->owned = texture_decoder->prepare_async(memory, state);
+            if (!job->owned) job.reset();
+        } else
+#endif
         if (!snapshot_texture(memory, state, job->snapshot)) job.reset();
     }
     std::vector<std::uint32_t> fresh_pixels;
     std::vector<std::uint32_t> &pixels = reuse_buffers() ? decoded_pixels : fresh_pixels;
-    if (!job && (!decode_texture(memory, state, pixels) || pixels.empty())) {
+    if (!job && (
+#if !defined(MHP3RD_BASELINE_B0)
+        !texture_decoder->decode_immediate(memory, state, pixels)
+#else
+        !decode_texture(memory, state, pixels)
+#endif
+        || pixels.empty())) {
         // MHP3RD_TRACE_WHITE_TEXTURES: each texture that could not be decoded
         // and is drawn white instead, once.
         static const bool trace_white = std::getenv("MHP3RD_TRACE_WHITE_TEXTURES") != nullptr;
@@ -4466,6 +4498,12 @@ void VulkanRenderer::Impl::prewarm_pipelines() {
                   << std::flush;
     });
 }
+
+#if !defined(MHP3RD_BASELINE_B0)
+void VulkanRenderer::Impl::report_texture_decode(bool final) {
+    (void)texture_decode_observation.report(texture_decoder->counters(), final);
+}
+#endif
 
 void VulkanRenderer::Impl::report_pipelines(bool final) {
     if (pipelines_new == 0u && !pipeline_cache_dirty) return;
@@ -5250,6 +5288,9 @@ void VulkanRenderer::begin_frame() {
     // with more, write_back_frame() takes it.
     impl.collect_writeback(impl.slot, false);
     impl.report_pipelines(false);
+#if !defined(MHP3RD_BASELINE_B0)
+    impl.report_texture_decode(false);
+#endif
     impl.apply_texture_pack();
     impl.replacements.begin_frame(impl.frames);
     if (texture_pack_trace() && impl.pack && impl.frames % 60u == 0u) {
@@ -7530,7 +7571,25 @@ bool VulkanRenderer::capture_frame(const std::string &path) {
     return write_bmp(path, pixels.data(), width, height, false);
 }
 
+void VulkanRenderer::flush_texture_decode_observation() noexcept {
+#if !defined(MHP3RD_BASELINE_B0)
+    try {
+        if (!impl_ || impl_->texture_decoder->mode() == TextureDecodeMode::Off) return;
+        // Pending jobs own their captures. Complete them before the final
+        // record; no guest memory, GPU upload or presentation is needed.
+        if (impl_->decode_pool)
+            for (auto &pending : impl_->pending_textures)
+                if (pending.job) impl_->decode_pool->wait(*pending.job);
+        impl_->report_texture_decode(true);
+    } catch (const std::exception &) {
+        if (auto observer = testing::active_observer())
+            observer->emit(testing::EventKind::Error, "texture_decode.finalization_failed", {}, true);
+    }
+#endif
+}
+
 void VulkanRenderer::shutdown() {
+    flush_texture_decode_observation();
     if (impl_ && impl_->gamepad != nullptr) {
         SDL_CloseGamepad(impl_->gamepad);
         impl_->gamepad = nullptr;

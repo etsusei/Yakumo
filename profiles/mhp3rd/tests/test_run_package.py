@@ -19,6 +19,7 @@ import zlib
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from profiles.mhp3rd.tools import run_package as package  # noqa: E402
 from profiles.mhp3rd.tools import native_modes  # noqa: E402
+from profiles.mhp3rd.tools import texture_decode_policy  # noqa: E402
 
 
 FILE_HEADER = struct.pack("<8sHHI", b"YKMJNL1\0", 1, 16, 0)
@@ -187,6 +188,28 @@ class JournalTests(unittest.TestCase):
 
 
 class PackageTests(unittest.TestCase):
+    def test_texture_policy_keeps_historical_identity_and_validates_new_records(self):
+        raw = package._read_journal_bytes(journal(self.ctx))
+        begin = raw["records"][0]["fields"]
+        self.assertNotIn(texture_decode_policy.SCHEMA_FIELD, package._identity(begin))
+        self.assertNotIn(texture_decode_policy.MODE_FIELD, package._identity(begin))
+        self.assertTrue(package._validate(raw, self.ctx, supervisor())["metadata_complete"])
+        begin.update({texture_decode_policy.SCHEMA_FIELD: texture_decode_policy.SCHEMA,
+                      texture_decode_policy.MODE_FIELD: "off"})
+        self.assertTrue(package._validate(raw, self.ctx, supervisor())["metadata_complete"])
+        self.assertEqual(package._identity(begin)[texture_decode_policy.MODE_FIELD], "off")
+        begin[texture_decode_policy.MODE_FIELD] = "native"
+        self.assertIn("baseline_texture_decode_not_off", package._validate(raw, self.ctx, supervisor())["issues"])
+        begin["role"] = "candidate"
+        self.assertTrue(package._validate(raw, self.ctx, supervisor())["metadata_complete"])
+        begin[texture_decode_policy.MODE_FIELD] = "invalid"
+        self.assertIn("invalid_texture_decode_mode", package._validate(raw, self.ctx, supervisor())["issues"])
+        begin[texture_decode_policy.MODE_FIELD] = "off"
+        begin[texture_decode_policy.SCHEMA_FIELD] = "future"
+        self.assertIn("unknown_texture_decode_schema", package._validate(raw, self.ctx, supervisor())["issues"])
+        del begin[texture_decode_policy.MODE_FIELD]
+        self.assertIn("incomplete_texture_decode_policy", package._validate(raw, self.ctx, supervisor())["issues"])
+
     def test_native_mode_schema_requires_exact_declared_switches(self):
         raw = package._read_journal_bytes(journal(self.ctx))
         begin = raw["records"][0]["fields"]

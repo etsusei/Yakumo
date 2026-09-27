@@ -83,6 +83,9 @@ public:
     // Returns false and fills `error` when the window or device cannot be created.
     bool initialize(const RendererConfig &config, std::string &error);
     void shutdown();
+    // Drain owned decode jobs and record final counters while the recorder
+    // still exists. Does not present, upload textures, or read guest memory.
+    void flush_texture_decode_observation() noexcept;
     [[nodiscard]] bool available() const noexcept;
 
     // Pumps window events; returns false once the window has been closed.

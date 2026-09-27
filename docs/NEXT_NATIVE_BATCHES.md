@@ -56,3 +56,15 @@ static file context cannot supply their neighboring bytes. Any live capture
 must retain actual bytes and effective layout from a user-run bounded case,
 with source identity where it can be demonstrated. It must not infer a file's
 visible role or original builder reachability from a matching marker.
+
+ASSET-007 now has production dispatch, offline ownership/recording gates and
+matched sealed builds. ASSET-008 prepares the dedicated renderer comparison
+policy and a finite user-led batch. Existing helper-only profiles deliberately
+reject active texture modes, so their acceptance cannot silently broaden.
+Bind mode policy, observation revision, source/binary/configuration identities
+and the new case in both signed apps. Report actual decode coverage, fallback,
+mismatch and incomplete finalization separately; zero observed decoding is
+not acceptance. Evaluate whether pending vector discovery can share this
+related observation route before asking the user to repeat another village
+case. Keep existing applications and user records unchanged, and finish the
+current native-data Baseline rerun before requesting the next manual batch.

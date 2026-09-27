@@ -15,12 +15,13 @@ import statistics
 import sys
 
 if __package__:
-    from . import native_modes
+    from . import native_modes, texture_decode_policy
     from .native_batch import load_profile, validate_profile, profile_sha256
     from .run_cases import collect_cases, load_case_catalog, validate_case_catalog
     from .run_package import load_package
 else:
     import native_modes
+    import texture_decode_policy
     from native_batch import load_profile, validate_profile, profile_sha256
     from run_cases import collect_cases, load_case_catalog, validate_case_catalog
     from run_package import load_package
@@ -49,7 +50,7 @@ def canonical_hash(value: object) -> str:
 def comparison_revision() -> str:
     directory = Path(__file__).resolve().parent
     files = ("compare_test_runs.py", "run_package.py", "run_cases.py", "native_batch.py",
-             "native_modes.py")
+             "native_modes.py", "texture_decode_policy.py")
     return "source-sha256:" + canonical_hash({name: hashlib.sha256((directory / name).read_bytes()).hexdigest()
                                               for name in files})
 
@@ -73,6 +74,17 @@ def compatibility(baseline: dict, candidate: dict, catalog: dict) -> list[str]:
         if type(declared_catalog) is not str or declared_catalog.lower() != canonical_hash(catalog):
             issues.append(role + ":case_catalog_differs")
     b, c = baseline["manifest"], candidate["manifest"]
+    for role, manifest in (("baseline", b), ("candidate", c)):
+        try:
+            texture_mode = texture_decode_policy.mode(manifest.get("identity", {}))
+            if texture_mode != "off":
+                # These catalogs and execution profiles certify PSP helper
+                # paths. A renderer experiment requires its own case policy.
+                issues.append(role + ":texture_decode_requires_renderer_case_policy")
+        except ValueError:
+            issues.append(role + ":invalid_texture_decode_policy")
+    if b.get("identity", {}).get("texture_decode_schema") != c.get("identity", {}).get("texture_decode_schema"):
+        issues.append("identity:texture_decode_schema")
     left_schema = b.get("identity", {}).get("native_mode_schema")
     right_schema = c.get("identity", {}).get("native_mode_schema")
     if left_schema != right_schema:

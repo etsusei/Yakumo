@@ -18,6 +18,7 @@ sys.path.insert(0, str(TOOLS))
 import launch_test_run  # noqa: E402
 import native_batch  # noqa: E402
 import native_modes  # noqa: E402
+import texture_decode_policy  # noqa: E402
 import package_test_pair as pair  # noqa: E402
 import register_baseline  # noqa: E402
 
@@ -164,6 +165,28 @@ class PairPackagingTests(unittest.TestCase):
                 return subprocess.CompletedProcess(command, 0, json.dumps(value), "")
             self.assertEqual(pair._preflight(build, settings=settings, runner=versioned)["native_mode_schema"],
                              native_modes.V2_SCHEMA)
+            def texture_versioned(command: list[str], **options: object) -> subprocess.CompletedProcess[str]:
+                result = versioned(command, **options)
+                value = json.loads(result.stdout)
+                value.update({texture_decode_policy.SCHEMA_FIELD: texture_decode_policy.SCHEMA,
+                              texture_decode_policy.MODE_FIELD: "off"})
+                return subprocess.CompletedProcess(command, 0, json.dumps(value), "")
+            self.assertEqual(pair._preflight(build, settings=settings, runner=texture_versioned)
+                             [texture_decode_policy.MODE_FIELD], "off")
+            def incomplete_texture(command: list[str], **options: object) -> subprocess.CompletedProcess[str]:
+                result = texture_versioned(command, **options)
+                value = json.loads(result.stdout)
+                del value[texture_decode_policy.MODE_FIELD]
+                return subprocess.CompletedProcess(command, 0, json.dumps(value), "")
+            with self.assertRaisesRegex(pair.PairError, "appear together"):
+                pair._preflight(build, settings=settings, runner=incomplete_texture)
+            def enabled_texture(command: list[str], **options: object) -> subprocess.CompletedProcess[str]:
+                result = texture_versioned(command, **options)
+                value = json.loads(result.stdout)
+                value[texture_decode_policy.MODE_FIELD] = "native"
+                return subprocess.CompletedProcess(command, 0, json.dumps(value), "")
+            with self.assertRaisesRegex(pair.PairError, "unexpectedly enables"):
+                pair._preflight(build, settings=settings, runner=enabled_texture)
             def unknown_schema(command: list[str], **options: object) -> subprocess.CompletedProcess[str]:
                 result = versioned(command, **options)
                 value = json.loads(result.stdout)
@@ -294,6 +317,7 @@ class PairPackagingTests(unittest.TestCase):
                     build={**build, "baseline_source_content_sha256": ""},
                     launcher=launcher, scripts=[TOOLS / "run_package.py", TOOLS / "run_cases.py",
                                                TOOLS / "native_batch.py", TOOLS / "native_modes.py",
+                                               TOOLS / "texture_decode_policy.py",
                                                TOOLS / "compare_test_runs.py", TOOLS / "launch_test_run.py"],
                     cases=cases, python=python, overlays=overlays,
                     libraries={"libMoltenVK.dylib": moltenvk}, font=font,
@@ -302,7 +326,8 @@ class PairPackagingTests(unittest.TestCase):
                     sources={"iso": str(iso), "elf": str(elf), "snapshot": str(snapshot_files.parent)},
                     overlay_tree=overlay_tree, overlay_id=register_baseline._tree_id(overlay_tree),
                     work_root=root / "runs", output=published, batch_id="test-pair", runner=signed,
-                    execution_profile=vector_profile, mode_schema=native_modes.V2_SCHEMA)
+                    execution_profile=vector_profile, mode_schema=native_modes.V2_SCHEMA,
+                    texture_schema=texture_decode_policy.SCHEMA)
             stage.rename(published)
             app = published / "Yakumo Baseline.app"
             self.assertEqual(config["binary"]["sha256"], pair._hash(app / "Contents/MacOS/YakumoGame"))
@@ -320,6 +345,9 @@ class PairPackagingTests(unittest.TestCase):
             self.assertEqual(loaded["role"], "baseline")
             self.assertEqual(loaded["settings"]["text.font"], str(font))
             self.assertEqual(loaded["overlays"]["tree_id"], config["overlays"]["tree_id"])
+            with mock.patch.dict("os.environ", {texture_decode_policy.ENVIRONMENT: "native"}):
+                self.assertEqual(launch_test_run._environment(loaded, root, "run-1")
+                                 [texture_decode_policy.ENVIRONMENT], "off")
             v2 = dict(candidate)
             v2["native_mode_schema"] = native_modes.V2_SCHEMA
             v2["baseline_provenance_sha256"] = ""
@@ -351,6 +379,33 @@ class PairPackagingTests(unittest.TestCase):
             preflight_path = root / "v2-preflight.json"
             preflight_path.write_text(json.dumps(preflight))
             self.assertEqual(launch_test_run._read_preflight(preflight_path, 0, False, normalized_v2), preflight)
+            texture_config = dict(v2, **{texture_decode_policy.SCHEMA_FIELD: texture_decode_policy.SCHEMA,
+                                         texture_decode_policy.MODE_FIELD: "native"})
+            normalized_texture = load_v2(texture_config)
+            self.assertEqual(normalized_texture[texture_decode_policy.MODE_FIELD], "native")
+            self.assertEqual(launch_test_run._environment(normalized_texture, root, "run-2")
+                             [texture_decode_policy.ENVIRONMENT], "native")
+            texture_preflight = dict(preflight, **{texture_decode_policy.SCHEMA_FIELD: texture_decode_policy.SCHEMA,
+                                                   texture_decode_policy.MODE_FIELD: "native"})
+            preflight_path.write_text(json.dumps(texture_preflight))
+            self.assertEqual(launch_test_run._read_preflight(preflight_path, 0, False, normalized_texture),
+                             texture_preflight)
+            texture_preflight[texture_decode_policy.MODE_FIELD] = "verify"
+            preflight_path.write_text(json.dumps(texture_preflight))
+            with self.assertRaisesRegex(launch_test_run.LaunchError, "texture decode policy differs"):
+                launch_test_run._read_preflight(preflight_path, 0, False, normalized_texture)
+            for wrong in ({key: value for key, value in texture_config.items()
+                           if key != texture_decode_policy.MODE_FIELD},
+                          dict(texture_config, texture_decode_schema="future"),
+                          dict(texture_config, texture_decode_mode="invalid")):
+                with self.assertRaises(launch_test_run.LaunchError):
+                    load_v2(wrong)
+            with self.assertRaisesRegex(launch_test_run.LaunchError, "Baseline portable texture"):
+                load_v2(dict(config, **{texture_decode_policy.SCHEMA_FIELD: texture_decode_policy.SCHEMA,
+                                        texture_decode_policy.MODE_FIELD: "native"}))
+            preflight_path.write_text(json.dumps(preflight))
+            with self.assertRaisesRegex(launch_test_run.LaunchError, "preflight schema or fields differ"):
+                launch_test_run._read_preflight(preflight_path, 0, False, normalized_texture)
             with self.assertRaises(launch_test_run.LaunchError):
                 launch_test_run._read_preflight(preflight_path, 0, False, loaded)
             preflight.pop("native_mode_schema")
@@ -367,7 +422,10 @@ class PairPackagingTests(unittest.TestCase):
             self.assertFalse((app / "Contents/Resources/testing/execution-profile.json").exists())
             self.assertEqual(vector_candidate["native_mode_schema"], native_modes.V2_SCHEMA)
             self.assertEqual(vector_candidate["native_modes"], vector_profile["candidate_modes"])
+            self.assertEqual(vector_candidate[texture_decode_policy.SCHEMA_FIELD], texture_decode_policy.SCHEMA)
+            self.assertEqual(vector_candidate[texture_decode_policy.MODE_FIELD], "off")
             self.assertTrue((published / "Yakumo Candidate V2.app/Contents/Resources/testing/native_modes.py").is_file())
+            self.assertTrue((published / "Yakumo Candidate V2.app/Contents/Resources/testing/texture_decode_policy.py").is_file())
 
 
 if __name__ == "__main__":
