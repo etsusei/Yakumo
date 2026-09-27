@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 124,
+  "revision": 125,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T13:43:00Z",
+  "updated_at": "2026-09-27T13:44:35Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -8427,7 +8427,7 @@
         "/root/texture_dispatch_registry_tests"
       ],
       "created_at": "2026-09-27T12:54:25Z",
-      "updated_at": "2026-09-27T13:43:00Z",
+      "updated_at": "2026-09-27T13:44:35Z",
       "started_at": "2026-09-27T13:16:30Z",
       "completed_at": null,
       "scope": "Connect certified original owner/command allocation, descriptor, transfer and invalidation observations to the source authority. Prepare a non-mutating guest command plan for verification and guarded commit, with explicit off/verify/native behavior, original fallback and scoped recording. Prove actual production call paths offline before a new user delivery.",
@@ -8687,7 +8687,8 @@
         ]
       },
       "implementation_commits": [
-        "d6680718167df04d0361dbe14f38b0613308ec44"
+        "d6680718167df04d0361dbe14f38b0613308ec44",
+        "9f79b3112e7a80dede8f73eca2231d6130fbeedf"
       ],
       "pause_reason": null,
       "blockers": [],
@@ -8742,6 +8743,13 @@
           "actor_id": "/root",
           "action": "review_and_build_closure",
           "description": "Independent review found no default-path correctness defect but identified an oracle target nested under the wrong option. Fixed its independent configuration and checked a fresh probes-OFF configure. Shared B0 staging and recorder source identity now include callback seams;8 staging tests pass. Final50-case bound original gate passes. No application callback owner or production authority is installed."
+        },
+        {
+          "recorded_at": "2026-09-27T13:44:35Z",
+          "occurred_at": "2026-09-27T13:44:35Z",
+          "actor_id": "/root",
+          "action": "published_compiled_aot_observations",
+          "description": "Published runtime-scoped callback routing, production AOT entry/return wiring,50 bounded original-path fixtures and shared B0 source closure in draft PR #33 at9f79b31. ASSET-014 remains in progress for actual lifecycle/caller receipts and authority-backed mode control. Existing apps/user records remain unchanged."
         }
       ],
       "updated_by_agent_id": "/root"

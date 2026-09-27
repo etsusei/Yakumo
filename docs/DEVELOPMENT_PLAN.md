@@ -2,7 +2,7 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-27T13:43:00Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-27T13:44:35Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -253,7 +253,7 @@ For each finite implementation task:
 
 Current continuation: **The native-data review is closed after the user waived the Auto-resolution rerun as an accidental setting change. Render-discovery user execution and analysis are complete. ASSET-001 through ASSET-013 are complete within their recorded offline or scoped live evidence. ASSET-014 is in progress.** The accepted render/vector observations are in [RENDER_DISCOVERY_ACCEPTANCE.md](RENDER_DISCOVERY_ACCEPTANCE.md); the earlier native-data configuration mismatch remains in its immutable report rather than being relabeled a matched run.
 
-Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. The prepared-plan bridge passed its full corpus and sanitizer gates. Runtime-scoped entry/return callbacks now compile in the production AOT unit and pass 32 boundary fixtures plus 18 actual selected caller-tail chains with full CPU/RAM/VRAM equality; the unowned 2,256-input/4,512-call corpus still matches. Next implement actual resource lifecycle observations, one-call caller tickets and an authority-backed mode controller using [TEXTURE_COMMAND_ADMISSION.md](TEXTURE_COMMAND_ADMISSION.md). The application installs no texture-command callback owner; live authority and native activation remain unfinished. Preserve existing apps and user records; no new manual test is requested until a related batch is ready. Do not skip directly to animation/AI rewriting or return to assistant-driven gameplay navigation.
+Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. The prepared-plan bridge passed its full corpus and sanitizer gates. Runtime-scoped entry/return callbacks now compile in the production AOT unit and pass 32 boundary fixtures plus 18 actual selected caller-tail chains with full CPU/RAM/VRAM equality; the unowned 2,256-input/4,512-call corpus still matches. This checkpoint is published at `9f79b31` in draft PR [#33](https://github.com/etsusei/Yakumo/pull/33). Next implement actual resource lifecycle observations, one-call caller tickets and an authority-backed mode controller using [TEXTURE_COMMAND_ADMISSION.md](TEXTURE_COMMAND_ADMISSION.md). The application installs no texture-command callback owner; live authority and native activation remain unfinished. Preserve existing apps and user records; no new manual test is requested until a related batch is ready. Do not skip directly to animation/AI rewriting or return to assistant-driven gameplay navigation.
 
 #### Historical paired delivery checkpoints
 
