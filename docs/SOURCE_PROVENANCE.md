@@ -91,3 +91,12 @@ implemented portable command core. Fingerprints identify local dependencies;
 no original instruction bytes, generated instruction bodies or game resource
 payloads are distributed. The differential harness uses the user's local
 executable and resources only.
+
+### Texture allocation and source-provider audit
+
+`tests/texture_allocation_oracle.cpp` is independently written test code using
+constructed heaps, objects and indexed resources. It executes only bounded
+original allocator and caller/provider spans from the local supported ELF;
+no original instruction bodies or resource payloads are included in tracked
+files. The related contracts record independently checked offsets, formulas
+and fingerprints, with unresolved ownership edges kept explicit.

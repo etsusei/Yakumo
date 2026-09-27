@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 106,
+  "revision": 108,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T10:56:29Z",
+  "updated_at": "2026-09-27T11:09:25Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -586,6 +586,22 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_caller_source_audit",
+      "type": "agent",
+      "role": "Original texture caller source ownership and lifetime audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_allocator_audit",
+      "type": "agent",
+      "role": "Original command allocator bounds and lifecycle audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -625,9 +641,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "ASSET-011",
+    "current_task_id": "ASSET-012",
     "next_task_id": "ASSET-012",
-    "next_action": "Certify a real original texture-builder caller and allocation-bound/lifetime provenance before production registration. Preserve delivered apps and user evidence; no additional manual test is requested.",
+    "next_action": "Continue ASSET-012: trace the actual owner allocation/vtable creation, overlay identity and successful source-slot load/readiness plus teardown/reuse invalidation. Current fixed-slot and allocator evidence is insufficient for live native registration; keep original paths and delivered apps unchanged.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": []
@@ -675,7 +691,9 @@
     "portable_texture_commands": "docs/PORTABLE_TEXTURE_COMMANDS.md",
     "portable_texture_commands_pr": "https://github.com/etsusei/Yakumo/pull/26",
     "texture_command_adapter": "docs/TEXTURE_COMMAND_ADAPTER.md",
-    "texture_command_adapter_pr": "https://github.com/etsusei/Yakumo/pull/27"
+    "texture_command_adapter_pr": "https://github.com/etsusei/Yakumo/pull/27",
+    "texture_allocation_contract": "docs/TEXTURE_ALLOCATION_CONTRACT.md",
+    "texture_caller_source_audit": "docs/TEXTURE_CALLER_SOURCE_AUDIT.md"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -7772,27 +7790,77 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-001",
-      "status": "not_started",
+      "status": "in_progress",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
-        "/root"
+        "/root",
+        "/root/texture_caller_source_audit",
+        "/root/texture_allocator_audit"
       ],
       "created_at": "2026-09-27T10:55:25Z",
-      "updated_at": "2026-09-27T10:55:25Z",
-      "started_at": null,
+      "updated_at": "2026-09-27T11:09:25Z",
+      "started_at": "2026-09-27T10:57:54Z",
       "completed_at": null,
       "scope": "Trace a real original texture-builder call path to source and command allocation owners, bounds and lifetime. Define a checked authority usable by production integration without inferring allocation extent from RAM mapping or an untrusted count.",
       "depends_on": [
         "ASSET-011"
       ],
-      "work_summary": "Planned prerequisite to production texture command replacement; offline harness bounds cannot silently become live allocation evidence.",
+      "work_summary": "Recovered original command allocator/reset/free/reuse semantics and a concrete vtable/selector-7 provider with a fixed 0x5800-byte inline slot. Bounded original AOT/interpreter gate passed 168 top-level segments with full RAM/VRAM/CPU equality, including 16 caller segments and 8 actual virtual-provider calls on constructed owners. Source object creation, successful load readiness and exact release pairing remain unresolved; task stays in progress and no production authority is enabled.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
           "kind": "contract",
           "state": "existing",
           "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_ALLOCATION_CONTRACT.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_CALLER_SOURCE_AUDIT.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_allocation_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_texture_allocation.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_allocation_runner.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-allocation-static-contract.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-caller-source-audit.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-allocation-provenance-gate.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -7802,8 +7870,40 @@
         "Do not enable an unsafe production hook or request another manual route based only on guessed reachability."
       ],
       "validation": {
-        "checks": [],
-        "limitations": []
+        "checks": [
+          {
+            "name": "Independent original allocator and source-provider audits",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-allocation-static-contract.json",
+              "out/testing/texture-caller-source-audit.json"
+            ],
+            "details": "Root rechecked eight allocator/caller spans and eleven source-provider/table/teardown spans against the supported ELF. Independently recorded source ownership gaps remain unresolved."
+          },
+          {
+            "name": "Original allocator lifecycle and caller/provider execution",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-allocation-provenance-gate.json",
+            "sha256": "6cce96c5ed6272185628a7f896278c4b17ad248f835de558a3d020ff19a2b2da",
+            "details": "168 top-level original execution segments per AOT/interpreter path:68 explicit allocations,60 frees,24 initializations/resets,16 caller segments including8 virtual-provider calls. Full RAM/VRAM/CPU equal after each;6 exactaddressreuses,10 reverse requested-alignment residues, max18076 interpreter slices. Fixtures construct the owner/heap/resource; object factory and loader were not executed."
+          },
+          {
+            "name": "Coverage and claim rejection tests",
+            "status": "passed",
+            "evidence": "Four tests in test_texture_allocation_runner.py passed. Reject missing counts, altered identities, omitted CPU/memory comparison, broadened live authority claims, invalid budgets and duplicate fields."
+          },
+          {
+            "name": "Strict compiler warnings",
+            "status": "passed",
+            "evidence": "C++20 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror syntax check passed for texture_allocation_oracle.cpp."
+          }
+        ],
+        "limitations": [
+          "Source vtable assignment at actual creation and successful load/ready event remain unresolved. A matching allocation size does not prove object identity.",
+          "Specific texture command pointer release/reset pairing and complete interception of lifetime changes remain unverified.",
+          "Constructed object execution proves original code flow, not a live source-ID mapping, legitimate object lifetime or production reachability.",
+          "No production registry, native hook, game run, concurrency, GPU or performance test; current apps and user records remain unchanged."
+        ]
       },
       "implementation_commits": [],
       "pause_reason": null,
@@ -7815,6 +7915,22 @@
           "actor_id": "/root",
           "action": "planned",
           "description": "Audit original caller allocation provenance before passing live bounds to the tested adapter."
+        },
+        {
+          "recorded_at": "2026-09-27T10:57:54Z",
+          "occurred_at": "2026-09-27T10:57:54Z",
+          "actor_id": "/root",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Auditing a real original builder caller, source root/child provenance, and command allocator/free/reuse behavior. Root prepares bounded original execution; independent agents audit source ownership and allocator semantics."
+        },
+        {
+          "recorded_at": "2026-09-27T11:09:25Z",
+          "occurred_at": "2026-09-27T11:09:25Z",
+          "actor_id": "/root",
+          "action": "allocation_and_provider_evidence",
+          "description": "Recovered original command allocator/reset/free/reuse semantics and a concrete vtable/selector-7 provider with a fixed 0x5800-byte inline slot. Bounded original AOT/interpreter gate passed 168 top-level segments with full RAM/VRAM/CPU equality, including 16 caller segments and 8 actual virtual-provider calls on constructed owners. Source object creation, successful load readiness and exact release pairing remain unresolved; task stays in progress and no production authority is enabled."
         }
       ],
       "updated_by_agent_id": "/root"
