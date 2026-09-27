@@ -91,6 +91,7 @@ class InstrumentSourceTests(unittest.TestCase):
             "    jump_target = ctx.gpr[31];\n"
             "    // nop\n"
             "    mhp3rd::native::texture_command_return(rt, ctx, jump_target);\n"
+            "    if (rt.stopped()) { ctx.pc = jump_target; return; }\n"
             "    local_pc = jump_target;",
             output,
         )
@@ -99,6 +100,7 @@ class InstrumentSourceTests(unittest.TestCase):
             "jump_target = ctx.gpr[31];\n"
             "    // nop\n"
             "    mhp3rd::native::texture_command_return(rt, ctx, jump_target);\n"
+            "    if (rt.stopped()) { ctx.pc = jump_target; return; }\n"
             "    local_pc = jump_target;",
             early,
         )

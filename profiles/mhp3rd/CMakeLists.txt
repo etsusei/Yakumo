@@ -94,6 +94,7 @@ endif()
 
 # Resolve the camera helper from the original corpus before substituting copies.
 include("${MHP3RD_PROFILE_DIR}/cmake/ProbeInstrumentation.cmake")
+include("${MHP3RD_PROFILE_DIR}/cmake/TextureCommandInstrumentation.cmake")
 
 # Renderer: SDL3 for the window and Vulkan for drawing. Both are optional so the
 # profile still builds headless on a machine without them.
@@ -580,6 +581,10 @@ list(APPEND MHP3RD_RECORDING_REVISION_INPUTS
     "${MHP3RD_PROFILE_DIR}/host/native/vector_metric_dispatch.hpp"
     "${MHP3RD_PROFILE_DIR}/host/native/vector_metric_dispatch.cpp"
     "${MHP3RD_PROFILE_DIR}/tools/instrument_probes.py"
+    "${MHP3RD_PROFILE_DIR}/host/native/texture_command_dispatch.hpp"
+    "${MHP3RD_PROFILE_DIR}/host/native/texture_command_dispatch.cpp"
+    "${MHP3RD_PROFILE_DIR}/tools/instrument_texture_commands.py"
+    "${MHP3RD_PROFILE_DIR}/cmake/TextureCommandInstrumentation.cmake"
     "${MHP3RD_PROFILE_DIR}/host/gpu/texture_decode_policy.hpp"
     "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.hpp"
     "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.cpp"
@@ -727,8 +732,17 @@ endif()
 add_library(mhp3rd_overlay_observation STATIC host/testing/overlay_observation.cpp)
 target_include_directories(mhp3rd_overlay_observation PUBLIC "${MHP3RD_PROFILE_DIR}/host")
 target_link_libraries(mhp3rd_overlay_observation PUBLIC psprecomp_core)
-add_library(mhp3rd_native_probes STATIC host/testing/probes.cpp host/native/vector_metric_dispatch.cpp)
+add_library(mhp3rd_native_probes STATIC host/testing/probes.cpp host/native/vector_metric_dispatch.cpp
+    host/native/texture_command_dispatch.cpp)
 target_link_libraries(mhp3rd_native_probes PUBLIC psprecomp_core mhp3rd_game_observation)
+add_executable(mhp3rd_texture_command_dispatch_tests tests/texture_command_dispatch_tests.cpp)
+target_link_libraries(mhp3rd_texture_command_dispatch_tests PRIVATE mhp3rd_native_probes)
+set_target_properties(mhp3rd_texture_command_dispatch_tests PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(PSPRECOMP_BUILD_TESTS)
+    add_test(NAME mhp3rd_texture_command_dispatch_tests COMMAND mhp3rd_texture_command_dispatch_tests)
+    set_tests_properties(mhp3rd_texture_command_dispatch_tests PROPERTIES TIMEOUT 60)
+endif()
 if(TARGET mhp3rd_vector_metrics_bridge)
     target_link_libraries(mhp3rd_vector_metrics_bridge PUBLIC mhp3rd_native_probes)
 endif()
@@ -884,6 +898,15 @@ if(MHP3RD_PROBE_INSTRUMENTED_SOURCES)
         target_link_libraries(mhp3rd_texture_command_oracle PRIVATE mhp3rd_tmh mhp3rd_texture_commands_bridge mhp3rd_native_probes)
         set_target_properties(mhp3rd_texture_command_oracle PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
     endif()
+endif()
+if(MHP3RD_TEXTURE_COMMAND_INSTRUMENTED_SOURCE AND TARGET mhp3rd_texture_commands_bridge)
+    add_executable(mhp3rd_texture_command_dispatch_oracle EXCLUDE_FROM_ALL
+        tests/texture_command_dispatch_oracle.cpp $<TARGET_OBJECTS:mhp3rd_generated>)
+    target_include_directories(mhp3rd_texture_command_dispatch_oracle PRIVATE "${MHP3RD_PROFILE_DIR}/generated")
+    target_link_libraries(mhp3rd_texture_command_dispatch_oracle PRIVATE
+        mhp3rd_texture_commands_bridge mhp3rd_native_probes)
+    set_target_properties(mhp3rd_texture_command_dispatch_oracle PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 endif()
 add_library(mhp3rd_control_delivery STATIC host/hle/control_delivery.cpp)
 target_link_libraries(mhp3rd_control_delivery PUBLIC psprecomp_core mhp3rd_game_observation)

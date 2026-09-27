@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 121,
+  "revision": 124,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T13:23:04Z",
+  "updated_at": "2026-09-27T13:43:00Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -674,6 +674,22 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_controller_admission",
+      "type": "agent",
+      "role": "Independent original-caller admission and correlation audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_dispatch_registry_tests",
+      "type": "agent",
+      "role": "Independent scoped callback registry ownership and bounded-capacity tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -715,7 +731,7 @@
   "execution_state": {
     "current_task_id": "ASSET-014",
     "next_task_id": "ASSET-014",
-    "next_action": "Implement and validate actual AOT entry/return callbacks and lifecycle observation producers from TEXTURE_OBSERVATION_INTEGRATION.md. The prepared-plan core has passed its full corpus and sanitizer gates; do not rerun those unchanged merely to resume. Injector output is not compiled or wired. Keep ASSET-014 in progress, default Off and Baseline original; no manual test requested before a related delivery.",
+    "next_action": "Implement actual original lifecycle/caller ticket producers and authority-backed mode control from TEXTURE_OBSERVATION_INTEGRATION.md and TEXTURE_COMMAND_ADMISSION.md. Entry/return routing is now compiled and passed32 boundary cases plus18 real selected caller-tail chains; callback ownership and unowned full corpus passed. Do not repeat these unchanged gates merely to resume. No application callback owner or manual test yet.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": []
@@ -8406,10 +8422,12 @@
       "contributor_agent_ids": [
         "/root",
         "/root/texture_command_plan",
-        "/root/texture_observation_seams"
+        "/root/texture_observation_seams",
+        "/root/texture_controller_admission",
+        "/root/texture_dispatch_registry_tests"
       ],
       "created_at": "2026-09-27T12:54:25Z",
-      "updated_at": "2026-09-27T13:23:04Z",
+      "updated_at": "2026-09-27T13:43:00Z",
       "started_at": "2026-09-27T13:16:30Z",
       "completed_at": null,
       "scope": "Connect certified original owner/command allocation, descriptor, transfer and invalidation observations to the source authority. Prepare a non-mutating guest command plan for verification and guarded commit, with explicit off/verify/native behavior, original fallback and scoped recording. Prove actual production call paths offline before a new user delivery.",
@@ -8417,7 +8435,7 @@
         "ASSET-013",
         "ASSET-011"
       ],
-      "work_summary": "Prepared-plan API implemented and offline-validated: preparation and comparison do not mutate guest state; commit rejects stale input and consumes one-shot ownership. Complete original AOT/interpreter corpus agrees for 2256 inputs/4512 calls. Audited original observation checkpoints and added a fixture-tested, unwired AOT injector. Actual lifecycle producers, callback controller and production dispatch remain unfinished.",
+      "work_summary": "Prepared-plan bridge and runtime-scoped callback routing now execute through the production instrumented AOT unit.32 entry/return and18 selected original caller-tail chains match full RAM/VRAM/CPU against interpretation; the unowned4512-call corpus still matches. Callback ownership passed6 asset-free tests and sanitizers. Actual lifecycle event producers and an authority-backed mode controller remain unfinished; no application installs a callback owner.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
@@ -8508,6 +8526,96 @@
           "kind": "validation_log",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/texture_command_dispatch.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/texture_command_dispatch.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/cmake/TextureCommandInstrumentation.cmake",
+          "kind": "build_configuration",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_command_dispatch_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_command_dispatch_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_texture_command_dispatch.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_command_dispatch_runner.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_COMMAND_ADMISSION.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-command-dispatch-caller-gate.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-instrumented-corpus-gate.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-dispatch-registry-sanitizers.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-dispatch-caller-gate-final.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-boundaries-no-probes-configure.log",
+          "kind": "validation_log",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/tools/prepare_observed_baseline.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_observed_baseline.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
         }
       ],
       "acceptance_criteria": [
@@ -8540,14 +8648,42 @@
             "name": "Report validation and injector fixtures",
             "status": "passed",
             "details": "12 Python tests:5 report checks and7 injector tests. Local original generated unit shape accepted with one entry and both original returns. Injector output is not compiled or connected to CMake; no production-hook coverage is claimed."
+          },
+          {
+            "name": "Compiled original entry/return and selected caller chains",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-command-dispatch-caller-gate-final.json",
+            "sha256": "e5a9c56176dbe0eeb44d9dbbda02cd115b18861862ffb724fcf4e0c9d633b927",
+            "details": "32 entry/return cases and18 actual selected caller-tail chains. Full RAM/VRAM/CPU matches bounded interpretation; maximum2242 slices. Registered/direct-chain/local-goto entry, positive/no-command returns, aliases, mismatched prediction and declined fixture replacement covered. Selected tail runs real virtual provider, child2 accessor, command allocator, builder and epilogue. Owner/source bounds are constructed fixtures, not production authority."
+          },
+          {
+            "name": "Unowned instrumented original corpus regression",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-command-instrumented-corpus-gate.json",
+            "sha256": "33b29a1b7c3330ae5a492d933baea95316986066fa63c6cfca25e15de05be306",
+            "details": "2256 inputs,8866 descriptors,4512 original calls,11122 command slots, plus36 synthetic calls/52 slots. New callbacks have no installed owner in this gate; original AOT/interpreter/prepared bridge effects still agree."
+          },
+          {
+            "name": "Scoped registry, injector and reporting validation",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-dispatch-registry-sanitizers.log",
+            "details": "6 asset-free CTest registry cases passed, including duplicate ownership, null behavior, runtime isolation, destruction and16-slot capacity/refill; also passed AddressSanitizer/UndefinedBehaviorSanitizer with runtime sources. Strict C++20 conversion/sign warnings as errors passed for routing and both C++ harnesses.14 Python tests passed. Actual production AOT object rebuilt; no application run."
+          },
+          {
+            "name": "Independent review and shared B0 build closure",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-boundaries-no-probes-configure.log",
+            "details": "Read-only reviewer /root/texture_controller_admission found a configuration gap: the dedicated oracle was accidentally nested under certified probes. Root moved it under its own boundary/bridge condition and confirmed a fresh probes-OFF/boundaries-ON configure contains the target. Default-profile final gate passed afterward. Root added shared B0 staging files and matched recording revision inputs;8 baseline-preparer tests passed. No new B0 application build or delivery."
           }
         ],
         "limitations": [
-          "ASSET-014 remains in progress: actual owner/descriptor/worker lifecycle producers, authority serialization, callback header/controller, mode/probe recording and production dispatch are not installed.",
-          "The build-local injector is an unwired prototype; only generated-text shape and synthetic filesystem/anchor behavior are tested. No compiled callback or intra-unit execution claim.",
-          "Byte snapshots do not establish allocation lifetime, detect change-and-restore, or exclude concurrent mutation; production requires current source authority and exclusive execution context.",
-          "No-command adapter effects are covered offline, but source authority remains positive-only. Alternate-file, live multi-fragment, real scheduling and broader gameplay remain unverified.",
-          "No app build/replacement or game run. Existing accepted user recordings and native-data resolution waiver are preserved."
+          "ASSET-014 remains in progress: actual owner/descriptor/worker lifecycle producers, authority serialization and an authority-backed mode/probe controller are not installed. The application registers no texture command callback owner.",
+          "Actual selected caller-tail tests start at088B0398 with constructed owner/root inputs and supplied bounds. They execute the original provider/accessor/allocator chain but do not prove live constructor/transfer observation or full caller entry.",
+          "Same-unit entry uses the actual preceding nop fallthrough; local-return tests use controlled harness termination. No claim of an observed gameplay route follows.",
+          "The callback registry serializes callbacks, not all guest writers. Callback owners require quiescent setup/destruction; callbacks may not recurse into dispatch/registration or throw.",
+          "Byte snapshots do not establish allocation lifetime or prevent concurrent mutation. Production needs current source authority, caller tickets, stable code/thread identity and exclusive writer context.",
+          "No-command bridge comparison is an offline fixture; source authority stays positive-only. Alternate-file, live multi-fragment, real scheduling and broader gameplay remain unverified.",
+          "No app build/replacement or game run. Existing accepted user recordings and native-data resolution waiver remain preserved."
         ]
       },
       "implementation_commits": [
@@ -8585,6 +8721,27 @@
           "actor_id": "/root",
           "action": "published_partial_integration",
           "description": "Published prepared-plan bridge, full corpus/atomic/sanitizer evidence and unwired observation injector prototype in draft PR #32 at d668071. ASSET-014 remains in progress for actual callbacks/lifecycle producers and production-path tests. User render-discovery acceptance and native-data resolution waiver remain recorded."
+        },
+        {
+          "recorded_at": "2026-09-27T13:30:09Z",
+          "occurred_at": "2026-09-27T13:30:09Z",
+          "actor_id": "/root",
+          "action": "actual_aot_seams_started",
+          "description": "Continuing from verified prepared-plan progress. Implementing runtime-scoped entry/return callback ownership and production build-local AOT seams, with actual compiled direct-chain, local-goto and both-return fixtures. Independent agents audit eventual source admission and test registry ownership; no game run."
+        },
+        {
+          "recorded_at": "2026-09-27T13:39:21Z",
+          "occurred_at": "2026-09-27T13:39:21Z",
+          "actor_id": "/root",
+          "action": "compiled_aot_observation_gate_passed",
+          "description": "Prepared-plan bridge and runtime-scoped callback routing now execute through the production instrumented AOT unit.32 entry/return and18 selected original caller-tail chains match full RAM/VRAM/CPU against interpretation; the unowned4512-call corpus still matches. Callback ownership passed6 asset-free tests and sanitizers. Actual lifecycle event producers and an authority-backed mode controller remain unfinished; no application installs a callback owner."
+        },
+        {
+          "recorded_at": "2026-09-27T13:43:00Z",
+          "occurred_at": "2026-09-27T13:43:00Z",
+          "actor_id": "/root",
+          "action": "review_and_build_closure",
+          "description": "Independent review found no default-path correctness defect but identified an oracle target nested under the wrong option. Fixed its independent configuration and checked a fresh probes-OFF configure. Shared B0 staging and recorder source identity now include callback seams;8 staging tests pass. Final50-case bound original gate passes. No application callback owner or production authority is installed."
         }
       ],
       "updated_by_agent_id": "/root"

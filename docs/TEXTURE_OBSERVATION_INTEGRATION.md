@@ -101,9 +101,14 @@ not apply to the builder because its span contains call-continuation
 `L_0889E5C0`, including same-unit `goto` entries, and return callbacks at
 `L_0889E650` (no command) and `L_0889E7C8` (positive) after their `jr ra`
 delay slots. The no-command path remains original and ineligible for authority.
-This injector is a fixture-tested prototype, not wired into CMake. Its
-callback header/implementation, production controller and lifecycle producers
-are still pending; its output has not been compiled or run as an AOT unit.
+`TextureCommandInstrumentation.cmake` now compiles this build-local copy under
+`MHP3RD_TEXTURE_COMMAND_BOUNDARIES` (default ON). `TextureCommandDispatch`
+provides at most 16 runtime-specific callback bindings, serialized with their
+registration and destruction. No application installs a binding yet, so the
+ordinary game and Baseline keep original execution. Callbacks cannot dispatch
+guest code, reenter the registry or throw. Owners must outlive all their guest
+calls and be destroyed before their runtime while execution is quiescent.
+The production mode controller and lifecycle producers remain pending.
 The remaining lifecycle/worker checkpoints require a separate fixed-address,
 shape-checked extension for units 0023, 0024, 0029, 0039, 0040, 0043,
 0045 and 0046. An outer `Runtime::register_function` wrapper or pre/post
@@ -114,6 +119,30 @@ use only bounded, read-only guest snapshots; the builder uses the separate
 `texture_command_entry(Runtime&, AllegrexContext&) -> bool` and
 `texture_command_return(Runtime&, AllegrexContext&, uint32_t jump_target)`
 callbacks.
+
+The compiled production unit passed 32 entry/return cases, including registered
+and direct-chain calls, original nop fallthrough into the builder, both returns,
+aliases, controlled same-unit returns, declined replacement and mismatched
+prediction. A stopped return callback exits before local redispatch and retains
+the actual return PC; it does not substitute zero for RA. Another 18 cases run
+the real selected `0x088B0398` caller tail through its virtual provider, child-2
+accessor, original heap allocator, builder and epilogue with observational,
+Verify or prepared-commit callbacks. Full RAM, VRAM and CPU results match the
+bounded interpreter. These tests supply constructed owners/resources and
+explicit fixture bounds; they do not manufacture production authority.
+In particular, builder entry sees the old command-state pointer before the
+builder stores the new one. See [the admission contract](TEXTURE_COMMAND_ADMISSION.md).
+
+Six asset-free registry cases passed CTest and memory sanitizers. Fourteen
+Python tests cover injector shape/output safety and report validation. Eight
+Baseline staging tests cover the shared seam files and matching recording
+revision inputs. A fresh configuration also retains the dedicated oracle with
+certified probes OFF and texture boundaries ON. A new B0 application has not
+been built or delivered. The
+unowned instrumented path also retained the complete 2,256-input/4,512-call
+original corpus result. Source/binary-bound evidence is in ASSET-014's ledger.
+No game, app delivery, owner-constructor/transfer callback integration or live
+source authority is established by this checkpoint.
 
 For `Verify`, prepare the existing nonmutating `TextureCommandPlan` at builder
 entry, let original AOT run **once**, then compare at the matched return

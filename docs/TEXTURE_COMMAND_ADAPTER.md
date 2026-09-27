@@ -29,10 +29,11 @@ These byte checks do not prove allocation lifetime, prevent another thread
 from writing, or detect a change followed by restoration. The caller must
 retain a revalidated source-authority permit and exclusive execution context.
 Allocation failures during preparation can throw before any guest mutation.
-No production lifecycle producer, mode controller or callback is installed.
-The [observation seam inventory](TEXTURE_OBSERVATION_INTEGRATION.md) and its
-fixture-tested injector are preparatory work; their output is not yet compiled
-into the game.
+No production lifecycle producer or mode controller is installed. The
+[observation seams](TEXTURE_OBSERVATION_INTEGRATION.md) now compile in the
+production AOT unit with a runtime-scoped callback registry. Bounded original
+entry/return and caller-tail fixtures exercise the bridge there; the actual
+application still installs no callback owner and enables no replacement.
 
 ## Boundary and ownership
 

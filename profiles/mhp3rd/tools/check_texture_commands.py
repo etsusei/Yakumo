@@ -202,6 +202,9 @@ def source_paths(oracle: Path) -> dict[str, Path]:
         "texture_commands_hpp": tools.parent / "host" / "resources" / "texture_commands.hpp",
         "texture_commands_bridge_cpp": tools.parent / "host" / "native" / "texture_commands_bridge.cpp",
         "texture_commands_bridge_hpp": tools.parent / "host" / "native" / "texture_commands_bridge.hpp",
+        "texture_command_dispatch_cpp": tools.parent / "host" / "native" / "texture_command_dispatch.cpp",
+        "texture_command_dispatch_hpp": tools.parent / "host" / "native" / "texture_command_dispatch.hpp",
+        "instrument_texture_commands_py": tools / "instrument_texture_commands.py",
         "texture_command_oracle_binary": oracle,
     }
 

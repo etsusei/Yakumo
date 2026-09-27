@@ -2,7 +2,7 @@
 
 Plan version: **1.1**. Decision date: **2026-09-26**. Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-27T13:23:04Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-27T13:43:00Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -160,7 +160,7 @@ Finite work beneath these ongoing workstreams:
 - [x] **ASSET-011** — Implement and offline-certify a bounded guest adapter, preserving CPU/memory effects and rejecting unsupported inputs before mutation.
 - [x] **ASSET-012** — Certify a real caller's source/command allocation bounds and lifetime before production integration.
 - [x] **ASSET-013** — Implement bounded source authority from original transfer/lifecycle receipts, including late-writer invalidation and exact fragment completion.
-- [ ] **ASSET-014** — In progress: prepare/compare/commit passed offline gates; connect actual original observations and guarded off/verify/native command dispatch, with bounded production-path tests before user delivery.
+- [ ] **ASSET-014** — In progress: prepare/compare/commit and compiled entry/return/caller-tail gates passed; connect actual resource lifecycle observations and guarded off/verify/native command dispatch, with bounded production-path tests before user delivery.
 
 The initial inventory is [NATIVE_MODULES.md](NATIVE_MODULES.md); finite requirements are in [NEXT_NATIVE_BATCHES.md](NEXT_NATIVE_BATCHES.md). ITER-001/002 stay in progress as workstreams. Finite tasks depend on INV-001 or other finite prerequisites, not on treating an ongoing workstream as already finished.
 
@@ -253,7 +253,7 @@ For each finite implementation task:
 
 Current continuation: **The native-data review is closed after the user waived the Auto-resolution rerun as an accidental setting change. Render-discovery user execution and analysis are complete. ASSET-001 through ASSET-013 are complete within their recorded offline or scoped live evidence. ASSET-014 is in progress.** The accepted render/vector observations are in [RENDER_DISCOVERY_ACCEPTANCE.md](RENDER_DISCOVERY_ACCEPTANCE.md); the earlier native-data configuration mismatch remains in its immutable report rather than being relabeled a matched run.
 
-Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Non-mutating texture-command preparation, comparison with original AOT/interpreter results, and guarded one-shot commit passed the complete 2,256-input/4,512-call corpus plus 24 plan checks and memory sanitizers. Next connect certified original lifecycle/transfer observations to source authority and prove actual AOT dispatch offline; the fixture-tested injector is currently unwired. This partial work is published at `d668071` in draft PR [#32](https://github.com/etsusei/Yakumo/pull/32). Production hook completeness and native activation remain unfinished. Preserve existing apps and actual user records; no new manual test is requested until a related batch is ready. Do not skip directly to animation/AI rewriting or return to assistant-driven gameplay navigation.
+Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. The prepared-plan bridge passed its full corpus and sanitizer gates. Runtime-scoped entry/return callbacks now compile in the production AOT unit and pass 32 boundary fixtures plus 18 actual selected caller-tail chains with full CPU/RAM/VRAM equality; the unowned 2,256-input/4,512-call corpus still matches. Next implement actual resource lifecycle observations, one-call caller tickets and an authority-backed mode controller using [TEXTURE_COMMAND_ADMISSION.md](TEXTURE_COMMAND_ADMISSION.md). The application installs no texture-command callback owner; live authority and native activation remain unfinished. Preserve existing apps and user records; no new manual test is requested until a related batch is ready. Do not skip directly to animation/AI rewriting or return to assistant-driven gameplay navigation.
 
 #### Historical paired delivery checkpoints
 
