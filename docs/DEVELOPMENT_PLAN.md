@@ -145,6 +145,9 @@ Finite work beneath these ongoing workstreams:
 - [x] **VEC-001** — Certify the four vector-metric contracts and numerical/state behavior offline.
 - [x] **VEC-002** — Implement a portable vector-metric core, adapters and differential tests.
 - [ ] **VEC-003** — Add bounded observations and evidence-based user cases for that module.
+- [x] **ASSET-001** — Certify nested indexed resource-bundle boundaries from original consumers.
+- [x] **ASSET-002** — Implement a portable bundle view and provenance-preserving offline validation.
+- [ ] **ASSET-003** — Certify the internal layout of TMH-marked children using original consumers.
 
 The initial inventory is [NATIVE_MODULES.md](NATIVE_MODULES.md); finite requirements are in [NEXT_NATIVE_BATCHES.md](NEXT_NATIVE_BATCHES.md). ITER-001/002 stay in progress as workstreams. Finite tasks depend on INV-001 or other finite prerequisites, not on treating an ongoing workstream as already finished.
 
@@ -237,7 +240,7 @@ For each finite implementation task:
 
 Current continuation: **RES-001, RES-002, and RES-003 are completed. OFF-001 through OFF-006 are completed. OBS-001 through OBS-004 and PAIR-001 are completed. PAIR-002 and PAIR-003 are completed; CASE-001 and CASE-002 are completed; FONT-001 is completed after user visual confirmation; INV-001 and NAT-001 are completed; NAT-002 and VEC-001 are completed; VEC-002 is completed; NAT-003 awaits user execution while VEC-003 awaits the separate discovery pair.** The source/input registration is recorded in `docs/RESOURCE_PREPARATION.md` and the ledger. Extraction, independent byte comparison, and source-anchored reuse passed. The task histories preserve the reuse review finding, its fix, and supporting evidence.
 
-Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. Continue with VEC-003, certified vector observations and startup/mode integration, while NAT-003 awaits the user. The first inventory and mode-aware offline gate are complete. The first user pair has been received and analyzed with explicit limits. PAIR-002 now supplies independent signed applications and a verified preparation-only launcher flow. PAIR-001 panel/controller integration passed offline tests; its contracts and limitations are in docs/TEST_SESSION_PANEL.md. Use the marker, counter-boundary, context and comparison contracts in docs/RUN_COMPARISON.md. OBS-004 packaging and comparison passed offline tests, including actual C++ writer integration; its local validation report and visual-preview limitation are recorded in the ledger. OBS-003 production-object probes, guarded state/performance readers and lifecycle checks passed offline; exact evidence and limitations are in docs/CERTIFIED_PROBES.md and the ledger. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
+Read `execution_state` and the latest task history in `tasks.json` before choosing the next action. ASSET-001 completed a static consumer and retained-pointer lifetime contract. ASSET-002 completed the portable shared-storage view and original-consumer/corpus gate; ASSET-003 is the next independent child-format contract. Both delivered user pairs remain unchanged. Continue with VEC-003, certified vector observations and startup/mode integration, while NAT-003 awaits the user. The first inventory and mode-aware offline gate are complete. The first user pair has been received and analyzed with explicit limits. PAIR-002 now supplies independent signed applications and a verified preparation-only launcher flow. PAIR-001 panel/controller integration passed offline tests; its contracts and limitations are in docs/TEST_SESSION_PANEL.md. Use the marker, counter-boundary, context and comparison contracts in docs/RUN_COMPARISON.md. OBS-004 packaging and comparison passed offline tests, including actual C++ writer integration; its local validation report and visual-preview limitation are recorded in the ledger. OBS-003 production-object probes, guarded state/performance readers and lifecycle checks passed offline; exact evidence and limitations are in docs/CERTIFIED_PROBES.md and the ledger. Preserve original AOT execution in Baseline; journal framing alone is not semantic or gameplay validation. The passing combined gate is recorded in docs/OFFLINE_VALIDATION.md and the ledger. Do not skip directly to animation/AI rewriting, broad game navigation, or a tools-only first handoff.
 
 #### Paired delivery checkpoint and next action
 
@@ -294,3 +297,17 @@ Use this procedure after context compression or when another agent takes over. T
 | Proof and remaining uncertainty | `acceptance_criteria`, `validation.checks`, `validation.limitations` |
 
 The task ledger retains history rather than overwriting it with a new chat summary. Planning an output, compiling an application, and passing user gameplay acceptance remain separate facts.
+
+
+### Resource boundary checkpoint
+
+ASSET-001/002 recovered original count/offset/length accessors and retained-pointer
+lifetime evidence, then implemented a portable shared-storage bundle view. All
+6,043 raw entry hashes were checked; 2,168 root and 28 nested structural
+candidates yielded 9,622 slots, including 555 absent slots. AOT and bounded
+interpretation each completed 25,832 metadata queries with matching CPU/memory
+state. The 24 core tests, six manifest checks and sanitizer run passed.
+Signatures remain annotations: 11 candidate nodes have only bounds evidence,
+and no child semantics or live loader replacement is claimed. Implementation `903b0f3` is published in draft PR [#20](https://github.com/etsusei/Yakumo/pull/20). See
+[INDEXED_RESOURCE_VIEWS.md](INDEXED_RESOURCE_VIEWS.md). Continue ASSET-003 while
+NAT-003/VEC-003 await user operation; preserve all delivered apps and raw assets.
