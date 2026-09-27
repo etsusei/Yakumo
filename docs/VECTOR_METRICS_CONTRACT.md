@@ -1,6 +1,6 @@
 # Vector metric leaf contract (VEC-001)
 
-This is the bounded, offline contract for four leaves in the registered supported executable. It describes the behavior of the current software interpreter on Apple Silicon macOS. It does not certify a native replacement or physical PSP floating-point results. The local evidence is `out/testing/vector-metrics-contract.json`; the reproducible probe is `profiles/mhp3rd/tests/vector_metrics_contract_probe.cpp`. Neither contains executable bytes or game data.
+This records the VEC-001 bounded interpreter contract for four leaves in the registered supported executable. The subsequent VEC-002 production AOT findings are recorded below and in [VECTOR_METRICS_MODULE.md](VECTOR_METRICS_MODULE.md). It describes the behavior of the current software interpreter on Apple Silicon macOS. It does not certify a native replacement or physical PSP floating-point results. The local evidence is `out/testing/vector-metrics-contract.json`; the reproducible probe is `profiles/mhp3rd/tests/vector_metrics_contract_probe.cpp`. Neither contains executable bytes or game data.
 
 ## Identity and execution bound
 
@@ -74,3 +74,28 @@ new local JSON file. The CMake target applies `-ffp-contract=off` only to the
 probe; the interpreter retains its normal production flags. Root independently
 reran the agent binary and the CMake-built target; both reproduced all four
 reported result sets. These reruns still do not execute generated AOT.
+
+## VEC-002 production AOT follow-up
+
+The generated production object has now been executed on identical synthetic
+inputs. The four-leaf audit contains 5,516 bounded calls with full raw CPU and
+512-byte memory comparison. AOT differs from the interpreter in 90 norm,
+173 norm-squared, 83 distance and 173 distance-squared cases. Every CPU
+difference is confined to FPR0 and VFPU storage index 4; memory differences
+are confined to the four scratch-result bytes. No unexpected write was seen.
+
+The AOT arithmetic model rounds the second product first, fuses the first
+product into it, then fuses the third and zero-filled fourth lanes. It matches
+all 4,496 standard-prefix raw results, including the tested NaNs, subnormals,
+infinities, extrema, cancellation and overlapping inputs. Ordinary finite
+inputs also differ between AOT and interpreter, so excluding unusual values
+would not repair the oracle mismatch. The native module targets the original
+AOT behavior; the interpreter differences are retained as diagnostic evidence.
+
+A direct call to the actual generated unit with temporary RA=0, followed by
+restoring the caller's internal RA/PC, also matched all 5,516 isolated AOT cases
+in full state and memory. This supplies the bounded original callback used by
+the owned adapter. It is specific to these four fingerprinted leaves, which do
+not consume RA before returning. It is not permission to substitute RA in
+arbitrary functions. The source is `tests/vector_metrics_aot_probe.cpp` under
+the profile; local reports and build identity hashes are listed in the ledger.
