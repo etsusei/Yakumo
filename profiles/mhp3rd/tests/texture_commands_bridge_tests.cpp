@@ -14,6 +14,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -261,15 +262,128 @@ public:
         ++successes_;
     }
 
+    void plan_cases() {
+        using namespace mhp3rd::native;
+        reset();
+        Setup setup;
+        install(setup);
+        const auto before_ram = memory_.bytes();
+        const auto before_vram = memory_.vram_bytes();
+        const auto before_cpu = setup.context;
+        auto plan = prepare_texture_commands(memory_, setup.context, setup.bounds);
+        require(plan.ok() && plan.blocks() == 1u, "Valid plan rejected");
+        require(memory_.bytes() == before_ram && memory_.vram_bytes() == before_vram &&
+                same_context(setup.context, before_cpu), "Preparation mutated guest state");
+        ++plan_checks_;
+
+        auto expected_ram = before_ram;
+        auto expected_cpu = before_cpu;
+        model_success(setup, 1u, expected_ram, expected_cpu);
+        GuestMemory actual(memory_.size());
+        actual.copy_in(kRam, expected_ram);
+        actual.copy_in(GuestMemory::kVramPhysicalBase, before_vram);
+        require(compare_texture_commands(plan, actual, expected_cpu).ok(),
+                "Read-only comparison rejected independently modeled result");
+        require(actual.bytes() == expected_ram && actual.vram_bytes() == before_vram,
+                "Successful comparison mutated memory");
+        ++plan_checks_;
+
+        const auto comparison_reject = [&](std::uint32_t address, TextureBridgeCompareError error) {
+            const auto old = actual.load8(address);
+            actual.store8(address, old ^ 1u);
+            const auto before = actual.bytes();
+            const auto result = compare_texture_commands(plan, actual, expected_cpu);
+            require(result.error == error, "Comparison omitted or misclassified differing region");
+            require(actual.bytes() == before && actual.vram_bytes() == before_vram,
+                    "Failed comparison mutated memory");
+            actual.store8(address, old);
+            ++plan_checks_;
+        };
+        comparison_reject(kState + 8u, TextureBridgeCompareError::State);
+        comparison_reject(kSp - 80u + 24u, TextureBridgeCompareError::Frame);
+        comparison_reject(kCommands + 35u, TextureBridgeCompareError::Commands);
+        comparison_reject(kSource + static_cast<std::uint32_t>(setup.source.bytes.size()) - 1u,
+                          TextureBridgeCompareError::Source);
+        for (const auto address : {kEntry + 527u, kHelper + 235u, kTable + 4099u, kGlobal})
+            comparison_reject(address, TextureBridgeCompareError::Dependency);
+        auto wrong_cpu = expected_cpu;
+        wrong_cpu.fpr[17] = std::bit_cast<float>(std::bit_cast<std::uint32_t>(wrong_cpu.fpr[17]) ^ 1u);
+        require(compare_texture_commands(plan, actual, wrong_cpu).error == TextureBridgeCompareError::Context,
+                "Comparison ignored full CPU difference");
+        ++plan_checks_;
+
+        // A byte-identical different instance cannot receive this plan's writes.
+        actual.copy_in(kRam, before_ram);
+        auto other_cpu = before_cpu;
+        require(commit_texture_commands(actual, other_cpu, plan).error == TextureBridgeError::StaleMemory &&
+                actual.bytes() == before_ram && same_context(other_cpu, before_cpu),
+                "Commit accepted or mutated another memory instance");
+        ++plan_checks_;
+        auto changed_cpu = before_cpu;
+        changed_cpu.vfpu_ctrl[3] ^= 1u;
+        const auto changed_copy = changed_cpu;
+        require(commit_texture_commands(memory_, changed_cpu, plan).error == TextureBridgeError::StaleContext &&
+                memory_.bytes() == before_ram && same_context(changed_cpu, changed_copy),
+                "Stale CPU rejection was not atomic");
+        ++plan_checks_;
+
+        for (const auto address : {kSource + 40u, kState, kSp - 80u + 79u,
+                                   kCommands + 35u, kEntry + 527u, kHelper + 235u,
+                                   kTable + 4099u, kGlobal}) {
+            const auto old = memory_.load8(address);
+            memory_.store8(address | 0x40000000u, old ^ 1u);
+            const auto changed_ram = memory_.bytes();
+            auto cpu = before_cpu;
+            require(commit_texture_commands(memory_, cpu, plan).error == TextureBridgeError::StaleMemory &&
+                    memory_.bytes() == changed_ram && memory_.vram_bytes() == before_vram &&
+                    same_context(cpu, before_cpu), "Stale memory rejection was not atomic");
+            memory_.store8(address, old);
+            ++plan_checks_;
+        }
+
+        auto moved = std::move(plan);
+        require(!plan.ok() && plan.error() == TextureBridgeError::InvalidPlan && moved.ok(),
+                "Move failed to transfer exclusive ownership");
+        require(commit_texture_commands(memory_, setup.context, plan).error == TextureBridgeError::InvalidPlan &&
+                compare_texture_commands(plan, actual, expected_cpu).error == TextureBridgeCompareError::InvalidPlan,
+                "Moved-from plan remained usable");
+        TextureCommandPlan assigned;
+        assigned = std::move(moved);
+        require(!moved.ok() && assigned.ok(), "Move assignment retained old ownership");
+        require(commit_texture_commands(memory_, setup.context, assigned).ok() &&
+                memory_.bytes() == expected_ram && memory_.vram_bytes() == before_vram &&
+                same_context(setup.context, expected_cpu), "Prepared commit differs from independent model");
+        ++plan_checks_;
+        require(!assigned.ok() && assigned.error() == TextureBridgeError::ConsumedPlan &&
+                commit_texture_commands(memory_, setup.context, assigned).error == TextureBridgeError::ConsumedPlan &&
+                compare_texture_commands(assigned, memory_, expected_cpu).error == TextureBridgeCompareError::ConsumedPlan &&
+                memory_.bytes() == expected_ram && same_context(setup.context, expected_cpu),
+                "Consumed plan was replayed");
+        ++plan_checks_;
+
+        reset();
+        install(setup);
+        setup.context = before_cpu;
+        setup.context.pc += 4u;
+        auto invalid = prepare_texture_commands(memory_, setup.context, setup.bounds);
+        const auto rejected_cpu = setup.context;
+        require(!invalid.ok() && invalid.error() == TextureBridgeError::Entry &&
+                commit_texture_commands(memory_, setup.context, invalid).error == TextureBridgeError::InvalidPlan &&
+                compare_texture_commands(invalid, memory_, setup.context).error == TextureBridgeCompareError::InvalidPlan &&
+                memory_.bytes() == before_ram && same_context(setup.context, rejected_cpu),
+                "Rejected preparation produced a usable or mutating plan");
+        ++plan_checks_;
+    }
+
     void print_counts() const {
         std::cout << "texture_commands_bridge_tests: " << successes_ << " successes, "
-                  << rejections_ << " atomic rejections\n";
+                  << rejections_ << " atomic rejections, " << plan_checks_ << " plan checks\n";
     }
 
 private:
     GuestMemory memory_;
     std::vector<std::uint8_t> baseline_ram_, baseline_vram_;
-    std::size_t rejections_{}, successes_{};
+    std::size_t rejections_{}, successes_{}, plan_checks_{};
 
     void reset() {
         memory_.copy_in(kRam, baseline_ram_);
@@ -555,6 +669,7 @@ int main(int argc, char **argv) {
         Harness harness(elf);
         success_cases(harness);
         rejection_cases(harness, kRam + elf.required_ram_size());
+        harness.plan_cases();
         harness.print_counts();
         return 0;
     } catch (const std::exception &error) {

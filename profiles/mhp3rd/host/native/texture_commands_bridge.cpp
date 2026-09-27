@@ -6,10 +6,13 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace mhp3rd::native {
@@ -191,23 +194,136 @@ template <std::size_t Size>
     return TextureBridgeError::Descriptor;
 }
 
-void write_descriptor(GuestMemory &memory, std::uint32_t frame,
-                      const TextureCommandDescriptor &descriptor) {
-    memory.store32(frame + 0u, descriptor.image_token);
-    memory.store32(frame + 4u, descriptor.format);
-    memory.store16(frame + 8u, static_cast<std::uint16_t>(descriptor.width));
-    memory.store16(frame + 10u, static_cast<std::uint16_t>(descriptor.height));
-    memory.store32(frame + 12u, descriptor.palette_token);
-    memory.store32(frame + 16u, descriptor.palette_format);
-    memory.store32(frame + 20u, static_cast<std::uint32_t>(descriptor.palette_count));
+struct RegionImage {
+    std::uint32_t address{};
+    std::vector<std::uint8_t> before;
+    std::vector<std::uint8_t> after;
+};
+
+struct GuestStore {
+    std::uint32_t address{};
+    std::uint32_t value{};
+    std::uint8_t width{};
+};
+
+[[nodiscard]] RegionImage capture_region(const GuestMemory &memory,
+                                         std::uint32_t address,
+                                         std::size_t length, bool writable) {
+    RegionImage region;
+    region.address = address;
+    region.before.resize(length);
+    memory.copy_out(address, region.before);
+    if (writable) region.after = region.before;
+    return region;
+}
+
+void append_store(std::vector<GuestStore> &writes, RegionImage &region,
+                  std::uint32_t address, std::uint32_t value,
+                  std::uint8_t width) {
+    writes.push_back({address, value, width});
+    const auto offset = static_cast<std::size_t>(address - region.address);
+    for (std::size_t i = 0; i < width; ++i) {
+        region.after[offset + i] = static_cast<std::uint8_t>(value >> (i * 8u));
+    }
+}
+
+void append_descriptor(std::vector<GuestStore> &writes, RegionImage &frame_image,
+                       std::uint32_t frame,
+                       const TextureCommandDescriptor &descriptor) {
+    append_store(writes, frame_image, frame + 0u, descriptor.image_token, 4u);
+    append_store(writes, frame_image, frame + 4u, descriptor.format, 4u);
+    append_store(writes, frame_image, frame + 8u, descriptor.width, 2u);
+    append_store(writes, frame_image, frame + 10u, descriptor.height, 2u);
+    append_store(writes, frame_image, frame + 12u, descriptor.palette_token, 4u);
+    append_store(writes, frame_image, frame + 16u, descriptor.palette_format, 4u);
+    append_store(writes, frame_image, frame + 20u,
+                 static_cast<std::uint32_t>(descriptor.palette_count), 4u);
+}
+
+[[nodiscard]] bool same_cpu(const psprecomp::AllegrexContext &a,
+                            const psprecomp::AllegrexContext &b) noexcept {
+    return a.gpr == b.gpr && a.hi == b.hi && a.lo == b.lo && a.pc == b.pc &&
+           a.fcr31 == b.fcr31 && a.vfpu_ctrl == b.vfpu_ctrl &&
+           std::memcmp(a.fpr.data(), b.fpr.data(), sizeof(a.fpr)) == 0 &&
+           std::memcmp(a.vfpu.data(), b.vfpu.data(), sizeof(a.vfpu)) == 0;
+}
+
+enum class RegionMatch { Same, Mapping, Different };
+
+[[nodiscard]] RegionMatch match_region(const GuestMemory &memory,
+                                       const RegionImage &region,
+                                       bool expected_after) noexcept {
+    if (region.before.empty()) return RegionMatch::Same;
+    const auto &expected = expected_after ? region.after : region.before;
+    if (!main_ram_range(memory, region.address, expected.size())) {
+        return RegionMatch::Mapping;
+    }
+    const auto *actual = memory.raw_pointer(region.address, expected.size());
+    if (!actual) return RegionMatch::Mapping;
+    return std::memcmp(actual, expected.data(), expected.size()) == 0
+        ? RegionMatch::Same : RegionMatch::Different;
+}
+
+void perform_store(GuestMemory &memory, const GuestStore &write) {
+    switch (write.width) {
+    case 1u: memory.store8(write.address, static_cast<std::uint8_t>(write.value)); break;
+    case 2u: memory.store16(write.address, static_cast<std::uint16_t>(write.value)); break;
+    default: memory.store32(write.address, write.value); break;
+    }
 }
 
 } // namespace
 
-TextureBridgeResult apply_texture_commands(
-    GuestMemory &memory, psprecomp::AllegrexContext &context,
+struct TextureCommandPlan::Impl {
+    const GuestMemory *memory{};
+    bool consumed{};
+    bool has_commands{};
+    std::uint32_t command_base{};
+    psprecomp::AllegrexContext before_cpu{};
+    psprecomp::AllegrexContext after_cpu{};
+    RegionImage source, state, frame, output, builder, helper, table, global;
+    std::vector<GuestStore> writes;
+};
+
+TextureCommandPlan::TextureCommandPlan() noexcept = default;
+TextureCommandPlan::~TextureCommandPlan() = default;
+
+TextureCommandPlan::TextureCommandPlan(TextureCommandPlan &&other) noexcept
+    : impl_(std::move(other.impl_)), result_(other.result_) {
+    other.result_ = {TextureBridgeError::InvalidPlan, 0u};
+}
+
+TextureCommandPlan &TextureCommandPlan::operator=(TextureCommandPlan &&other) noexcept {
+    if (this != &other) {
+        impl_ = std::move(other.impl_);
+        result_ = other.result_;
+        other.result_ = {TextureBridgeError::InvalidPlan, 0u};
+    }
+    return *this;
+}
+
+bool TextureCommandPlan::ok() const noexcept {
+    return result_.ok() && impl_ && !impl_->consumed;
+}
+
+TextureBridgeError TextureCommandPlan::error() const noexcept {
+    if (result_.ok() && impl_ && impl_->consumed) return TextureBridgeError::ConsumedPlan;
+    return result_.error;
+}
+
+std::size_t TextureCommandPlan::blocks() const noexcept {
+    return result_.blocks;
+}
+
+TextureCommandPlan prepare_texture_commands(
+    const GuestMemory &memory, const psprecomp::AllegrexContext &context,
     const TextureCommandBounds &bounds) {
-    if (context.pc != kEntry) return {TextureBridgeError::Entry, 0u};
+    TextureCommandPlan plan;
+    const auto fail = [&](TextureBridgeError error) -> TextureCommandPlan {
+        plan.result_ = {error, 0u};
+        return std::move(plan);
+    };
+    if (context.pc != kEntry) return fail(TextureBridgeError::Entry);
 
     const auto state = context.gpr[4];
     const auto command_base = context.gpr[5];
@@ -217,11 +333,11 @@ TextureBridgeResult apply_texture_commands(
     const auto stack = context.gpr[29];
     if (bounds.source_bytes < 12u || bounds.source_bytes > kSourceLimit ||
         stack < kFrameBytes) {
-        return {TextureBridgeError::Range, 0u};
+        return fail(TextureBridgeError::Range);
     }
     if ((state & 3u) != 0u || (source & 3u) != 0u ||
         (stack & 3u) != 0u) {
-        return {TextureBridgeError::Alignment, 0u};
+        return fail(TextureBridgeError::Alignment);
     }
     const auto frame = stack - static_cast<std::uint32_t>(kFrameBytes);
     const auto source_range = main_ram_range(memory, source, bounds.source_bytes);
@@ -231,13 +347,13 @@ TextureBridgeResult apply_texture_commands(
     const auto helper_range = main_ram_range(memory, kHelper, kHelperBytes);
     const auto table_range = main_ram_range(memory, kTable, kTableBytes);
     if (!source_range || !state_range || !stack_range) {
-        return {TextureBridgeError::Range, 0u};
+        return fail(TextureBridgeError::Range);
     }
     if (!builder_range || !helper_range || !table_range ||
         !matches_fingerprint<kBuilderBytes>(memory, kEntry, kBuilderHash) ||
         !matches_fingerprint<kHelperBytes>(memory, kHelper, kHelperHash) ||
         !matches_fingerprint<kTableBytes>(memory, kTable, kTableHash)) {
-        return {TextureBridgeError::Dependency, 0u};
+        return fail(TextureBridgeError::Dependency);
     }
     const PhysicalRange global_range{kGlobal, static_cast<std::uint64_t>(kGlobal) + 4u};
     constexpr std::size_t kDependencyCount = 4u;
@@ -246,13 +362,13 @@ TextureBridgeResult apply_texture_commands(
     if (overlaps(*source_range, *state_range) ||
         overlaps(*source_range, *stack_range) ||
         overlaps(*state_range, *stack_range)) {
-        return {TextureBridgeError::Aliasing, 0u};
+        return fail(TextureBridgeError::Aliasing);
     }
     for (const auto dependency : dependencies) {
         if (overlaps(*source_range, dependency) ||
             overlaps(*state_range, dependency) ||
             overlaps(*stack_range, dependency)) {
-            return {TextureBridgeError::Aliasing, 0u};
+            return fail(TextureBridgeError::Aliasing);
         }
     }
 
@@ -261,37 +377,39 @@ TextureBridgeResult apply_texture_commands(
     const bool has_commands = effective != 0u && (effective & 0x80000000u) == 0u;
     const auto count = has_commands ? static_cast<std::size_t>(effective) : 0u;
     if (has_commands && (count > kBlockLimit || count > bounds.max_blocks)) {
-        return {TextureBridgeError::Budget, 0u};
+        return fail(TextureBridgeError::Budget);
     }
 
     std::vector<TextureCommandDescriptor> descriptors;
     resources::TextureCommandResult commands;
+    std::uint32_t selected_address{};
     if (has_commands) {
-        if (bounds.source_bytes < 16u) return {TextureBridgeError::Resource, 0u};
+        if (bounds.source_bytes < 16u) return fail(TextureBridgeError::Resource);
         const auto required_slots = first_slot + count;
         if (required_slots > bounds.destination_slots ||
             (command_base & 3u) != 0u) {
-            return {required_slots > bounds.destination_slots
-                        ? TextureBridgeError::Range : TextureBridgeError::Alignment, 0u};
+            return fail(required_slots > bounds.destination_slots
+                        ? TextureBridgeError::Range : TextureBridgeError::Alignment);
         }
         const auto raw_selected = static_cast<std::uint64_t>(command_base) +
                                   first_slot * 36u;
         const auto selected_range = main_ram_range(memory, raw_selected, count * 36u);
         if (!selected_range || !main_ram_range(memory, command_base, 1u)) {
-            return {TextureBridgeError::Range, 0u};
+            return fail(TextureBridgeError::Range);
         }
+        selected_address = static_cast<std::uint32_t>(raw_selected);
         if (!main_ram_range(memory, kGlobal, 4u)) {
-            return {TextureBridgeError::Dependency, 0u};
+            return fail(TextureBridgeError::Dependency);
         }
         for (const auto dependency : dependencies) {
             if (overlaps(*selected_range, dependency)) {
-                return {TextureBridgeError::Aliasing, 0u};
+                return fail(TextureBridgeError::Aliasing);
             }
         }
         if (overlaps(*selected_range, *source_range) ||
             overlaps(*selected_range, *state_range) ||
             overlaps(*selected_range, *stack_range)) {
-            return {TextureBridgeError::Aliasing, 0u};
+            return fail(TextureBridgeError::Aliasing);
         }
         // The original reads this memory-only ELF address once per command.
         // Its value is dead in the certified helper, but it must be mapped.
@@ -301,57 +419,175 @@ TextureBridgeResult apply_texture_commands(
         descriptors.resize(required_records);
         if (!decode_descriptors(memory, source, bounds.source_bytes,
                                 first_record, count, descriptors)) {
-            return {TextureBridgeError::Resource, 0u};
+            return fail(TextureBridgeError::Resource);
         }
         const TextureCommandRequest request{
             source, command_base, declared_count, context.gpr[8],
             context.gpr[7], context.gpr[9], bounds.destination_slots};
         commands = resources::build_texture_commands(descriptors, request,
                                                       bounds.max_blocks);
-        if (!commands.ok()) return {core_error(commands.error), 0u};
-    }
-
-    // No adapter allocations or validation remain after this point. Each store has
-    // already been proved to lie in a disjoint, mapped main-RAM interval.
-    constexpr std::array<std::size_t, 10> saved_regs{
-        16u, 17u, 18u, 19u, 20u, 21u, 22u, 23u, 30u, 31u};
-    for (std::size_t i = 0; i < saved_regs.size(); ++i) {
-        memory.store32(frame + 32u + static_cast<std::uint32_t>(i * 4u),
-                       context.gpr[saved_regs[i]]);
-    }
-    memory.store32(state + 4u, command_base);
-    if (has_commands) {
+        if (!commands.ok()) return fail(core_error(commands.error));
+        if (commands.patches.size() != count) return fail(TextureBridgeError::Descriptor);
         for (std::size_t i = 0; i < count; ++i) {
-            const auto &patch = commands.patches[i];
-            write_descriptor(memory, frame,
-                             descriptors[patch.source_record]);
-            const auto slot = command_base + patch.destination_slot * 36u;
-            for (const auto word_index : resources::kTextureCommandStoreOrder) {
-                memory.store32(slot + static_cast<std::uint32_t>(word_index * 4u),
-                               patch.words[word_index]);
+            if (commands.patches[i].source_record != first_record + i ||
+                commands.patches[i].destination_slot != first_slot + i) {
+                return fail(TextureBridgeError::Descriptor);
             }
         }
     }
-    memory.store32(state + 0u, source);
-    memory.store8(state + 8u, static_cast<std::uint8_t>(declared_count));
 
-    context.gpr[2] = declared_count;
+    auto prepared = std::make_unique<TextureCommandPlan::Impl>();
+    prepared->memory = &memory;
+    prepared->has_commands = has_commands;
+    prepared->command_base = command_base;
+    prepared->before_cpu = context;
+    prepared->after_cpu = context;
+    prepared->source = capture_region(memory, source, bounds.source_bytes, false);
+    prepared->state = capture_region(memory, state, 9u, true);
+    prepared->frame = capture_region(memory, frame, kFrameBytes, true);
+    prepared->builder = capture_region(memory, kEntry, kBuilderBytes, false);
+    prepared->helper = capture_region(memory, kHelper, kHelperBytes, false);
+    prepared->table = capture_region(memory, kTable, kTableBytes, false);
+    if (has_commands) {
+        prepared->output = capture_region(memory, selected_address, count * 36u, true);
+        prepared->global = capture_region(memory, kGlobal, 4u, false);
+    }
+    prepared->writes.reserve(13u + count * 16u);
+
+    // Preserve the original store order, including every repeated descriptor
+    // write into the stack frame. Untouched frame gaps retain their old bytes.
+    constexpr std::array<std::size_t, 10> saved_regs{
+        16u, 17u, 18u, 19u, 20u, 21u, 22u, 23u, 30u, 31u};
+    for (std::size_t i = 0; i < saved_regs.size(); ++i) {
+        append_store(prepared->writes, prepared->frame,
+                     frame + 32u + static_cast<std::uint32_t>(i * 4u),
+                     context.gpr[saved_regs[i]], 4u);
+    }
+    append_store(prepared->writes, prepared->state,
+                 state + 4u, command_base, 4u);
+    if (has_commands) {
+        for (std::size_t i = 0; i < count; ++i) {
+            const auto &patch = commands.patches[i];
+            append_descriptor(prepared->writes, prepared->frame, frame,
+                              descriptors[patch.source_record]);
+            const auto slot = command_base + patch.destination_slot * 36u;
+            for (const auto word_index : resources::kTextureCommandStoreOrder) {
+                append_store(prepared->writes, prepared->output,
+                             slot + static_cast<std::uint32_t>(word_index * 4u),
+                             patch.words[word_index], 4u);
+            }
+        }
+    }
+    append_store(prepared->writes, prepared->state, state + 0u, source, 4u);
+    append_store(prepared->writes, prepared->state, state + 8u,
+                 static_cast<std::uint8_t>(declared_count), 1u);
+
+    auto &after = prepared->after_cpu;
+    after.gpr[2] = declared_count;
     if (has_commands) {
         const auto &last = commands.patches.back();
         const auto &last_descriptor = descriptors[last.source_record];
-        context.gpr[3] = 0xC4000000u;
-        context.gpr[4] = last.words[7];
-        context.gpr[5] = last.words[6];
-        context.gpr[6] = command_base + last.destination_slot * 36u;
-        context.gpr[7] = kTable + last_descriptor.height * 4u;
-        context.gpr[8] = kTable + last_descriptor.width * 4u;
-        context.gpr[9] = last.words[1];
-        context.gpr[10] = last.words[2];
+        after.gpr[3] = 0xC4000000u;
+        after.gpr[4] = last.words[7];
+        after.gpr[5] = last.words[6];
+        after.gpr[6] = command_base + last.destination_slot * 36u;
+        after.gpr[7] = kTable + last_descriptor.height * 4u;
+        after.gpr[8] = kTable + last_descriptor.width * 4u;
+        after.gpr[9] = last.words[1];
+        after.gpr[10] = last.words[2];
     } else {
-        context.gpr[3] = static_cast<std::uint32_t>(first_slot);
+        after.gpr[3] = static_cast<std::uint32_t>(first_slot);
     }
-    context.pc = context.gpr[31];
-    return {TextureBridgeError::None, count};
+    after.pc = context.gpr[31];
+    plan.impl_ = std::move(prepared);
+    plan.result_ = {TextureBridgeError::None, count};
+    return plan;
+}
+
+TextureBridgeResult commit_texture_commands(
+    GuestMemory &memory, psprecomp::AllegrexContext &context,
+    TextureCommandPlan &plan) {
+    if (!plan.result_.ok() || !plan.impl_) {
+        return {TextureBridgeError::InvalidPlan, 0u};
+    }
+    auto &prepared = *plan.impl_;
+    if (prepared.consumed) return {TextureBridgeError::ConsumedPlan, 0u};
+    if (prepared.memory != &memory) {
+        return {TextureBridgeError::StaleMemory, 0u};
+    }
+    if (!same_cpu(context, prepared.before_cpu)) {
+        return {TextureBridgeError::StaleContext, 0u};
+    }
+    if (prepared.has_commands &&
+        !main_ram_range(memory, prepared.command_base, 1u)) {
+        return {TextureBridgeError::StaleMemory, 0u};
+    }
+    const std::array<const RegionImage *, 8> regions{
+        &prepared.source, &prepared.state, &prepared.frame, &prepared.output,
+        &prepared.builder, &prepared.helper, &prepared.table, &prepared.global};
+    for (const auto *region : regions) {
+        if (match_region(memory, *region, false) != RegionMatch::Same) {
+            return {TextureBridgeError::StaleMemory, 0u};
+        }
+    }
+
+    // A throwing write-watch callback may leave partial effects. Mark the plan
+    // consumed before the first store so a diagnostic exception cannot replay it.
+    prepared.consumed = true;
+    for (const auto &write : prepared.writes) perform_store(memory, write);
+    context = prepared.after_cpu;
+    return {TextureBridgeError::None, plan.result_.blocks};
+}
+
+TextureBridgeComparison compare_texture_commands(
+    const TextureCommandPlan &plan, const GuestMemory &memory,
+    const psprecomp::AllegrexContext &context) {
+    if (!plan.result_.ok() || !plan.impl_) {
+        return {TextureBridgeCompareError::InvalidPlan};
+    }
+    const auto &prepared = *plan.impl_;
+    if (prepared.consumed) return {TextureBridgeCompareError::ConsumedPlan};
+    if (!same_cpu(context, prepared.after_cpu)) {
+        return {TextureBridgeCompareError::Context};
+    }
+    if (prepared.has_commands &&
+        !main_ram_range(memory, prepared.command_base, 1u)) {
+        return {TextureBridgeCompareError::Mapping};
+    }
+    const auto compare_region = [&](const RegionImage &region, bool expected_after,
+                                    TextureBridgeCompareError mismatch) {
+        const auto status = match_region(memory, region, expected_after);
+        if (status == RegionMatch::Mapping) return TextureBridgeCompareError::Mapping;
+        if (status == RegionMatch::Different) return mismatch;
+        return TextureBridgeCompareError::None;
+    };
+    const auto state_result = compare_region(prepared.state, true,
+                                             TextureBridgeCompareError::State);
+    if (state_result != TextureBridgeCompareError::None) return {state_result};
+    const auto frame_result = compare_region(prepared.frame, true,
+                                             TextureBridgeCompareError::Frame);
+    if (frame_result != TextureBridgeCompareError::None) return {frame_result};
+    const auto output_result = compare_region(prepared.output, true,
+                                              TextureBridgeCompareError::Commands);
+    if (output_result != TextureBridgeCompareError::None) return {output_result};
+    const auto source_result = compare_region(prepared.source, false,
+                                              TextureBridgeCompareError::Source);
+    if (source_result != TextureBridgeCompareError::None) return {source_result};
+    for (const auto *dependency : {&prepared.builder, &prepared.helper,
+                                   &prepared.table, &prepared.global}) {
+        const auto result = compare_region(*dependency, false,
+                                           TextureBridgeCompareError::Dependency);
+        if (result != TextureBridgeCompareError::None) return {result};
+    }
+    return {};
+}
+
+TextureBridgeResult apply_texture_commands(
+    GuestMemory &memory, psprecomp::AllegrexContext &context,
+    const TextureCommandBounds &bounds) {
+    auto plan = prepare_texture_commands(memory, context, bounds);
+    if (!plan.ok()) return {plan.error(), 0u};
+    return commit_texture_commands(memory, context, plan);
 }
 
 } // namespace mhp3rd::native

@@ -6,6 +6,34 @@ offline harness. `native/texture_commands_bridge.hpp` accepts guest memory,
 an entry context and explicit source-allocation and command-capacity bounds.
 It is not installed as a game hook.
 
+## Prepared plans (ASSET-014, partial integration)
+
+`prepare_texture_commands` now returns a move-only `TextureCommandPlan` and
+does not write guest memory or registers. The owned plan holds input context,
+bounded source/dependency snapshots, expected output regions and ordered
+stores. `compare_texture_commands` reads an original execution's result,
+including a separate memory instance, and checks full CPU state, state bytes,
+stack gaps, selected command bytes and unchanged source/code dependencies.
+It never applies or rolls back predicted writes. This permits a later Verify
+controller to prepare first and observe one natural original execution.
+
+`commit_texture_commands` accepts only the preparing memory instance and
+rechecks the complete input context and captured regions before the first
+store. Changed input, output, stack, source or dependency bytes reject without
+further mutation. A successful commit consumes the plan before its first store;
+it cannot be replayed, including after a throwing write-watch diagnostic.
+Move operations invalidate the source plan. `apply_texture_commands` remains
+the convenience prepare/commit wrapper.
+
+These byte checks do not prove allocation lifetime, prevent another thread
+from writing, or detect a change followed by restoration. The caller must
+retain a revalidated source-authority permit and exclusive execution context.
+Allocation failures during preparation can throw before any guest mutation.
+No production lifecycle producer, mode controller or callback is installed.
+The [observation seam inventory](TEXTURE_OBSERVATION_INTEGRATION.md) and its
+fixture-tested injector are preparatory work; their output is not yet compiled
+into the game.
+
 ## Boundary and ownership
 
 The caller supplies the source allocation's byte extent and the destination
@@ -68,6 +96,16 @@ It also passed with AddressSanitizer and UndefinedBehaviorSanitizer applied to
 the adapter, portable core, harness and runtime sources. Strict C++20 warnings,
 including signed/conversion warnings, passed for the new adapter and harness.
 Five report-validation tests passed.
+
+The plan extension adds 24 checks for read-only preparation/comparison,
+changed CPU/regions, cross-instance commit rejection, move ownership, failed
+preparation and one-shot consumption. The complete corpus oracle now prepares
+before either original execution, compares the same prediction with original
+AOT and interpretation, then commits only to its separate adapter memory.
+Reports must include `prepared_plan_compared` and exact `plan_calls`; an older
+adapter-only report cannot certify this added contract. The updated gate
+retains the corpus and synthetic counts below. Current evidence and remaining
+integration work are recorded under ASSET-014 in the ledger.
 
 The complete original differential gate covers 2,256 inputs, 8,866 descriptors,
 4,512 calls and 11,122 command slots. Another 36 synthetic calls cover 52 slots,

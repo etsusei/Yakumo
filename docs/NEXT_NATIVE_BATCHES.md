@@ -204,3 +204,11 @@ Use a fresh current gameplay source commit in build metadata; never relabel
 the existing applications or historical user records. Retain positive-only
 authority, alternate-file, live multi-fragment and broader gameplay limitations
 until their own evidence exists.
+
+ASSET-014 partial checkpoint: the prepared-plan bridge passed the full original
+corpus plus atomic/stale-plan/ownership checks and memory sanitizers. The
+[checkpoint map](TEXTURE_OBSERVATION_INTEGRATION.md) identifies both builder
+returns and lifecycle edges. Its injector is tested as a text transformation
+only; callback implementation, CMake wiring, producer/controller integration
+and actual production-path execution tests remain unfinished. No new manual
+case or application has been delivered.
