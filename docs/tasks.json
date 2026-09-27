@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 61,
+  "revision": 62,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T05:09:24Z",
+  "updated_at": "2026-09-27T05:14:19Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -412,7 +412,8 @@
     "game_font_fix_pr": "https://github.com/etsusei/Yakumo/pull/14",
     "native_inventory_and_execution_pr": "https://github.com/etsusei/Yakumo/pull/15",
     "native_data_pilot_guide": "docs/NATIVE_DATA_CASE.md",
-    "vector_metrics_contract": "docs/VECTOR_METRICS_CONTRACT.md"
+    "vector_metrics_contract": "docs/VECTOR_METRICS_CONTRACT.md",
+    "native_data_and_vector_contract_pr": "https://github.com/etsusei/Yakumo/pull/16"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -4592,6 +4593,15 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Delivered signed source-bound native-data pair with one Chinese NATIVE-DATA-01 case and explicit profile: candidate scale/copy native, other three off; Baseline all off, all probes selected. Both final builds, 21 preflight checks, 9 relevant CTests, production AOT harnesses,actual native preparation-only readiness and 43-glyph checks per prepared role passed. Distinct batch app identities,verified font and immutable prior apps retained. No game launched; NAT-003 awaits user execution."
+        },
+        {
+          "recorded_at": "2026-09-27T05:14:19Z",
+          "occurred_at": "2026-09-27T05:14:19Z",
+          "actor_id": "/root",
+          "action": "published",
+          "from_status": "completed",
+          "to_status": "completed",
+          "description": "Published delivery evidence and vector-contract audit in draft PR #16. Actual native-data game acceptance remains NAT-003; generated-AOT vector equivalence and implementation remain VEC-002."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -4705,7 +4715,7 @@
         "/root"
       ],
       "created_at": "2026-09-27T04:32:05Z",
-      "updated_at": "2026-09-27T05:09:24Z",
+      "updated_at": "2026-09-27T05:14:19Z",
       "started_at": "2026-09-27T04:48:42Z",
       "completed_at": "2026-09-27T05:09:24Z",
       "timestamp_note": null,
@@ -4779,7 +4789,9 @@
           "No native adapter, actual fallback or live caller coverage has been implemented."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "96490d3"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -4800,6 +4812,15 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Recorded exact four-leaf inputs, 16-byte loads, stack scratch, VFPU/control state and prefix/numeric behavior from 11,604 bounded interpreter runs. Primary reran both agent and CMake-built probes with identical results. Fused model matches 8,192 finite comparisons on this Apple Silicon interpreter object; unfused models differ. No native adapter or actual generated-AOT equivalence is claimed; VEC-002 must resolve that gate."
+        },
+        {
+          "recorded_at": "2026-09-27T05:14:19Z",
+          "occurred_at": "2026-09-27T05:14:19Z",
+          "actor_id": "/root",
+          "action": "published",
+          "from_status": "completed",
+          "to_status": "completed",
+          "description": "Published delivery evidence and vector-contract audit in draft PR #16. Actual native-data game acceptance remains NAT-003; generated-AOT vector equivalence and implementation remain VEC-002."
         }
       ],
       "updated_by_agent_id": "/root"
