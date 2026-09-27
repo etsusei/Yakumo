@@ -1,5 +1,6 @@
 #include "testing/probes.hpp"
 #include "testing/game_observers.hpp"
+#include "testing/runtime_diagnostics.hpp"
 
 #include "psprecomp/allegrex_context.hpp"
 #include "psprecomp/runtime.hpp"
@@ -11,6 +12,7 @@
 #include <mutex>
 #include <optional>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -24,6 +26,10 @@ using namespace mhp3rd::testing;
 constexpr std::uint32_t kAngle = 0x088775ACu;
 constexpr std::uint32_t kVector = 0x08877818u;
 constexpr std::uint32_t kScale = 0x08878B28u;
+constexpr std::uint32_t kNorm = 0x08877244u;
+constexpr std::uint32_t kNormSquared = 0x08877264u;
+constexpr std::uint32_t kDistance = 0x08877280u;
+constexpr std::uint32_t kDistanceSquared = 0x088772A8u;
 
 int failures = 0;
 void check(bool value, std::string_view message) {
@@ -76,6 +82,40 @@ void counts_and_variants() {
     check(snapshot.leaves[3].entry_hits == 0 && snapshot.leaves[3].completed == 0,
           "selected zero-call leaf has explicit empty coverage");
     check(snapshot.leaves[1].entry_hits == 0, "unselected leaf has no hits");
+}
+
+void vector_metric_selection_and_counts() {
+    check(kProbeLegacy == 0x1Fu && kProbeAll == 0x1FFu && kProbeLeafCount == 9,
+          "existing bit positions and nine-leaf all selection stay stable");
+    check(parse_probe_selection("legacy") == kProbeLegacy &&
+          parse_probe_selection("all") == kProbeAll &&
+          parse_probe_selection("norm,norm_squared,distance,distance_squared") ==
+              (kProbeNorm | kProbeNormSquared | kProbeDistance | kProbeDistanceSquared),
+          "selection names cover all new leaves without changing legacy names");
+    try {
+        static_cast<void>(parse_probe_selection("norm,norm"));
+        check(false, "duplicate vector metric selection is rejected");
+    } catch (const std::invalid_argument &) {
+    }
+
+    FakeClock clock{100};
+    ProbeTracker tracker(kProbeNorm | kProbeNormSquared | kProbeDistance | kProbeDistanceSquared,
+                         FakeClock::read, &clock);
+    int runtime = 1, context = 2;
+    constexpr std::uint32_t entries[]{kNorm, kNormSquared, kDistance, kDistanceSquared};
+    for (const auto entry : entries) {
+        const auto token = tracker.enter(&runtime, &context, entry, true, true);
+        check(token != 0, "vector metric leaf entry is tracked");
+        clock.now += 10;
+        tracker.exit_aot(token, &runtime, &context, entry, 0x1000u, 0x1000u);
+    }
+    const auto snapshot = tracker.flush();
+    for (std::size_t i = 0; i < 4; ++i) {
+        const auto &leaf = snapshot.leaves[5 + i];
+        check(leaf.entry == entries[i] && leaf.entry_hits == 1 &&
+              leaf.completed == 1 && leaf.variants[0].calls == 1,
+              "new leaves keep declared order and independent counters");
+    }
 }
 
 void abnormal_and_mismatched_scopes() {
@@ -301,6 +341,97 @@ void callback_bookkeeping() {
           "restart does not inherit old session's calls or suppression");
 }
 
+void scoped_aot_suppression() {
+    psprecomp::Runtime runtime;
+    psprecomp::Runtime other_runtime;
+    psprecomp::AllegrexContext context{};
+    psprecomp::AllegrexContext other_context{};
+    context.gpr[31] = other_context.gpr[31] = 0x1000u;
+    JournalFixture fixture;
+    configure_native_probes(fixture.observer, kProbeNorm | kProbeDistance);
+    {
+        NativeProbeScope outer(runtime, context, kNorm);
+        {
+            NativeProbeAotSuppression guard(runtime, context, kNorm);
+            check(NativeProbeAotSuppression::applies(runtime, context, kNorm) &&
+                  !NativeProbeAotSuppression::applies(runtime, other_context, kNorm) &&
+                  !NativeProbeAotSuppression::applies(runtime, context, kDistance) &&
+                  !NativeProbeAotSuppression::applies(other_runtime, context, kNorm),
+                  "suppression matches exactly one runtime, context, and entry");
+            native_probe_aot_enter(runtime, context, kNorm);
+            native_probe_aot_exit(runtime, context, kNorm, context.gpr[31]);
+            {
+                NativeProbeAotSuppression nested(runtime, context, kDistance);
+                native_probe_aot_enter(runtime, context, kDistance);
+                native_probe_aot_exit(runtime, context, kDistance, context.gpr[31]);
+                native_probe_aot_enter(runtime, other_context, kNorm);
+                native_probe_aot_exit(runtime, other_context, kNorm, other_context.gpr[31]);
+                native_probe_aot_enter(other_runtime, context, kDistance);
+                native_probe_aot_exit(other_runtime, context, kDistance, context.gpr[31]);
+            }
+            check(!NativeProbeAotSuppression::applies(runtime, context, kDistance),
+                  "nested suppression restores the previous guard");
+            native_probe_aot_enter(runtime, context, kDistance);
+            native_probe_aot_exit(runtime, context, kDistance, context.gpr[31]);
+            native_probe_aot_enter(other_runtime, context, kNorm);
+            native_probe_aot_exit(other_runtime, context, kNorm, context.gpr[31]);
+            std::thread other_thread([&] {
+                check(!NativeProbeAotSuppression::applies(runtime, context, kNorm),
+                      "suppression is local to the host thread");
+            });
+            other_thread.join();
+        }
+        check(!NativeProbeAotSuppression::applies(runtime, context, kNorm),
+              "suppression ends at guard destruction");
+        native_probe_aot_enter(runtime, context, kNorm);
+        {
+            NativeProbeAotSuppression nested_original(runtime, context, kNorm);
+            native_probe_aot_enter(runtime, context, kNorm);
+            native_probe_aot_exit(runtime, context, kNorm, context.gpr[31]);
+        }
+        native_probe_aot_exit(runtime, context, kNorm, context.gpr[31]);
+        outer.finish(ProbeVariant::Verify);
+    }
+    flush_native_probes(true);
+    const auto journal = fixture.close();
+    const auto *norm = find_record(journal, "probe.summary", "\"leaf\":\"norm\"");
+    const auto *distance = find_record(journal, "probe.summary", "\"leaf\":\"distance\"");
+    check(journal.complete() && norm && distance,
+          "suppression journal reports the selected vector leaves");
+    check(uint_field(norm, "entry_hits") == 4u &&
+          uint_field(norm, "orphan_exits") == 0u &&
+          uint_field(norm, "incomplete") == 0u &&
+          uint_field(distance, "entry_hits") == 2u &&
+          uint_field(distance, "orphan_exits") == 0u,
+          "suppressed original adds no hit or orphan and does not consume outer scope");
+    check(uint_field(norm, "verify_calls") == 0u &&
+          uint_field(norm, "uncertified_returns") == 4u,
+          "unrelated callbacks remain observed with their own certification");
+}
+
+void suppression_unwinds_after_exception() {
+    psprecomp::Runtime runtime;
+    psprecomp::AllegrexContext context{};
+    context.gpr[31] = 0x1000u;
+    JournalFixture fixture;
+    configure_native_probes(fixture.observer, kProbeNormSquared);
+    try {
+        NativeProbeAotSuppression guard(runtime, context, kNormSquared);
+        native_probe_aot_enter(runtime, context, kNormSquared);
+        native_probe_aot_exit(runtime, context, kNormSquared, context.gpr[31]);
+        throw std::runtime_error("synthetic original failure");
+    } catch (const std::runtime_error &) {
+    }
+    native_probe_aot_enter(runtime, context, kNormSquared);
+    native_probe_aot_exit(runtime, context, kNormSquared, context.gpr[31]);
+    flush_native_probes(true);
+    const auto journal = fixture.close();
+    const auto *summary = find_record(journal, "probe.summary", "\"leaf\":\"norm_squared\"");
+    check(journal.complete() && uint_field(summary, "entry_hits") == 1u &&
+          uint_field(summary, "orphan_exits") == 0u,
+          "exception unwind ends suppression before the next AOT call");
+}
+
 void verification_mismatch_diagnostic() {
     psprecomp::Runtime runtime;
     psprecomp::AllegrexContext context{};
@@ -382,11 +513,14 @@ void tagged_counter_snapshots() {
 
 int main() {
     counts_and_variants();
+    vector_metric_selection_and_counts();
     abnormal_and_mismatched_scopes();
     bounded_stack_and_finalization();
     thread_identity();
     recent_detail_ring();
     callback_bookkeeping();
+    scoped_aot_suppression();
+    suppression_unwinds_after_exception();
     verification_mismatch_diagnostic();
     tagged_counter_snapshots();
     if (failures) std::cerr << failures << " probe test(s) failed\n";

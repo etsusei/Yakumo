@@ -1,7 +1,7 @@
 # Certified leaf probes and read-only diagnostics
 
 OBS-003 extends the shared [game observation journal](GAME_OBSERVATION.md). It
-observes five identified math leaves, periodic game-state samples, and the
+observes nine identified math leaves, periodic game-state samples, and the
 existing performance summary. It does not identify every gameplay function or
 establish animation, combat, AI, or multiplayer correctness.
 
@@ -9,7 +9,7 @@ establish animation, combat, AI, or multiplayer correctness.
 
 Recording remains off unless `MHP3RD_RECORD_DIR` and its required run metadata
 are supplied. `MHP3RD_RECORD_PROBES` is additionally empty or `off` by default.
-Use `all` or a comma-separated subset of `angle,scale,translation,vector,copy`.
+Use `all` for all nine leaves, `legacy` for the original five, or a comma-separated subset of `angle,scale,translation,vector,copy,norm,norm_squared,distance,distance_squared`.
 Unknown, repeated, or empty list entries are rejected before recording starts.
 The forthcoming case panel selects probes for each case; this environment
 setting supplies an explicit selection for diagnostic runs in the meantime.
@@ -29,7 +29,7 @@ recoverable merely because an in-process destructor exists.
 
 ## Function boundaries and evidence
 
-CMake discovers the five entry registrations in the original generated corpus,
+CMake discovers the nine entry registrations in the original generated corpus,
 after the camera helper lookup. It instruments build-local copies of affected
 units and leaves the source corpus untouched. The current corpus needs two
 copies. Source-shape checks reject missing/duplicate entries or changed return
@@ -50,7 +50,17 @@ The candidate bridges record the path actually used:
 | `aot` | Original compiled leaf between matched boundaries |
 | `native` | Accepted native bridge execution |
 | `verify` | Prediction and original-code comparison together |
-| `fallback` | Original interpreter reference used by a bridge |
+| `fallback` | Original reference used by a bridge; the vector metrics use actual generated AOT, while the earlier five bridges use bounded interpretation |
+
+The vector metric entry labels also contain a candidate dispatch seam, because
+same-unit generated calls use local gotos that bypass ordinary registration.
+With no candidate owner (including the sealed B0 build), the seam leaves the
+original path untouched. A scoped runtime/context/entry guard suppresses the
+nested AOT callbacks during metric Verify/Fallback; the outer native scope is
+counted once. Unrelated entries and contexts remain observable. A real bounded
+same-unit caller at `0x08877610` is covered by the production-object test.
+See [vector observations](VECTOR_METRICS_OBSERVATION.md) for the startup and
+record-version contracts.
 
 Verification and fallback durations must not be presented as native speedups.
 Entry hits, certified entries, completed scopes, rejected spans, unmatched

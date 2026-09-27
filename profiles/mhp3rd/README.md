@@ -835,13 +835,24 @@ Safeguards: CMake finds the generated unit that holds the rotation helper and fa
 
 ### Native helper experiments
 
-Five independent startup switches control certified native leaves: `MHP3RD_NATIVE_ANGLE_STEP`, `MHP3RD_NATIVE_SCALE_MATRIX`, `MHP3RD_NATIVE_TRANSLATION_MATRIX`, `MHP3RD_NATIVE_VECTOR_CONSTRUCT`, and `MHP3RD_NATIVE_MATRIX_COPY`. `verify` predicts results without speculative guest writes and compares them against bounded original execution, retaining the original result. `native` uses the replacement for supported inputs; unset, `off`, or `0` installs no replacement. Unknown code is refused, unsupported inputs use the original, and mismatches retain the original result. Logs report calls, verified/native/fallback counts, mismatches and errors.
+The original five startup switches control certified native leaves: `MHP3RD_NATIVE_ANGLE_STEP`, `MHP3RD_NATIVE_SCALE_MATRIX`, `MHP3RD_NATIVE_TRANSLATION_MATRIX`, `MHP3RD_NATIVE_VECTOR_CONSTRUCT`, and `MHP3RD_NATIVE_MATRIX_COPY`. `verify` predicts results without speculative guest writes and compares them against bounded original execution, retaining the original result. `native` uses the replacement for supported inputs; unset, `off`, or `0` installs no replacement. Unknown code is refused, unsupported inputs use the original, and mismatches retain the original result. Logs report calls, verified/native/fallback counts, mismatches and errors.
+
+Four additional startup switches control vector metrics:
+`MHP3RD_NATIVE_VECTOR_NORM`, `MHP3RD_NATIVE_VECTOR_NORM_SQUARED`,
+`MHP3RD_NATIVE_VECTOR_DISTANCE`, and `MHP3RD_NATIVE_VECTOR_DISTANCE_SQUARED`.
+They accept the same off/verify/native values and default off. The core follows
+production AOT arithmetic, whose floating-point rounding differs from the
+interpreter. Verify and fallback retain actual AOT results. Native is currently
+admitted only on Apple Silicon and requires compiled metric entry boundaries;
+other hosts can collect Verify evidence. Registration is scoped to one runtime
+and covers both ordinary dispatch and same-unit local calls. See
+[VECTOR_METRICS_OBSERVATION.md](../../docs/VECTOR_METRICS_OBSERVATION.md).
 
 These opt-in experiments are not a performance feature or a replacement for animation, AI or combat systems. The new leaves have offline differential evidence only; no live coverage is claimed. See [native contracts](../../docs/NATIVE_MODULES.md), [the experiment guide](../../docs/NATIVE_EXPERIMENT.md), and [the current development plan](../../docs/DEVELOPMENT_PLAN.md) for boundaries and the user-led acceptance workflow.
 
 ### Test recording integration
 
-The shared recording core can observe delivered controls, game-frame/virtual-time coordinates, camera operations, UI domains and overlay validation epochs. It is disabled unless a fresh `MHP3RD_RECORD_DIR` and the required role/run/batch identifiers are supplied. With recording enabled, `MHP3RD_RECORD_PROBES` selects `all` or a subset of `angle,scale,translation,vector,copy`; unset or `off` selects no function probes. Read-only state and performance summaries accompany the input journal. [GAME_OBSERVATION.md](../../docs/GAME_OBSERVATION.md) defines the environment contract, and [CERTIFIED_PROBES.md](../../docs/CERTIFIED_PROBES.md) describes exact scope, overhead and coverage limits. A bound catalog enables the [Chinese test-session panel](../../docs/TEST_SESSION_PANEL.md); the paired launcher and first acceptance package are still pending.
+The shared recording core can observe delivered controls, game-frame/virtual-time coordinates, camera operations, UI domains and overlay validation epochs. It is disabled unless a fresh `MHP3RD_RECORD_DIR` and the required role/run/batch identifiers are supplied. With recording enabled, `MHP3RD_RECORD_PROBES` selects `all` (nine leaves), `legacy` (the original five), or a subset of `angle,scale,translation,vector,copy,norm,norm_squared,distance,distance_squared`; unset or `off` selects no function probes. Read-only state and performance summaries accompany the input journal. [GAME_OBSERVATION.md](../../docs/GAME_OBSERVATION.md) defines the environment contract, and [CERTIFIED_PROBES.md](../../docs/CERTIFIED_PROBES.md) describes exact scope, overhead and coverage limits. A bound catalog enables the [Chinese test-session panel](../../docs/TEST_SESSION_PANEL.md); paired applications and the first acceptance package have been delivered. New records explicitly declare `native_mode_schema=yakumo-native-modes-v2` and all nine mode fields; historical five-field records remain legacy records. New paired packaging requires a matching explicit execution profile.
 
 [RUN_COMPARISON.md](../../docs/RUN_COMPARISON.md) defines local packaging and JSON/HTML comparison. `MHP3RD_RECORD_CONTEXT_SHA256` binds a run to launcher-supplied input/configuration identities; unbound logs remain inspectable but cannot pass paired comparison. Case counters require tagged begin/end snapshots. Recorded manual input/state differences remain distinct from certified same-input reference mismatches.
 

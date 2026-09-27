@@ -6,9 +6,10 @@ IEEE-754 words and has no runtime, guest memory, instruction decoder or generate
 code dependency. It returns the distance components as well as the scalar so a
 guest adapter can preserve observable scratch state.
 
-The module is not registered in the game yet. The existing native-data test
-applications are unchanged. VEC-003 owns startup, certified observations, mode
-metadata, and a later user-led acceptance batch. This milestone establishes a
+The VEC-003 source now supplies opt-in startup registration, certified observations
+and versioned mode metadata; see [VECTOR_METRICS_OBSERVATION.md](VECTOR_METRICS_OBSERVATION.md).
+The existing native-data test applications are unchanged. A later user-led
+acceptance batch remains pending demonstrated gameplay triggers. This milestone establishes a
 small reusable numerical module, not migrated animation, AI or collision.
 
 ## The numerical reference
@@ -91,8 +92,7 @@ native implementation or live gameplay acceptance.
 No live callers, frame performance, recording overhead, physical PSP behavior,
 other host platforms, or whole-game compatibility are certified by these
 offline tests. Native admission outside default host floating-point settings
-has not been established. Broad startup integration remains disabled until
-the observation and execution-profile work is complete.
+has not been established. All four modes remain off by default; no new user test application has been delivered.
 
 ## Executed VEC-002 gate
 

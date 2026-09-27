@@ -2,10 +2,12 @@
 #include "native/angle_step_bridge.hpp"
 #include "native/scale_matrix.hpp"
 #include "native/contracts.hpp"
+#include "native/mode_registry.hpp"
 #if !defined(MHP3RD_BASELINE_B0)
 #include "native/translation_matrix.hpp"
 #include "native/vector_construct.hpp"
 #include "native/matrix_copy.hpp"
+#include "native/vector_metrics_runtime.hpp"
 #endif
 #include "testing/runtime_recording.hpp"
 #include "testing/runtime_diagnostics.hpp"
@@ -42,6 +44,12 @@ void MHP3RD_CAMERA_HELPER_UNIT(Runtime &, AllegrexContext &);
 }
 #endif
 
+#if defined(MHP3RD_VECTOR_METRICS_UNIT) && !defined(MHP3RD_BASELINE_B0)
+namespace psprecomp {
+void MHP3RD_VECTOR_METRICS_UNIT(Runtime &, AllegrexContext &);
+}
+#endif
+
 #include <atomic>
 #include <cerrno>
 #include <chrono>
@@ -64,8 +72,7 @@ namespace {
 
 void require_sealed_baseline_modes() {
 #if defined(MHP3RD_BASELINE_B0)
-    for (const auto *name : {"MHP3RD_NATIVE_ANGLE_STEP", "MHP3RD_NATIVE_SCALE_MATRIX",
-             "MHP3RD_NATIVE_TRANSLATION_MATRIX", "MHP3RD_NATIVE_VECTOR_CONSTRUCT", "MHP3RD_NATIVE_MATRIX_COPY"})
+    for (const auto *name : mhp3rd::native::kNativeModeSwitches)
         if (mhp3rd::native::parse_native_mode(std::getenv(name)) != mhp3rd::native::NativeMode::Off)
             throw std::runtime_error("The B0 reference is sealed with all native replacements off");
 #endif
@@ -79,6 +86,7 @@ int test_preflight() {
     require_sealed_baseline_modes();
     mhp3rd::testing::Fields fields{
         {"schema", std::string("yakumo-test-preflight-v1")},
+        {"native_mode_schema", std::string(mhp3rd::native::kNativeModeSchema)},
         {"recorder_revision", std::string(mhp3rd::testing::recording_revision())},
         {"configuration_sha256", mhp3rd::settings::case_configuration_sha256()},
         {"build_config_sha256", std::string(MHP3RD_BUILD_CONFIG_SHA256)},
@@ -426,8 +434,8 @@ int main(int argc, char **argv) {
             for (const char *name : {"MHP3RD_NO_RENDER", "MHP3RD_NO_AUDIO", "MHP3RD_INPUT_SCRIPT",
                     "MHP3RD_INPUT_LIVE", "PSPRECOMP_NO_CHAIN", "PSPRECOMP_COUNT_PC"})
                 metadata.push_back({std::string(name) + "_present", std::getenv(name) != nullptr});
-            for (const char *name : {"MHP3RD_NATIVE_ANGLE_STEP", "MHP3RD_NATIVE_SCALE_MATRIX",
-                    "MHP3RD_NATIVE_TRANSLATION_MATRIX", "MHP3RD_NATIVE_VECTOR_CONSTRUCT", "MHP3RD_NATIVE_MATRIX_COPY"}) {
+            metadata.push_back({"native_mode_schema", std::string(mhp3rd::native::kNativeModeSchema)});
+            for (const char *name : mhp3rd::native::kNativeModeSwitches) {
                 const char *value = std::getenv(name);
                 const auto mode = mhp3rd::native::parse_native_mode(value);
                 if (recording_options->role == "baseline" && mode != mhp3rd::native::NativeMode::Off)
@@ -498,6 +506,19 @@ int main(int argc, char **argv) {
         mhp3rd::native::configure_translation_matrix(runtime);
         mhp3rd::native::configure_vector_construct(runtime);
         mhp3rd::native::configure_matrix_copy(runtime);
+        const auto metric_modes = mhp3rd::native::vector_metric_environment_modes();
+        for (const auto mode : metric_modes)
+            if (mode != mhp3rd::native::NativeMode::Off && sha256 != mhp3rd::install::kExecutableSha256)
+                throw std::runtime_error("Vector metrics require the supported executable");
+        mhp3rd::native::VectorMetricRuntime vector_metrics(runtime, elf,
+#if defined(MHP3RD_VECTOR_METRICS_UNIT)
+            &psprecomp::MHP3RD_VECTOR_METRICS_UNIT
+#else
+            nullptr
+#endif
+        );
+        if (!vector_metrics.install(metric_modes))
+            throw std::runtime_error("Vector metric registration failed; refusing partial native startup");
 #endif
         if (recording && !recording_options->case_catalog.empty()) {
             if (sha256 != mhp3rd::install::kExecutableSha256)
@@ -558,6 +579,7 @@ int main(int argc, char **argv) {
         mhp3rd::native::report_translation_matrix();
         mhp3rd::native::report_vector_construct();
         mhp3rd::native::report_matrix_copy();
+        vector_metrics.report();
 #endif
         return runtime.stop_reason().empty() ? 0 : 4;
     } catch (const std::exception &e) {

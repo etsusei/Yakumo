@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <chrono>
 #include <limits>
 #include <string>
@@ -16,14 +17,17 @@
 
 namespace mhp3rd::testing {
 namespace {
-constexpr std::array<std::uint32_t, 5> kEntries{
+constexpr std::array<std::uint32_t, kProbeLeafCount> kEntries{
     0x088775ACu, 0x08878B28u, 0x08878B4Cu, 0x08877818u, 0x08879D08u,
+    0x08877244u, 0x08877264u, 0x08877280u, 0x088772A8u,
 };
-constexpr std::array<const char *, 5> kNames{
+constexpr std::array<const char *, kProbeLeafCount> kNames{
     "angle", "scale_matrix", "translation_matrix", "vector_construct", "matrix_copy",
+    "norm", "norm_squared", "distance", "distance_squared",
 };
-constexpr std::array<std::uint32_t, 5> kBits{
+constexpr std::array<std::uint32_t, kProbeLeafCount> kBits{
     kProbeAngle, kProbeScale, kProbeTranslation, kProbeVector, kProbeCopy,
+    kProbeNorm, kProbeNormSquared, kProbeDistance, kProbeDistanceSquared,
 };
 constexpr std::array<const char *, 4> kVariantNames{"aot", "native", "verify", "fallback"};
 std::atomic<std::uint64_t> next_counter_epoch{1};
@@ -88,6 +92,18 @@ bool certify(psprecomp::Runtime &runtime, std::uint32_t entry) noexcept {
         case 0x08879D08u:
             return matches_span<80>(memory, entry,
                 "e918aeb6363b81be6cab6ddb2c2605f2179d24bcfa418ea3f24dc06ef393f6c9");
+        case 0x08877244u:
+            return matches_span<32>(memory, entry,
+                "1b1da8d38edcbeb7eb486e12977c6a667fa699639b6ef8d8d7d3f664219b12a0");
+        case 0x08877264u:
+            return matches_span<28>(memory, entry,
+                "1fa5cdbdd2f96479f4cecb659eb7f68dd95a82ef853f99d7a299dc707c241cc1");
+        case 0x08877280u:
+            return matches_span<40>(memory, entry,
+                "977da7d41ecfd722f43c497c0f4627bb4faa7d57126d1cefa8f92138115b02a1");
+        case 0x088772A8u:
+            return matches_span<36>(memory, entry,
+                "05771b861950457e9e065384220c69cc255874d63fe09e62face44defea00d36");
         default: return false;
         }
     } catch (...) {
@@ -579,6 +595,7 @@ thread_local std::array<AotLink, ProbeTracker::kMaxDepth> aot_links{};
 thread_local std::size_t aot_depth{};
 thread_local std::weak_ptr<NativeProbeSession> suppressed_session;
 thread_local bool suppressed{};
+thread_local NativeProbeAotSuppression *aot_suppression_top{};
 
 void compact_active_links(const std::shared_ptr<NativeProbeSession> &session) noexcept {
     std::size_t kept = 0;
@@ -593,6 +610,29 @@ void compact_active_links(const std::shared_ptr<NativeProbeSession> &session) no
     aot_depth = kept;
 }
 } // namespace
+
+NativeProbeAotSuppression::NativeProbeAotSuppression(
+        psprecomp::Runtime &runtime, const psprecomp::AllegrexContext &context,
+        std::uint32_t entry) noexcept
+    : runtime_(&runtime), context_(&context), entry_(entry),
+      previous_(aot_suppression_top) {
+    aot_suppression_top = this;
+}
+
+NativeProbeAotSuppression::~NativeProbeAotSuppression() noexcept {
+    assert(aot_suppression_top == this);
+    aot_suppression_top = previous_;
+}
+
+bool NativeProbeAotSuppression::applies(
+        const psprecomp::Runtime &runtime, const psprecomp::AllegrexContext &context,
+        std::uint32_t entry) noexcept {
+    for (const auto *guard = aot_suppression_top; guard; guard = guard->previous_) {
+        if (guard->runtime_ == &runtime && guard->context_ == &context &&
+            guard->entry_ == entry) return true;
+    }
+    return false;
+}
 
 void configure_native_probes(std::shared_ptr<GameObserver> observer, std::uint32_t mask) noexcept {
     std::shared_ptr<NativeProbeSession> next;
@@ -641,6 +681,7 @@ void native_probe_verification_mismatch(psprecomp::Runtime &runtime,
 void native_probe_aot_enter(psprecomp::Runtime &runtime,
                             const psprecomp::AllegrexContext &context,
                             std::uint32_t entry) noexcept {
+    if (NativeProbeAotSuppression::applies(runtime, context, entry)) return;
     if (current_mask.load(std::memory_order_acquire) == 0) return;
     auto session = std::atomic_load_explicit(&current_session, std::memory_order_acquire);
     if (!session || !session->selected(entry)) return;
@@ -674,6 +715,7 @@ void native_probe_aot_enter(psprecomp::Runtime &runtime,
 void native_probe_aot_exit(psprecomp::Runtime &runtime,
                            const psprecomp::AllegrexContext &context,
                            std::uint32_t entry, std::uint32_t jump_target) noexcept {
+    if (NativeProbeAotSuppression::applies(runtime, context, entry)) return;
     if (suppressed) {
         const auto old = suppressed_session.lock();
         const auto current = std::atomic_load_explicit(&current_session, std::memory_order_acquire);

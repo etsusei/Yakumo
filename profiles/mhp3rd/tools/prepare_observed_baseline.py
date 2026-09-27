@@ -40,6 +40,9 @@ OBSERVATION_FILES = (
     "profiles/mhp3rd/host/hle/hle_system.cpp",
     "profiles/mhp3rd/host/native/bridge_contracts.hpp",  # Offline harness only.
     "profiles/mhp3rd/host/native/contracts.hpp",         # Baseline mode parsing.
+    "profiles/mhp3rd/host/native/mode_registry.hpp",     # Shared mode names; B0 remains off.
+    "profiles/mhp3rd/host/native/vector_metric_dispatch.hpp",  # Same-unit observation seam.
+    "profiles/mhp3rd/host/native/vector_metric_dispatch.cpp",
     "profiles/mhp3rd/host/overlays.cpp",
     "profiles/mhp3rd/host/overlays.hpp",
     "profiles/mhp3rd/host/settings/settings.cpp",
@@ -54,6 +57,7 @@ OBSERVATION_FILES = (
     "profiles/mhp3rd/scripts/check_offline.py",
     "profiles/mhp3rd/tools/compare_test_runs.py",
     "profiles/mhp3rd/tools/native_batch.py",
+    "profiles/mhp3rd/tools/native_modes.py",
     "profiles/mhp3rd/tools/instrument_probes.py",
     "profiles/mhp3rd/tools/prepare_observed_baseline.py",
     "profiles/mhp3rd/tools/prepare_resources.py",
@@ -210,6 +214,9 @@ def _recording_revision(stage: Path) -> str:
     testing = PROFILE + "host/testing/"
     paths = sorted(testing + name for name in OBSERVATION_TESTING_FILES)
     paths += [
+        PROFILE + "host/native/mode_registry.hpp",
+        PROFILE + "host/native/vector_metric_dispatch.hpp",
+        PROFILE + "host/native/vector_metric_dispatch.cpp",
         PROFILE + "tools/instrument_probes.py",
         PROFILE + "host/hle/control_delivery.hpp",
         PROFILE + "host/hle/control_delivery.cpp",

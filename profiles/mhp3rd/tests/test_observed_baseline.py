@@ -6,6 +6,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import re
 import subprocess
 import tarfile
 import tempfile
@@ -27,6 +28,23 @@ def git(repo: Path, *args: str, input_data: bytes | None = None) -> bytes:
 
 
 class ObservedBaselineTests(unittest.TestCase):
+    def test_recording_revision_matches_cmake_input_order(self) -> None:
+        repo = TOOL.parents[3]
+        profile = TOOL.parents[1]
+        cmake = (profile / "CMakeLists.txt").read_text(encoding="utf-8")
+        start = cmake.index("list(APPEND MHP3RD_RECORDING_REVISION_INPUTS")
+        end = cmake.index(")", start)
+        appended = re.findall(r'"\$\{MHP3RD_PROFILE_DIR\}/([^"\n]+)"', cmake[start:end])
+        self.assertEqual(appended[:3], [
+            "host/native/mode_registry.hpp",
+            "host/native/vector_metric_dispatch.hpp",
+            "host/native/vector_metric_dispatch.cpp",
+        ])
+        paths = sorted([*profile.glob("host/testing/*.cpp"), *profile.glob("host/testing/*.hpp")])
+        paths.extend(profile / name for name in appended)
+        joined = "".join(hashlib.sha256(path.read_bytes()).hexdigest() + ";" for path in paths)
+        self.assertEqual(PREP._recording_revision(repo), hashlib.sha256(joined.encode("ascii")).hexdigest())
+
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

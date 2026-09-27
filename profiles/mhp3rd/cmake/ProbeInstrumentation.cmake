@@ -4,11 +4,11 @@ option(MHP3RD_CERTIFIED_PROBES "Compile observational boundaries for supported n
 set(MHP3RD_PROBE_INSTRUMENTED_SOURCES)
 if(MHP3RD_CERTIFIED_PROBES AND MHP3RD_CAMERA_HELPER_UNIT)
     find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
-    set(probe_entries 088775AC 08877818 08878B28 08878B4C 08879D08)
+    set(probe_entries 088775AC 08877818 08878B28 08878B4C 08879D08 08877244 08877264 08877280 088772A8)
     set(found_entries)
     foreach(unit IN LISTS MHP3RD_GENERATED)
         file(STRINGS "${unit}" registrations
-            REGEX "register_function\\(0x(088775AC|08877818|08878B28|08878B4C|08879D08)u,")
+            REGEX "register_function\\(0x(088775AC|08877818|08878B28|08878B4C|08879D08|08877244|08877264|08877280|088772A8)u,")
         if(NOT registrations)
             continue()
         endif()

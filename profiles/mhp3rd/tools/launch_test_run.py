@@ -26,8 +26,9 @@ import uuid
 from typing import Any
 
 try:
-    from . import run_cases, run_package
+    from . import native_modes, run_cases, run_package
 except ImportError:
+    import native_modes  # type: ignore[no-redef]
     import run_cases  # type: ignore[no-redef]
     import run_package  # type: ignore[no-redef]
 
@@ -254,8 +255,15 @@ def _load_config(config_path: os.PathLike[str] | str) -> dict[str, Any]:
         config = run_package._parse_json(raw)
     except (run_package.PackageError, ValueError, UnicodeError, RecursionError) as error:
         raise LaunchError("invalid launch configuration JSON") from error
-    if set(config) != _LAUNCH_FIELDS or config.get("schema") != LAUNCH_SCHEMA:
+    if set(config) not in (_LAUNCH_FIELDS, _LAUNCH_FIELDS | {"native_mode_schema"}) or config.get("schema") != LAUNCH_SCHEMA:
         raise LaunchError("invalid launch configuration schema or fields")
+    mode_schema = config.get("native_mode_schema")
+    if "native_mode_schema" in config and mode_schema is None:
+        raise LaunchError("unknown native mode schema")
+    try:
+        mode_fields = native_modes.fields(mode_schema)
+    except ValueError as error:
+        raise LaunchError("unknown native mode schema") from error
     role = config["role"]
     if role not in ("baseline", "candidate"):
         raise LaunchError("role must be baseline or candidate")
@@ -304,8 +312,8 @@ def _load_config(config_path: os.PathLike[str] | str) -> dict[str, Any]:
                 any(ord(char) < 32 or ord(char) == 127 for char in value)):
             raise LaunchError("settings contain an invalid key or value")
     modes = config["native_modes"]
-    if type(modes) is not dict or set(modes) != set(run_package.NATIVE_MODE_FIELDS):
-        raise LaunchError("native_modes must name every certified helper")
+    if type(modes) is not dict or set(modes) != set(mode_fields):
+        raise LaunchError("native_modes must name exactly the helpers for the declared schema")
     for key, mode in modes.items():
         if mode not in ("off", "verify", "native"):
             raise LaunchError(f"invalid native mode for {key}")
@@ -318,7 +326,7 @@ def _load_config(config_path: os.PathLike[str] | str) -> dict[str, Any]:
         provenance = _hash(provenance, "baseline_provenance_sha256")
     elif provenance != "":
         raise LaunchError("candidate baseline_provenance_sha256 must be empty")
-    return {
+    normalized = {
         "role": role, "batch_id": batch_id, "baseline_id": baseline_id,
         "baseline_commit": baseline_commit, "source_commit": source_commit,
         "binary": binary, "iso": iso, "elf": elf, "overlays": overlays,
@@ -331,6 +339,9 @@ def _load_config(config_path: os.PathLike[str] | str) -> dict[str, Any]:
         "recorder_revision": _revision(config["recorder_revision"]),
         "baseline_provenance_sha256": provenance,
     }
+    if mode_schema is not None:
+        normalized["native_mode_schema"] = mode_schema
+    return normalized
 
 
 def _new_run_root(work_root: Path) -> tuple[str, Path, Path]:
@@ -489,8 +500,12 @@ def _read_preflight(path: Path, returncode: int | None, timed_out: bool,
         value = run_package._parse_json(raw, flat=True)
     except (run_package.PackageError, ValueError, UnicodeError, RecursionError) as error:
         raise LaunchError("binary preflight did not emit one bounded JSON object") from error
-    if set(value) != _PREFLIGHT_FIELDS or value["schema"] != PREFLIGHT_SCHEMA:
+    mode_schema = config.get("native_mode_schema")
+    expected_fields = _PREFLIGHT_FIELDS | ({"native_mode_schema"} if mode_schema is not None else set())
+    if set(value) != expected_fields or value["schema"] != PREFLIGHT_SCHEMA:
         raise LaunchError("binary preflight schema or fields differ")
+    if mode_schema is not None and value["native_mode_schema"] != mode_schema:
+        raise LaunchError("binary preflight native mode schema differs from the launch manifest")
     expected = {
         "recorder_revision": config["recorder_revision"],
         "configuration_sha256": config["configuration_sha256"],

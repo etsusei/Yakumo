@@ -27,6 +27,7 @@ from typing import Any, Callable
 import register_baseline
 import run_cases
 import native_batch
+import native_modes
 
 
 PROFILE = Path(__file__).resolve().parents[1]
@@ -35,7 +36,7 @@ BUILD_SCHEMA = "yakumo-observed-build-v1"
 PREFLIGHT_SCHEMA = "yakumo-test-preflight-v1"
 LAUNCH_SCHEMA = "yakumo-test-launch-v1"
 ROLES = ("baseline", "candidate")
-NATIVE_MODES = tuple(register_baseline.NATIVE_SWITCHES)
+NATIVE_MODES = native_modes.LEGACY_FIELDS
 SHA = re.compile(r"[0-9a-f]{64}\Z", re.ASCII)
 COMMIT = re.compile(r"[0-9a-f]{40}\Z", re.ASCII)
 RECORDER = re.compile(r"source-sha256:[0-9a-f]{64}\Z", re.ASCII)
@@ -246,8 +247,10 @@ def _preflight(build: dict[str, Any], *, settings: dict[str, str],
     required = {"schema", "recorder_revision", "configuration_sha256", "build_config_sha256",
                 "gameplay_source_commit", "baseline_sealed", "renderer_compiled", "aot_probes_compiled"}
     required.add("baseline_provenance_sha256")
-    if type(value) is not dict or set(value) != required or value["schema"] != PREFLIGHT_SCHEMA:
+    if type(value) is not dict or set(value) not in (required, required | {"native_mode_schema"}) or value["schema"] != PREFLIGHT_SCHEMA:
         raise PairError("Native preflight schema differs")
+    if "native_mode_schema" in value and value["native_mode_schema"] != native_modes.V2_SCHEMA:
+        raise PairError("Unknown native mode schema in native preflight")
     for key in ("recorder_revision", "build_config_sha256", "gameplay_source_commit", "baseline_sealed"):
         if value[key] != build[key]:
             raise PairError(f"Native preflight differs from {build['role']} build manifest: {key}")
@@ -497,7 +500,8 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
                 registration: dict[str, Any], sources: dict[str, str],
                 overlay_tree: dict[str, Any], overlay_id: str,
                 work_root: Path, output: Path, batch_id: str, runner: Run,
-                execution_profile: dict[str, Any] | None = None) -> dict[str, Any]:
+                execution_profile: dict[str, Any] | None = None,
+                mode_schema: str | None = None) -> dict[str, Any]:
     contents = app / "Contents"
     macos = contents / "MacOS"
     framework = contents / "Frameworks"
@@ -557,12 +561,21 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
     binary_sha = _hash(game)
     installed_overlays = register_baseline._scan_tree(framework / "overlays")
     installed_overlay_id = register_baseline._tree_id(installed_overlays)
+    mode_fields = native_modes.fields(mode_schema)
+    if mode_schema == native_modes.V2_SCHEMA and execution_profile is None:
+        raise PairError("Versioned native modes require an explicit execution profile")
+    if execution_profile is not None:
+        profile_schema = (native_modes.V2_SCHEMA if execution_profile["schema"] == native_batch.V2_SCHEMA else None)
+        if mode_schema != profile_schema:
+            raise PairError("Execution profile and binary native mode schemas differ")
     if role == "baseline":
-        native_modes = {name: "off" for name in NATIVE_MODES}
+        selected_modes = {name: "off" for name in mode_fields}
     elif execution_profile is not None:
-        native_modes = dict(execution_profile["candidate_modes"])
+        selected_modes = dict(execution_profile["candidate_modes"])
     else:
-        native_modes = {name: "verify" for name in NATIVE_MODES}
+        selected_modes = {name: "verify" for name in mode_fields}
+    if set(selected_modes) != set(mode_fields):
+        raise PairError("Execution profile does not declare exactly the binary's native modes")
     config = {
         "schema": LAUNCH_SCHEMA, "role": role, "batch_id": batch_id,
         "baseline_id": "B0", "baseline_commit": registration["identity"]["source"]["commit"],
@@ -579,12 +592,14 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
                   "sha256": hashlib.sha256(json.dumps(run_cases.load_case_catalog(cases), sort_keys=True,
                                                        separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest()},
         "work_root": str(work_root), "settings": dict(settings),
-        "native_modes": native_modes,
+        "native_modes": selected_modes,
         "probe_selection": "all", "configuration_sha256": settings_hash,
         "build_config_sha256": build["build_config_sha256"],
         "recorder_revision": build["recorder_revision"],
         "baseline_provenance_sha256": build.get("baseline_source_content_sha256", ""),
     }
+    if mode_schema is not None:
+        config["native_mode_schema"] = mode_schema
     _write_json(testing / "launch-config.json", config)
     _run(["codesign", "--force", "--sign", "-", "--timestamp=none", str(app)], runner=runner)
     _run(["codesign", "--verify", "--deep", "--strict", str(app)], runner=runner)
@@ -619,6 +634,9 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
     preflight_candidate = _preflight(candidate, settings=settings, runner=runner)
     if preflight_base["configuration_sha256"] != preflight_candidate["configuration_sha256"]:
         raise PairError("Paired builds have different effective configuration")
+    mode_schema = preflight_base.get("native_mode_schema")
+    if mode_schema != preflight_candidate.get("native_mode_schema"):
+        raise PairError("Paired builds have different native mode schemas")
     overlays = _real_dir(inputs.overlays, "overlay directory")
     overlay_tree = register_baseline._scan_tree(overlays)
     if len(overlay_tree["files"]) != 355 or overlay_tree["dirs"] or any(
@@ -636,12 +654,16 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
     execution_profile = (native_batch.load_profile(
         _real_file(inputs.execution_profile, "native execution profile"), catalog)
         if inputs.execution_profile is not None else None)
+    expected_schema = (native_modes.V2_SCHEMA if execution_profile is not None and
+                       execution_profile["schema"] == native_batch.V2_SCHEMA else None)
+    if mode_schema != expected_schema:
+        raise PairError("Binary native mode schema requires a matching explicit execution profile")
     launcher = _real_file(inputs.launcher, "native test launcher")
     python = _real_file(inputs.python, "external Python interpreter")
     if not os.access(python, os.X_OK):
         raise PairError("External Python interpreter is not executable")
     scripts = [_real_file(PROFILE / "tools" / name, name) for name in (
-        "run_package.py", "run_cases.py", "native_batch.py", "compare_test_runs.py",
+        "run_package.py", "run_cases.py", "native_batch.py", "native_modes.py", "compare_test_runs.py",
         "launch_test_run.py")]
     moltenvk = _real_file(inputs.moltenvk or Path("/opt/homebrew/lib/libMoltenVK.dylib"), "MoltenVK driver")
     font = _real_file(inputs.font or repo / "out/native-experiment/Yakumo-baseline.app/Contents/Resources/fonts/NotoSansCJKjp-Regular.otf",
@@ -668,7 +690,8 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
                 settings=settings,
                 registration=registration, sources=sources, overlay_tree=overlay_tree,
                 overlay_id=overlay_id, work_root=work_root, output=output,
-                batch_id=batch_id, runner=runner, execution_profile=execution_profile)
+                batch_id=batch_id, runner=runner, execution_profile=execution_profile,
+                mode_schema=mode_schema)
         if configs["baseline"]["binary"]["sha256"] == configs["candidate"]["binary"]["sha256"]:
             raise PairError("Baseline and candidate application binaries are identical")
         if configs["baseline"]["overlays"]["tree_id"] != configs["candidate"]["overlays"]["tree_id"]:
@@ -686,6 +709,8 @@ def package_pair(inputs: PairInputs, *, runner: Run = subprocess.run,
         if execution_profile is not None:
             report["execution_profile"] = execution_profile
             report["execution_profile_sha256"] = native_batch.profile_sha256(execution_profile)
+        if mode_schema is not None:
+            report["native_mode_schema"] = mode_schema
         _write_json(stage / "pair-manifest.json", report)
         if output.exists() or output.is_symlink():
             raise PairError("Output appeared during assembly")

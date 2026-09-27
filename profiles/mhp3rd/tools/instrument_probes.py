@@ -28,6 +28,7 @@ class Leaf:
     size: int
     returns: tuple[int, ...]
     store_delay_slot: bool = False
+    stack_restore_delay_slot: bool = False
 
 
 # Addresses and return offsets are certified format facts, not game code.
@@ -37,7 +38,12 @@ LEAVES: dict[int, Leaf] = {
     0x08878B28: Leaf(36, (0x1C,), True),
     0x08878B4C: Leaf(36, (0x1C,), True),
     0x08879D08: Leaf(80, (0x48,)),
+    0x08877244: Leaf(32, (0x18,), stack_restore_delay_slot=True),
+    0x08877264: Leaf(28, (0x14,), stack_restore_delay_slot=True),
+    0x08877280: Leaf(40, (0x20,), stack_restore_delay_slot=True),
+    0x088772A8: Leaf(36, (0x1C,), stack_restore_delay_slot=True),
 }
+VECTOR_METRIC_ENTRIES = frozenset((0x08877244, 0x08877264, 0x08877280, 0x088772A8))
 
 _LABEL = re.compile(r"(?m)^L_([0-9A-F]{8}):(?=\r?$)")
 _ENTRY_SIGNATURE = re.compile(
@@ -47,8 +53,10 @@ _ENTRY_SIGNATURE = re.compile(
 _RUNTIME_INCLUDE = re.compile(r'(?m)^#include "psprecomp/runtime\.hpp"(?P<newline>\r?\n)')
 _ADDRESS = re.compile(r"0[xX][0-9a-fA-F]{1,8}\Z")
 _INCLUDE = '#include "testing/probes.hpp"'
+_VECTOR_METRIC_INCLUDE = '#include "native/vector_metric_dispatch.hpp"'
 _ENTER = "native_probe_aot_enter"
 _EXIT = "native_probe_aot_exit"
+_VECTOR_METRIC_DISPATCH = "dispatch_vector_metric_entry"
 _MANIFEST_SCHEMA = "mhp3rd-probe-instrumentation-v1"
 
 
@@ -94,6 +102,11 @@ def _check_return_block(block: str, entry: int, return_address: int, leaf: Leaf)
     if leaf.store_delay_slot:
         if not (delay_slot.startswith("aot_mem.aot_store32(") and delay_slot.endswith(");")):
             raise ProbeInstrumentationError(f"expected a store delay slot at 0x{return_address:08X}")
+    elif leaf.stack_restore_delay_slot:
+        if delay_slot != "ctx.gpr[29] = (ctx.gpr[29] + static_cast<std::uint32_t>(16));":
+            raise ProbeInstrumentationError(
+                f"expected the audited stack restore at 0x{return_address:08X}"
+            )
     elif delay_slot != "// nop":
         raise ProbeInstrumentationError(f"expected a nop delay slot at 0x{return_address:08X}")
     local_pc = re.findall(r"(?m)^[ \t]*local_pc = jump_target;\r?\n", block)
@@ -109,7 +122,9 @@ def instrument_source(source: str, entries: tuple[int, ...]) -> tuple[str, dict]
         raise ProbeInstrumentationError("at least one probe entry is required")
     if len(set(entries)) != len(entries) or any(entry not in LEAVES for entry in entries):
         raise ProbeInstrumentationError("requested probe entries must be distinct supported addresses")
-    if _INCLUDE in source or _ENTER in source or _EXIT in source:
+    if any(marker in source for marker in (
+        _INCLUDE, _VECTOR_METRIC_INCLUDE, _ENTER, _EXIT, _VECTOR_METRIC_DISPATCH
+    )):
         raise ProbeInstrumentationError("source is already instrumented")
 
     signature = _single(list(_ENTRY_SIGNATURE.finditer(source)), "generated entry signature")
@@ -127,7 +142,10 @@ def instrument_source(source: str, entries: tuple[int, ...]) -> tuple[str, dict]
         raise ProbeInstrumentationError("no generated instruction labels found")
     next_label = {match.start(): ordered_labels[i + 1].start()
                   for i, match in enumerate(ordered_labels[:-1])}
-    insertions: list[tuple[int, str]] = [(include.end(), _INCLUDE + newline)]
+    includes = _INCLUDE + newline
+    if any(entry in VECTOR_METRIC_ENTRIES for entry in entries):
+        includes += _VECTOR_METRIC_INCLUDE + newline
+    insertions: list[tuple[int, str]] = [(include.end(), includes)]
     entry_total = exit_total = 0
 
     for entry in entries:
@@ -143,10 +161,21 @@ def instrument_source(source: str, entries: tuple[int, ...]) -> tuple[str, dict]
         if span.count("jump_target = ctx.gpr[31];") != len(leaf.returns):
             raise ProbeInstrumentationError(f"unexpected return target in 0x{entry:08X} span")
 
-        insertions.append((
-            _line_after(source, first),
-            f"    mhp3rd::testing::{_ENTER}({runtime_name}, ctx, 0x{entry:08X}u);{newline}",
-        ))
+        entry_callback = f"    mhp3rd::testing::{_ENTER}({runtime_name}, ctx, 0x{entry:08X}u);{newline}"
+        if entry in VECTOR_METRIC_ENTRIES:
+            # A same-unit local goto bypasses Runtime's registered entry. Give
+            # the owned dispatcher first refusal, then retain the original AOT
+            # entry and its observation callback when no native mode applies.
+            entry_callback = (
+                f"    if (mhp3rd::native::{_VECTOR_METRIC_DISPATCH}({runtime_name}, ctx, 0x{entry:08X}u)) {{{newline}"
+                f"        if ({runtime_name}.stopped()) return;{newline}"
+                f"        local_pc = ctx.pc;{newline}"
+                f"        if (++local_transfers < 2048u) {{ entry_id = 0u; goto LOCAL_DISPATCH; }}{newline}"
+                f"        return;{newline}"
+                f"    }}{newline}"
+                + entry_callback
+            )
+        insertions.append((_line_after(source, first), entry_callback))
         entry_total += 1
         for offset in leaf.returns:
             return_address = entry + offset

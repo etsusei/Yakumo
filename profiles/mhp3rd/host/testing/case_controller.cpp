@@ -39,6 +39,10 @@ std::uint32_t probe_bit(std::uint32_t entry) noexcept {
     case 0x08878B4Cu: return kProbeTranslation;
     case 0x08877818u: return kProbeVector;
     case 0x08879D08u: return kProbeCopy;
+    case 0x08877244u: return kProbeNorm;
+    case 0x08877264u: return kProbeNormSquared;
+    case 0x08877280u: return kProbeDistance;
+    case 0x088772A8u: return kProbeDistanceSquared;
     default: return 0;
     }
 }

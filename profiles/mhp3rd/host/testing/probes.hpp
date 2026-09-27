@@ -23,8 +23,15 @@ inline constexpr std::uint32_t kProbeScale = 1u << 1u;
 inline constexpr std::uint32_t kProbeTranslation = 1u << 2u;
 inline constexpr std::uint32_t kProbeVector = 1u << 3u;
 inline constexpr std::uint32_t kProbeCopy = 1u << 4u;
-inline constexpr std::uint32_t kProbeAll = kProbeAngle | kProbeScale | kProbeTranslation |
-                                            kProbeVector | kProbeCopy;
+inline constexpr std::uint32_t kProbeNorm = 1u << 5u;
+inline constexpr std::uint32_t kProbeNormSquared = 1u << 6u;
+inline constexpr std::uint32_t kProbeDistance = 1u << 7u;
+inline constexpr std::uint32_t kProbeDistanceSquared = 1u << 8u;
+inline constexpr std::size_t kProbeLeafCount = 9;
+inline constexpr std::uint32_t kProbeLegacy = kProbeAngle | kProbeScale |
+    kProbeTranslation | kProbeVector | kProbeCopy;
+inline constexpr std::uint32_t kProbeAll = kProbeLegacy | kProbeNorm |
+    kProbeNormSquared | kProbeDistance | kProbeDistanceSquared;
 
 struct ProbeVariantStats {
     std::uint64_t calls{};
@@ -71,7 +78,7 @@ struct ProbeSnapshot {
     static constexpr std::size_t kRecentCapacity = 32;
     std::uint32_t mask{};
     bool final{};
-    std::array<ProbeLeafStats, 5> leaves{};
+    std::array<ProbeLeafStats, kProbeLeafCount> leaves{};
     std::array<ProbeDetail, kRecentCapacity> recent{};
     std::size_t recent_count{};
 };
@@ -137,7 +144,7 @@ private:
     std::uint64_t next_token_{1};
     bool final_{};
     std::array<ThreadSlot, kMaxThreads> threads_{};
-    std::array<ProbeLeafStats, 5> leaves_{};
+    std::array<ProbeLeafStats, kProbeLeafCount> leaves_{};
     std::array<ProbeDetail, ProbeSnapshot::kRecentCapacity> recent_{};
     std::size_t recent_next_{};
     std::size_t recent_count_{};
@@ -161,6 +168,29 @@ void native_probe_aot_exit(psprecomp::Runtime &runtime, const psprecomp::Allegre
 void native_probe_verification_mismatch(psprecomp::Runtime &runtime,
                                         const psprecomp::AllegrexContext &context,
                                         std::uint32_t entry) noexcept;
+
+// Suppress only AOT boundary callbacks from a direct original-wrapper call.
+// The guard is thread-local and scoped so an outer native scope, or callbacks
+// for a different runtime, context, or entry, remain observable.
+class NativeProbeAotSuppression {
+public:
+    NativeProbeAotSuppression(psprecomp::Runtime &runtime,
+                              const psprecomp::AllegrexContext &context,
+                              std::uint32_t entry) noexcept;
+    ~NativeProbeAotSuppression() noexcept;
+    NativeProbeAotSuppression(const NativeProbeAotSuppression &) = delete;
+    NativeProbeAotSuppression &operator=(const NativeProbeAotSuppression &) = delete;
+
+    [[nodiscard]] static bool applies(const psprecomp::Runtime &runtime,
+                                      const psprecomp::AllegrexContext &context,
+                                      std::uint32_t entry) noexcept;
+
+private:
+    const psprecomp::Runtime *runtime_{};
+    const psprecomp::AllegrexContext *context_{};
+    std::uint32_t entry_{};
+    NativeProbeAotSuppression *previous_{};
+};
 
 class NativeProbeScope {
 public:

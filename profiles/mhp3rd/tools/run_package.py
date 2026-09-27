@@ -25,6 +25,11 @@ import tempfile
 import zlib
 from typing import Any, Dict, List, Optional, Tuple
 
+if __package__:
+    from . import native_modes
+else:
+    import native_modes
+
 
 FILE_HEADER = struct.Struct("<8sHHI")
 RECORD_HEADER = struct.Struct("<4sIQQHHI")
@@ -44,11 +49,8 @@ KIND_NAMES = {
     5: "checkpoint", 6: "anomaly", 7: "input", 8: "state",
     9: "probe", 10: "performance", 11: "error", 12: "recording_loss",
 }
-NATIVE_MODE_FIELDS = (
-    "MHP3RD_NATIVE_ANGLE_STEP", "MHP3RD_NATIVE_SCALE_MATRIX",
-    "MHP3RD_NATIVE_TRANSLATION_MATRIX", "MHP3RD_NATIVE_VECTOR_CONSTRUCT",
-    "MHP3RD_NATIVE_MATRIX_COPY",
-)
+# Retained for callers that construct historical five-helper fixtures.
+NATIVE_MODE_FIELDS = native_modes.LEGACY_FIELDS
 IDENTITY_FIELDS = (
     "role", "run_id", "batch_id", "baseline_id", "baseline_commit",
     "recorder_revision", "observer_schema", "recording_mode", "binary_sha256",
@@ -350,12 +352,20 @@ def _identity(begin: Dict[str, Any]) -> Dict[str, Any]:
     identity = {name: begin.get(name) for name in IDENTITY_FIELDS + OPTIONAL_IDENTITY_FIELDS
                 if name not in panel_fields or name in begin}
     identity["native_modes"] = _native_modes(begin)
+    if "native_mode_schema" in begin:
+        identity["native_mode_schema"] = begin["native_mode_schema"]
     return identity
 
 
 def _native_modes(begin: Dict[str, Any]) -> Dict[str, str]:
+    schema = begin.get("native_mode_schema")
+    try:
+        declared = native_modes.fields(schema)
+    except ValueError:
+        declared = native_modes.LEGACY_FIELDS
+    observed = set(declared) | {key for key in begin if key.startswith("MHP3RD_NATIVE_")}
     return {name: begin[name] if type(begin.get(name)) is str and begin[name] else "unknown"
-            for name in NATIVE_MODE_FIELDS}
+            for name in sorted(observed)}
 
 
 def _validate(journal: Dict[str, Any], context: Dict[str, Any],
@@ -403,7 +413,19 @@ def _validate(journal: Dict[str, Any], context: Dict[str, Any],
             issues.append("invalid_optional_identity:" + name)
         elif name == "build_config" and (type(item) is not str or not item):
             issues.append("invalid_optional_identity:" + name)
-    for name in NATIVE_MODE_FIELDS:
+    mode_schema = begin.get("native_mode_schema")
+    try:
+        mode_fields = native_modes.fields(mode_schema)
+        for name in sorted(native_modes.extra_fields(begin, mode_schema)):
+            issues.append("undeclared_native_mode:" + name)
+    except ValueError:
+        issues.append("unknown_native_mode_schema")
+        mode_fields = native_modes.LEGACY_FIELDS
+        for name in sorted(key for key in begin if key.startswith("MHP3RD_NATIVE_") and key not in mode_fields):
+            issues.append("undeclared_native_mode:" + name)
+    if "native_mode_schema" in begin and mode_schema is None:
+        issues.append("unknown_native_mode_schema")
+    for name in mode_fields:
         if type(begin.get(name)) is not str or not begin[name]:
             issues.append("missing_native_mode:" + name)
         elif begin[name] not in ("off", "0", "verify", "native"):
@@ -536,6 +558,7 @@ def _validate(journal: Dict[str, Any], context: Dict[str, Any],
     metadata_only_prefixes = ("missing_identity:", "invalid_identity:",
                               "invalid_optional_identity:", "missing_context:",
                               "missing_native_mode:", "invalid_native_mode:",
+                              "undeclared_native_mode:",
                               "invalid_runtime_inputs:")
     metadata_only_issues = {
         "unsupported_observer_schema", "unsupported_recording_mode",
@@ -543,6 +566,7 @@ def _validate(journal: Dict[str, Any], context: Dict[str, Any],
         "runtime_inputs_after_case_begin", "unsupported_runtime_elf",
         "runtime_elf_profile_mismatch", "runtime_elf_context_mismatch",
         "runtime_inputs_contradiction",
+        "unknown_native_mode_schema",
     }
     metadata_complete = not any(item.startswith(metadata_only_prefixes) or
                                 item in metadata_only_issues for item in issues)
