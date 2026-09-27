@@ -100,3 +100,13 @@ original allocator and caller/provider spans from the local supported ELF;
 no original instruction bodies or resource payloads are included in tracked
 files. The related contracts record independently checked offsets, formulas
 and fingerprints, with unresolved ownership edges kept explicit.
+
+### Lobby owner construction and lifecycle validation
+
+The owner oracle uses locally supplied original ELF/overlay bytes and an
+existing original AOT module, bound by hashes and module identity. Tracked
+code contains independently written fixtures, comparison logic and format
+facts only. Derived overlay wrappers/disassembly, original module binaries
+and execution reports remain local and ignored. The source-slot lifecycle
+notes distinguish original control-flow observations from successful byte
+loading, which has not yet been validated.

@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 109,
+  "revision": 111,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T11:10:28Z",
+  "updated_at": "2026-09-27T11:27:32Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -602,6 +602,22 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_overlay_owner",
+      "type": "agent",
+      "role": "Original lobby overlay object creation and owner identity audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_slot_lifecycle",
+      "type": "agent",
+      "role": "Source slot loading/readiness/reset and command-state lifecycle audit",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     }
   ],
   "future_subagent_policy": {
@@ -643,7 +659,7 @@
   "execution_state": {
     "current_task_id": "ASSET-012",
     "next_task_id": "ASSET-012",
-    "next_action": "Continue ASSET-012: trace the actual owner allocation/vtable creation, overlay identity and successful source-slot load/readiness plus teardown/reuse invalidation. Current fixed-slot and allocator evidence is insufficient for live native registration; keep original paths and delivered apps unchanged.",
+    "next_action": "Continue ASSET-012 at the selected asynchronous worker completion path: correlate resource ID, exact destination, successful read/transform result and decoded extent to the live owner generation. Creation and command-pointer free are now proven in scoped original-code evidence; retain queue-idle/post-build flag limitations and keep production dispatch off.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": []
@@ -694,7 +710,10 @@
     "texture_command_adapter_pr": "https://github.com/etsusei/Yakumo/pull/27",
     "texture_allocation_contract": "docs/TEXTURE_ALLOCATION_CONTRACT.md",
     "texture_caller_source_audit": "docs/TEXTURE_CALLER_SOURCE_AUDIT.md",
-    "texture_allocation_audit_pr": "https://github.com/etsusei/Yakumo/pull/28"
+    "texture_allocation_audit_pr": "https://github.com/etsusei/Yakumo/pull/28",
+    "texture_owner_overlay_audit": "docs/TEXTURE_OWNER_OVERLAY_AUDIT.md",
+    "texture_slot_lifecycle": "docs/TEXTURE_SLOT_LIFECYCLE.md",
+    "texture_owner_validation": "docs/TEXTURE_OWNER_VALIDATION.md"
   },
   "update_protocol": [
     "Read the plan, ledger and repository instructions before choosing work.",
@@ -7797,17 +7816,19 @@
       "contributor_agent_ids": [
         "/root",
         "/root/texture_caller_source_audit",
-        "/root/texture_allocator_audit"
+        "/root/texture_allocator_audit",
+        "/root/texture_overlay_owner",
+        "/root/texture_slot_lifecycle"
       ],
       "created_at": "2026-09-27T10:55:25Z",
-      "updated_at": "2026-09-27T11:10:28Z",
+      "updated_at": "2026-09-27T11:27:32Z",
       "started_at": "2026-09-27T10:57:54Z",
       "completed_at": null,
       "scope": "Trace a real original texture-builder call path to source and command allocation owners, bounds and lifetime. Define a checked authority usable by production integration without inferring allocation extent from RAM mapping or an untrusted count.",
       "depends_on": [
         "ASSET-011"
       ],
-      "work_summary": "Recovered original command allocator/reset/free/reuse semantics and a concrete vtable/selector-7 provider with a fixed 0x5800-byte inline slot. Bounded original AOT/interpreter gate passed 168 top-level segments with full RAM/VRAM/CPU equality, including 16 caller segments and 8 actual virtual-provider calls on constructed owners. Source object creation, successful load readiness and exact release pairing remain unresolved; task stays in progress and no production authority is enabled.",
+      "work_summary": "Closed the specific source-owner allocation-to-lobby-constructor pointer chain and command-pointer free pairing. Original lobby constructor, provider, state reset, command release and owner free/reuse passed22 AOT/interpreter calls with full RAM/VRAM/CPU equality. Static loading audit identified asynchronous enqueue/poll/build states; per-request successful decoded extent and complete lifecycle interception remain unproved. ASSET-012 stays in progress; no production dispatch is enabled.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
@@ -7862,6 +7883,60 @@
           "kind": "validation_report",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "docs/TEXTURE_OWNER_OVERLAY_AUDIT.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_SLOT_LIFECYCLE.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "docs/TEXTURE_OWNER_VALIDATION.md",
+          "kind": "documentation",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_owner_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_texture_owner.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_owner_runner.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-owner-static-contract.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-slot-lifecycle-static.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-owner-provenance-final.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -7897,13 +7972,34 @@
             "name": "Strict compiler warnings",
             "status": "passed",
             "evidence": "C++20 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror syntax check passed for texture_allocation_oracle.cpp."
+          },
+          {
+            "name": "Lobby construction and separate command/owner release original gate",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-owner-provenance-final.json",
+            "sha256": "600df239d169906fe948268f1f980e81b905628053b8e753d36b25efb067cdd5",
+            "details": "22 top-level original calls per AOT/interpreter path; two variants each of owner construction, state reset, command release, stale vptr after owner free and exact owner-address reuse. Distinct command/owner heaps. Full RAM/VRAM/CPU match; maximum96567 interpreter slices. Existing original lobby dylib loaded read-only and bound by SHA256/module/header/code identity. No loader execution."
+          },
+          {
+            "name": "Original overlay and selected slot lifecycle audits",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-owner-static-contract.json",
+              "out/testing/texture-slot-lifecycle-static.json"
+            ],
+            "details": "Four factory/constructor spans and23 main-ELF lifecycle spans independently rechecked. Raw lobby/game overlay identities distinguish different code at same guest address. State4 follows builder; enqueue/idle do not prove successful decoded output."
+          },
+          {
+            "name": "Owner report rejection checks and strict compiler",
+            "status": "passed",
+            "evidence": "Four test_texture_owner_runner.py tests passed; rejects omitted coverage, altered scope/broadened loader claims, invalid execution budgets and missing overlay page. Strict C++20 conversion/signed warnings passed for owner harness."
           }
         ],
         "limitations": [
-          "Source vtable assignment at actual creation and successful load/ready event remain unresolved. A matching allocation size does not prove object identity.",
-          "Specific texture command pointer release/reset pairing and complete interception of lifetime changes remain unverified.",
-          "Constructed object execution proves original code flow, not a live source-ID mapping, legitimate object lifetime or production reachability.",
-          "No production registry, native hook, game run, concurrency, GPU or performance test; current apps and user records remain unchanged."
+          "Actual lobby creation pointer flow is established statically and constructor behavior validated with constructed heaps; the full factory and outer removal workflow were not executed.",
+          "Successful asynchronous resource completion and exact decoded extent for selector7 remain unproved; queue idle and post-build state4 are insufficient source readiness evidence.",
+          "Complete interception of reset/cancel/reload/free and binding of outer container slots to live owner instances remain implementation/coverage obligations.",
+          "No production ownership registry or native command dispatch, game run, GPU, concurrency or performance test. Existing apps and user records remain unchanged."
         ]
       },
       "implementation_commits": [
@@ -7941,6 +8037,20 @@
           "actor_id": "/root",
           "action": "published_partial_evidence",
           "description": "Published verified allocator/provider evidence and bounded original harness in draft PR #28 at 8110aee. ASSET-012 intentionally remains in progress: actual owner creation, load readiness and release pairing are unproven; next action is preserved."
+        },
+        {
+          "recorded_at": "2026-09-27T11:14:45Z",
+          "occurred_at": "2026-09-27T11:14:45Z",
+          "actor_id": "/root",
+          "action": "owner_lifecycle_audit_started",
+          "description": "Continuing source ownership through the two overlay images that can occupy the candidate constructor address, plus main-ELF slot loading and invalidation paths. Root prepares bounded original owner construction checks; no game run."
+        },
+        {
+          "recorded_at": "2026-09-27T11:27:32Z",
+          "occurred_at": "2026-09-27T11:27:32Z",
+          "actor_id": "/root",
+          "action": "owner_creation_and_release_evidence",
+          "description": "Closed the specific source-owner allocation-to-lobby-constructor pointer chain and command-pointer free pairing. Original lobby constructor, provider, state reset, command release and owner free/reuse passed22 AOT/interpreter calls with full RAM/VRAM/CPU equality. Static loading audit identified asynchronous enqueue/poll/build states; per-request successful decoded extent and complete lifecycle interception remain unproved. ASSET-012 stays in progress; no production dispatch is enabled."
         }
       ],
       "updated_by_agent_id": "/root"

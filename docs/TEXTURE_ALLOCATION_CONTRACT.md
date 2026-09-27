@@ -218,3 +218,13 @@ Four synthetic runner-validation tests and strict C++20 compiler warnings
 passed. ASSET-012 remains in progress until the source owner's creation and
 load/reuse chain provide a usable live authority; this allocator evidence
 alone does not close that task.
+
+
+Follow-up evidence resolves the specific allocation-pointer-to-lobby-constructor
+identity and selected command-pointer free pairing; see
+[owner construction](TEXTURE_OWNER_OVERLAY_AUDIT.md),
+[slot lifecycle](TEXTURE_SLOT_LIFECYCLE.md) and
+[bounded owner validation](TEXTURE_OWNER_VALIDATION.md). Earlier unresolved
+creation/free statements above describe the prior audit stage. Asynchronous
+source completion and decoded extent remain unresolved; ASSET-012 is still
+in progress.

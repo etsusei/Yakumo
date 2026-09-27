@@ -146,3 +146,12 @@ candidate 0x2F470-byte object allocation and overlay-side creation path without
 assuming that a matching size proves owner identity. No production hook is
 justified yet. See [allocator evidence](TEXTURE_ALLOCATION_CONTRACT.md) and
 [source audit](TEXTURE_CALLER_SOURCE_AUDIT.md).
+
+
+ASSET-012 further progress: the lobby overlay proves the exact owner pointer
+chain, and the original owner/command release helpers have bounded execution
+evidence (22 calls per AOT/interpreter path). The next seam is now the selected
+asynchronous manager's worker completion and exact decoded destination extent.
+The observed post-build state4 and queue-idle poll are not successful byte
+completion evidence. Preserve this gap and do not enable the native adapter
+until a usable per-owner source authority is implemented.
