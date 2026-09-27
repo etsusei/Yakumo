@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 90,
+  "revision": 91,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T08:26:11Z",
+  "updated_at": "2026-09-27T08:33:12Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -495,6 +495,14 @@
       "id": "/root/texture_dispatch_tests",
       "type": "agent",
       "role": "Independent production texture dispatch and ownership tests",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
+    },
+    {
+      "id": "/root/texture_integration_review",
+      "type": "agent",
+      "role": "Independent renderer ownership, fallback, B0 and finalization review",
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
@@ -6501,10 +6509,11 @@
         "/root",
         "/root/texture_owned_dispatch",
         "/root/texture_policy_audit",
-        "/root/texture_dispatch_tests"
+        "/root/texture_dispatch_tests",
+        "/root/texture_integration_review"
       ],
       "created_at": "2026-09-27T08:09:36Z",
-      "updated_at": "2026-09-27T08:26:11Z",
+      "updated_at": "2026-09-27T08:33:12Z",
       "started_at": "2026-09-27T08:14:29Z",
       "completed_at": null,
       "scope": "Connect immediate and asynchronous renderer texture decoding to an owned-byte portable core behind explicit off/verify/native policy, baseline enforcement and scoped observations. Keep bounded guest reads at an adapter, with legacy fallback and offline production dispatch tests; no automatic game or replacement of existing paired apps.",
@@ -6566,6 +6575,18 @@
           "kind": "validation_log",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "out/testing/texture-dispatch-paired-preflight.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-sources/B0-texture-dispatch-e154548/observed_baseline_manifest.json",
+          "kind": "source_audit",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -6580,7 +6601,9 @@
           "No live draw/source mapping or user acceptance yet."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "e1545482e8e997150f5d25796b7f6e1a2eb10ae9"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -6599,6 +6622,13 @@
           "actor_id": "/root",
           "action": "implementation_checkpoint",
           "description": "Production immediate and async dispatch integrated with immutable owned snapshots, separate off/verify/native policy, B0 compile guard and bounded recorder counters/final job drain. Candidate builds; two CTests, five policy-comparison tests and80 targeted compatibility tests pass. Original decoder unchanged. Observed B0 build/paired preflight and observation finalization verification remain pending; no game or app replacement."
+        },
+        {
+          "recorded_at": "2026-09-27T08:33:12Z",
+          "occurred_at": "2026-09-27T08:33:12Z",
+          "actor_id": "/root",
+          "action": "paired_build_verified",
+          "description": "Published checkpoint e154548 in draft PR #23. Both observed B0 and Candidate build; all42actual binary preflights pass with identical observer/build identities and baseline rejection of active texturemodes. Independent reviewer found no concrete integration/lifecycle defect. Extracting reporter for real-journal rate/final/ownership tests before scopedcompletion; currenttest apps remainunchanged."
         }
       ],
       "updated_by_agent_id": "/root"

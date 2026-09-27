@@ -105,6 +105,7 @@ OBSERVATION_TESTING_FILES = (
     "journal.cpp", "journal.hpp", "overlay_observation.cpp", "overlay_observation.hpp",
     "probes.cpp", "probes.hpp", "runtime_diagnostics.cpp", "runtime_diagnostics.hpp",
     "runtime_recording.cpp", "runtime_recording.hpp", "sdl_observers.cpp", "sdl_observers.hpp",
+    "texture_decode_observation.hpp",
     "session_recorder.cpp", "session_recorder.hpp", "state_observation.cpp",
     "state_observation.hpp",
 )

@@ -6,7 +6,7 @@
 #include "texture_decode.hpp"
 #if !defined(MHP3RD_BASELINE_B0)
 #include "portable_texture_dispatch.hpp"
-#include "testing/game_observers.hpp"
+#include "testing/texture_decode_observation.hpp"
 #endif
 #include "triangle_indices.hpp"
 #include "texture_pack.hpp"
@@ -609,9 +609,8 @@ struct VulkanRenderer::Impl {
 #if !defined(MHP3RD_BASELINE_B0)
     std::shared_ptr<PortableTextureDispatcher> texture_decoder =
         std::make_shared<PortableTextureDispatcher>(parse_texture_decode_mode(std::getenv(kTextureDecodeSwitch)));
-    std::weak_ptr<testing::GameObserver> texture_decode_observer{testing::active_observer()};
-    std::chrono::steady_clock::time_point texture_decode_reported{};
-    bool texture_decode_finalized{};
+    testing::TextureDecodeObservation texture_decode_observation{
+        testing::active_observer(), texture_decoder->mode()};
     void report_texture_decode(bool final);
 #endif
     struct Texture {
@@ -4502,32 +4501,7 @@ void VulkanRenderer::Impl::prewarm_pipelines() {
 
 #if !defined(MHP3RD_BASELINE_B0)
 void VulkanRenderer::Impl::report_texture_decode(bool final) {
-    if (texture_decode_finalized || texture_decoder->mode() == TextureDecodeMode::Off) return;
-    const auto observer = texture_decode_observer.lock();
-    if (!observer) return;
-    const auto now = std::chrono::steady_clock::now();
-    if (!final && now - texture_decode_reported < std::chrono::seconds(1)) return;
-    texture_decode_reported = now;
-    const auto counters = texture_decoder->counters();
-    observer->emit(testing::EventKind::State, "texture_decode.counters", {
-        {"schema", std::string(kTextureDecodeSchema)},
-        {"mode", std::string(texture_decode_mode_name(texture_decoder->mode()))},
-        {"scope", std::string("renderer_cache_miss_decodes_not_all_draws")},
-        {"final", final}, {"workers_drained", final},
-        {"requests", counters.requests},
-        {"immediate_requests", counters.immediate_requests},
-        {"async_requests", counters.async_requests},
-        {"async_capture_attempts", counters.async_capture_attempts},
-        {"snapshot_rejected", counters.snapshot_rejected},
-        {"unsupported_state", counters.unsupported_state},
-        {"portable_success", counters.portable_success},
-        {"verified", counters.verified}, {"native", counters.native},
-        {"fallbacks", counters.fallbacks}, {"mismatches", counters.mismatches},
-        {"errors", counters.errors}, {"legacy_failures", counters.legacy_failures},
-        {"portable_elapsed_ns", counters.portable_elapsed_ns},
-        {"reference_elapsed_ns", counters.reference_elapsed_ns},
-    }, final);
-    texture_decode_finalized = final;
+    (void)texture_decode_observation.report(texture_decoder->counters(), final);
 }
 #endif
 

@@ -63,8 +63,12 @@ concurrent jobs, malformed windows and the immediate/snapshot palette-boundary
 distinction. Paired-tool compatibility tests preserve historical records and
 reject inconsistent policy fields.
 
-The observed B0 build and complete paired preflight remain pending at this
-implementation checkpoint. Live Vulkan presentation, asynchronous scheduling
+Both roles built and passed 42 actual-binary preflight checks at the initial
+integration checkpoint. The extracted observation helper also passes real
+journal tests for rate limiting, every counter field, finalization exactly
+once, suppression after recorder close and no rebinding to another session.
+The final observer revision's matched build check is pending. Live Vulkan
+presentation, asynchronous scheduling
 under gameplay load, performance, exact source-to-draw mapping and user visual
 acceptance are not yet verified. Do not infer those from the offline core or
 dispatcher tests.
