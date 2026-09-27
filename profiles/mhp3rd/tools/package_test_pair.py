@@ -530,11 +530,15 @@ def _bundle_app(app: Path, *, role: str, build: dict[str, Any], launcher: Path,
     _copy_checked(cases, testing / "cases.json")
     (testing / "python.path").write_text(str(python) + "\n", encoding="utf-8")
     (testing / "python.sha256").write_text(_hash(python) + "\n", encoding="ascii")
+    # Separate delivered batches in Launch Services as well as in window titles.
+    # Reusing a role-only identifier makes old and corrected copies ambiguous.
+    batch_tag = hashlib.sha256(batch_id.encode("utf-8")).hexdigest()[:12]
+    display_name = "Yakumo " + role.title() + " (" + batch_id + ")"
     plist = {
         "CFBundleDevelopmentRegion": "en", "CFBundleExecutable": "YakumoTestLauncher",
-        "CFBundleIconFile": "Yakumo", "CFBundleIdentifier": "io.github.teamgdb.yakumo.test." + role,
-        "CFBundleInfoDictionaryVersion": "6.0", "CFBundleName": "Yakumo " + role.title(),
-        "CFBundleDisplayName": "Yakumo " + role.title(), "CFBundlePackageType": "APPL",
+        "CFBundleIconFile": "Yakumo", "CFBundleIdentifier": "io.github.teamgdb.yakumo.batch-" + batch_tag + ".test." + role,
+        "CFBundleInfoDictionaryVersion": "6.0", "CFBundleName": display_name,
+        "CFBundleDisplayName": display_name, "CFBundlePackageType": "APPL",
         "CFBundleShortVersionString": "0.1", "CFBundleVersion": "1",
         "LSMinimumSystemVersion": "13.0", "LSApplicationCategoryType": "public.app-category.action-games",
         "NSHighResolutionCapable": True, "LSSupportsGameMode": True,

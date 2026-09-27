@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 53,
+  "revision": 54,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T03:26:47Z",
+  "updated_at": "2026-09-27T04:13:46Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -337,9 +337,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "FONT-001",
-    "next_task_id": "ITER-001",
-    "next_action": "Corrected apps are in out/testing/dist/font-fixed; request only a brief game-text visual confirmation, not another four-case batch. The production rasterizer and actual prepared settings pass 43/43 with all 23 known omissions restored. Preserve prior apps/evidence and await confirmation before resuming migration.",
+    "current_task_id": "ITER-001",
+    "next_task_id": "ITER-002",
+    "next_action": "Proceed with a source-based module/dependency inventory and finite next-batch tasks. Distinguish already native host services, guest-ABI-bound helpers and original game logic. Select bounded units with offline original-code comparison or validated samples; retain actual native-mode rollout and untriggered helper coverage as separate obligations. No new user gameplay batch is needed merely to create the inventory.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": []
   },
@@ -3806,7 +3806,7 @@
       "title": "Restore the verified Chinese game font in paired test configurations",
       "phase": "milestone_3",
       "kind": "finite",
-      "status": "awaiting_user_test",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -3814,15 +3814,15 @@
         "/root/game_font_regression_probe"
       ],
       "created_at": "2026-09-27T03:16:04Z",
-      "updated_at": "2026-09-27T03:26:47Z",
+      "updated_at": "2026-09-27T04:13:46Z",
       "started_at": "2026-09-27T03:16:04Z",
-      "completed_at": null,
+      "completed_at": "2026-09-27T04:13:46Z",
       "timestamp_note": null,
       "scope": "Fix user-reported missing in-game Chinese characters in both delivered test roles before further migration. Preserve original apps/logs and restore the historically working font selection.",
       "depends_on": [
         "CASE-002"
       ],
-      "work_summary": "Restored the historically working STHeiti game-font selection in both signed app copies under out/testing/dist/font-fixed. Actual production rasterizer reproduces old 23 missing glyphs and renders restored 43/43 samples; the same 43/43 pass when reading each app-created settings file. Future packaging seeds game font in preflight and runtime, with path/hash readiness binding. Original apps, binaries and user records are preserved. Awaiting only a brief user visual check of game text, not a repeat of four cases.",
+      "work_summary": "User confirmed game text displays normally in the correctly identified font-fixed app. Restored common STHeiti selection and offline43/43 glyph checks remain valid. A follow-up screenshot was traced to the old first-pair app with an empty font selection; corrected app copies received distinct identifiers/display names and the correct candidate was launched. Live journal configuration confirmed the selected font before user visual confirmation. Future assembled batches now have distinct identifiers and display names to reduce old/new ambiguity.",
       "deliverables": [
         {
           "path": "docs/GAME_FONT_REGRESSION.md",
@@ -3933,13 +3933,17 @@
               "profiles/mhp3rd/tests/test_pair_readiness.py"
             ],
             "unit_checks": 11
+          },
+          {
+            "name": "User visual confirmation in corrected game app",
+            "status": "passed",
+            "evidence": "User confirmed that game text displays normally after the corrected candidate was launched.",
+            "run_id": "run-1a88a8649de24ce8a85bb1a5492014f4"
           }
         ],
         "limitations": [
-          "No game was launched; a brief user visual confirmation is pending.",
-          "Coverage includes the 23 logged omissions and 43 representative glyphs, not exhaustive game text.",
-          "The corrected pair still depends on its installed Mac system font and external Python.",
-          "Corrected copies preserve the old game/observer binaries; newer source-only recording/menu fixes are not part of this font-only update."
+          "Confirmed the reported game text; this is not exhaustive coverage of every possible glyph.",
+          "Corrected copies retain the original game/observer binaries and require the installed Mac font and external Python."
         ]
       },
       "implementation_commits": [
@@ -3974,6 +3978,15 @@
           "from_status": "awaiting_user_test",
           "to_status": "awaiting_user_test",
           "description": "Published verified font configuration repair and glyph evidence in draft PR #14. Corrected app copies are ready; only the targeted visual font check remains."
+        },
+        {
+          "recorded_at": "2026-09-27T04:13:46Z",
+          "occurred_at": "2026-09-27T04:13:46Z",
+          "actor_id": "/root",
+          "action": "user_confirmed",
+          "from_status": "awaiting_user_test",
+          "to_status": "completed",
+          "description": "User confirmed game text displays normally in the correctly identified font-fixed app. Restored common STHeiti selection and offline43/43 glyph checks remain valid. A follow-up screenshot was traced to the old first-pair app with an empty font selection; corrected app copies received distinct identifiers/display names and the correct candidate was launched. Live journal configuration confirmed the selected font before user visual confirmation. Future assembled batches now have distinct identifiers and display names to reduce old/new ambiguity."
         }
       ],
       "updated_by_agent_id": "/root"

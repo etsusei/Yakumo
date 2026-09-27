@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import plistlib
 from pathlib import Path
 import subprocess
 import sys
@@ -241,6 +242,10 @@ class PairPackagingTests(unittest.TestCase):
             stage.rename(published)
             app = published / "Yakumo Baseline.app"
             self.assertEqual(config["binary"]["sha256"], pair._hash(app / "Contents/MacOS/YakumoGame"))
+            info = plistlib.loads((app / "Contents/Info.plist").read_bytes())
+            self.assertTrue(info["CFBundleIdentifier"].endswith(".test.baseline"))
+            self.assertNotEqual(info["CFBundleIdentifier"], "io.github.teamgdb.yakumo.test.baseline")
+            self.assertIn("test-pair", info["CFBundleDisplayName"])
             self.assertNotEqual(config["overlays"]["tree_id"], register_baseline._tree_id(overlay_tree))
             self.assertEqual(config["starting_save"]["path"], str(snapshot_files))
             self.assertEqual(config["baseline_provenance_sha256"], "d" * 64)

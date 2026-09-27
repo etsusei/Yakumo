@@ -30,3 +30,13 @@ Local evidence: `out/testing/font-old-default.json`, `font-restored-heiti.json`,
 ## Limits and follow-up
 
 The reported omissions and sample glyphs are verified through actual production rendering. Full live appearance and every possible game character have not been exhaustively checked. The user only needs to inspect game text in a corrected app; the four-case gameplay batch does not need to be repeated for this font check. The font setting changes the configuration identity, so old and corrected recordings must not be treated as identical starting configurations.
+
+## User confirmation and application identity
+
+The follow-up screenshot showed `first-pair`, and its run context identified the
+older provisional app with an empty `text.font` setting. The corrected local
+copies received separate application identifiers and explicit font-fix display
+names. The corrected candidate was launched, and its live journal recorded the
+restored font configuration. The user then confirmed normal game text. Future
+packaging derives an identifier from the batch and includes that batch in the
+display name so old and corrected deliveries are distinguishable.
