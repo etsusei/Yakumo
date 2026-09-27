@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 84,
+  "revision": 86,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T08:00:26Z",
+  "updated_at": "2026-09-27T08:09:36Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -505,9 +505,9 @@
     ]
   },
   "execution_state": {
-    "current_task_id": "ASSET-006",
-    "next_task_id": "NAT-004",
-    "next_action": "Implement the explicit-byte-window pixeldecoder using project-owned algorithms. Compare asset rectangles and available fullGEwindows separately; enumerate tenmissingneighbor contexts and flag four legacyunaligned bypasses. Deliveredpairs remainunchanged.",
+    "current_task_id": null,
+    "next_task_id": "ASSET-007",
+    "next_action": "Integrate portable pixel decoding at the actual renderer boundary with owned immutable texture inputs and explicit off/verify/native observation. NAT-004 awaits NAT-003 user records; existing paired apps remain frozen.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": [
@@ -6075,7 +6075,7 @@
         "/root/texture_layout_audit"
       ],
       "created_at": "2026-09-27T07:31:39Z",
-      "updated_at": "2026-09-27T07:44:05Z",
+      "updated_at": "2026-09-27T08:06:09Z",
       "started_at": "2026-09-27T07:36:07Z",
       "completed_at": "2026-09-27T07:44:05Z",
       "scope": "Recover the relevant layout/stride/extent and palette state needed to decode TMH pixels, reuse existing native codec logic where supported, and define a portable interface with explicit context instead of a guessed file-wide swizzle.",
@@ -6122,7 +6122,9 @@
           "Currentsoftwarecompatibility isnotphysicalPSP or visualacceptance."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "f77f94bf1aff49602c056f6097dafdce36697790"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -6143,6 +6145,13 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Established explicit decoder windows, rasterextent/stride, palette transforms and software swizzle policy from original builder and currentrenderer. All8866records accounted:85rounded,83pastimage,34pastTMH,10pastroot,4legacyunalignedskips. The10 require capturedneighbors for exactcanvas, notzero padding. Portable input/result interface declared; physicalPSP/renderedappearance remainsunclaimed."
+        },
+        {
+          "recorded_at": "2026-09-27T08:06:09Z",
+          "occurred_at": "2026-09-27T08:06:09Z",
+          "actor_id": "/root",
+          "action": "published_checkpoint",
+          "description": "Published portable pixel decoder, explicit TMH plans and synthetic software differential gates in draft PR #22 at f77f94b. Corpus gate remains running; no production renderer or app change."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -6153,7 +6162,7 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "in_progress",
+      "status": "completed",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -6164,14 +6173,14 @@
         "/root/pixel_core_review"
       ],
       "created_at": "2026-09-27T07:44:05Z",
-      "updated_at": "2026-09-27T08:00:26Z",
+      "updated_at": "2026-09-27T08:09:36Z",
       "started_at": "2026-09-27T07:44:05Z",
-      "completed_at": null,
+      "completed_at": "2026-09-27T08:09:36Z",
       "scope": "Adapt existing project texture algorithms to a portable span-based decoder with explicit layout/stride/palette parameters, immutable inputs and checked windows; compare software oracles and account for all corpus contexts without inventingneighbors.",
       "depends_on": [
         "ASSET-005"
       ],
-      "work_summary": "Portable pixel core and explicit TMH builder plans implemented. Core/plan/owned-view CTests and separate fast/slow legacy differential checks pass (212 cases, 176 snapshot comparisons each). Corpus window comparison and independent review remain in progress; renderer and delivered apps unchanged.",
+      "work_summary": "Portable explicit-window pixel core and TMH builder plans complete. All2256inputs/8866rectangles and8856file-backed canvases agree pixel-for-pixel with unchanged fast/slow renderer software. Tenpastroot contexts explicitly lackpixels; fourunaligned bypasses strictlyreject. Independent root audit verified every spec/source window and exactexceptions. Sixrealoracle syntheticchecks, fourCTests,212legacycases/176snapshots perroute and core/planASan/UBSan pass. Productionintegration remains separate.",
       "deliverables": [
         {
           "path": "profiles/mhp3rd/host/resources/pixel_decode.cpp",
@@ -6244,6 +6253,36 @@
           "kind": "validation_log",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/tests/tmh_pixel_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_tmh_pixels.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_tmh_pixel_oracle.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/tmh-pixel-gate.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/tmh-pixel-corpus-audit.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -6276,14 +6315,35 @@
             "name": "Independent read-only source review",
             "status": "passed",
             "details": "/root/pixel_core_review found no concrete correctness or bounds defect; review scoped to frozen software behavior."
+          },
+          {
+            "name": "Complete file-backed TMH pixel corpus",
+            "status": "passed",
+            "evidence_path": "out/testing/tmh-pixel-gate.json",
+            "details": "2256inputs,8866rectangles,8856canvases; fast/slow matches,220404480canvaspixels perroute,10missingneighborcontexts,4strictrejections,0top-left differences."
+          },
+          {
+            "name": "Independent root structural/window audit",
+            "status": "passed",
+            "evidence_path": "out/testing/tmh-pixel-corpus-audit.json",
+            "details": "Every reported spec, coordinate, palette hash and window checked against independent structuralinventory; exact10missing and4bypass identities match priorfootprint contract."
+          },
+          {
+            "name": "Real corpus oracle synthetic integration",
+            "status": "passed",
+            "evidence": "Executed tests/test_tmh_pixel_oracle.py --oracle out/mhp3rd/bin/mhp3rd_tmh_pixel_oracle -v: six tests passed. Sourcehash/modeenvironment rejection,missingcontext,parentbytes,duplicates,existingoutput preservation."
           }
         ],
         "limitations": [
-          "Corpus windows not yet compared; this task remains in progress.",
-          "No production renderer integration, hardware or gameplay acceptance."
+          "No production renderer integration or actual user draw/source mapping; hardware and gameplay fidelity unverified.",
+          "Ten canvas windows extend beyond decoded root files; their missing neighbors are not inferred or counted as compared.",
+          "Strict swizzle rejects four corpus records; compatibility deliberately preserves the current software bypass.",
+          "Decoding was already native in the renderer; this task establishes a portable resource boundary, not another replacement of PSP instructions."
         ]
       },
-      "implementation_commits": [],
+      "implementation_commits": [
+        "f77f94bf1aff49602c056f6097dafdce36697790"
+      ],
       "pause_reason": null,
       "blockers": [],
       "history": [
@@ -6293,8 +6353,71 @@
           "actor_id": "/root",
           "action": "progress",
           "description": "Portable pixel core and explicit TMH builder plans implemented. Core/plan/owned-view CTests and separate fast/slow legacy differential checks pass (212 cases, 176 snapshot comparisons each). Corpus window comparison and independent review remain in progress; renderer and delivered apps unchanged."
+        },
+        {
+          "recorded_at": "2026-09-27T08:06:09Z",
+          "occurred_at": "2026-09-27T08:06:09Z",
+          "actor_id": "/root",
+          "action": "published_checkpoint",
+          "description": "Published portable pixel decoder, explicit TMH plans and synthetic software differential gates in draft PR #22 at f77f94b. Corpus gate remains running; no production renderer or app change."
+        },
+        {
+          "recorded_at": "2026-09-27T08:09:36Z",
+          "occurred_at": "2026-09-27T08:09:36Z",
+          "actor_id": "/root",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Portable explicit-window pixel core and TMH builder plans complete. All2256inputs/8866rectangles and8856file-backed canvases agree pixel-for-pixel with unchanged fast/slow renderer software. Tenpastroot contexts explicitly lackpixels; fourunaligned bypasses strictlyreject. Independent root audit verified every spec/source window and exactexceptions. Sixrealoracle syntheticchecks, fourCTests,212legacycases/176snapshots perroute and core/planASan/UBSan pass. Productionintegration remains separate."
         }
       ],
+      "updated_by_agent_id": "/root"
+    },
+    {
+      "id": "ASSET-007",
+      "title": "Integrate owned portable texture decoding into renderer dispatch",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": "/root",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/root"
+      ],
+      "created_at": "2026-09-27T08:09:36Z",
+      "updated_at": "2026-09-27T08:09:36Z",
+      "started_at": null,
+      "completed_at": null,
+      "scope": "Connect immediate and asynchronous renderer texture decoding to an owned-byte portable core behind explicit off/verify/native policy, baseline enforcement and scoped observations. Keep bounded guest reads at an adapter, with legacy fallback and offline production dispatch tests; no automatic game or replacement of existing paired apps.",
+      "depends_on": [
+        "ASSET-006"
+      ],
+      "work_summary": "Dependency-ready. Current renderer dispatch sites and mutable legacy snapshot behavior inspected; explicit ownership and baseline policy must be designed before integration.",
+      "deliverables": [
+        {
+          "path": "docs/NEXT_NATIVE_BATCHES.md",
+          "kind": "contract",
+          "state": "existing",
+          "local_only": false
+        }
+      ],
+      "acceptance_criteria": [
+        "Actual renderer immediate and worker paths can select the portable core without carrying GuestMemory into worker decoding.",
+        "Off restores unchanged legacy behavior; verify compares same owned inputs; unsupported states have explicit fallback and counters.",
+        "Baseline disallows new native behavior and paired mode identities are preserved.",
+        "Offline production dispatch, ownership, invalid windows and fallback checks pass; game performance and user acceptance remain separate."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": [
+          "No live draw/source mapping or user acceptance yet."
+        ]
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [],
       "updated_by_agent_id": "/root"
     }
   ],

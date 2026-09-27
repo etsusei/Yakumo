@@ -61,10 +61,38 @@ The adapter does not read or synthesize those bytes.
    include 36 compatibility bypasses, 77 cross-row cases and three explicit
    rejection cases. The test-only performance hook selects the current
    software path; no game or graphics device is created.
-3. Corpus validation compares file-backed encoded rectangles and available
-   model-builder canvases separately. Missing neighboring context must remain
-   enumerated with source coordinates. No corpus gate may count invented
-   padding as a successful comparison.
+3. Corpus validation passed for all 2,256 TMH inputs: 8,866 encoded rectangles
+   and 8,856 file-backed model-builder canvases, in both fresh fast and slow
+   legacy processes. There were zero pixel differences and zero differences
+   in the 8,856 comparable top-left rectangles. Four records use the explicit
+   unaligned compatibility behavior and are rejected by strict swizzle.
+   The available canvas comparisons cover 220,404,480 pixels per route.
+4. The remaining ten canvases require bytes beyond the decoded root entry and
+   are reported as missing context, with no fabricated output: entry/record
+   pairs `4074/2`, `4074/3`, `4078/7`, `4078/8`, `4079/26`, `4080/1`,
+   `4080/2`, `4081/1`, `4083/15`, and `4084/4`. Their encoded rectangles
+   still passed. All 83 image-boundary extensions and 34 TMH-boundary
+   extensions are retained in the report. A separate root audit checked every
+   reported extent, stride, palette hash and source window against the prior
+   structural inventory, including the exact missing-context identities.
+5. Six synthetic executable-level tests verify missing-context reporting,
+   real parent bytes beyond a child, corrupt hashes, duplicate rows, actual
+   fast/slow mode identity and no overwrite of existing reports.
+
+The corpus tool records source/binary and manifest hashes and runs 70 shards
+twice, with a 60-second cap on each oracle process. Generated reports remain
+under the ignored `out/testing/` directory. Reproduce with a new output path:
+
+```sh
+cmake --build out/mhp3rd --target mhp3rd_tmh_pixel_oracle -j2
+python3 profiles/mhp3rd/tools/check_tmh_pixels.py \
+  --workspace profiles/mhp3rd/analysis/resources \
+  --layout-report out/testing/tmh-layout-complete-inventory.json \
+  --oracle out/mhp3rd/bin/mhp3rd_tmh_pixel_oracle \
+  --output out/testing/tmh-pixel-gate.json
+python3 profiles/mhp3rd/tests/test_tmh_pixel_oracle.py \
+  --oracle out/mhp3rd/bin/mhp3rd_tmh_pixel_oracle -v
+```
 
 Software equality does not establish visible UVs, animation, gameplay, hardware
 fidelity or performance improvement. Production integration, actual source-to-
