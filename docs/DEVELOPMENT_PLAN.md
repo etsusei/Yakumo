@@ -2,7 +2,7 @@
 
 Plan version: **1.3**. Decision date: **2026-09-26**; amended **2026-09-28** ([Amendment 1.2](#amendment-12--texture-path-and-working-rules)) and **2026-09-29** ([Amendment 1.3](#amendment-13--loading-experience-first)). Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-29T05:30:00Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-29T06:30:00Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -196,8 +196,8 @@ Finite work beneath these ongoing workstreams:
 - [x] **LOAD-001** — Prepare the load-measurement session: an isolated data directory from the registered starting save, a launch script with load tracing, and Chinese instructions.
 - [x] **LOAD-002** — User plays the load-measurement session.
 - [x] **LOAD-003** — Analyze each load's real/game time, fast-loading engagement and time split; set the scope of LOAD-004/LOAD-005.
-- [ ] **LOAD-004** — Present a black fade instead of the loading screen, host-side, with an off switch.
-- [ ] **LOAD-005** — Make in-quest area loads fast within the scope set by LOAD-003, with an off switch.
+- [x] **LOAD-004** — Present a black fade instead of the loading screen, host-side, with an off switch.
+- [x] **LOAD-005** — Make in-quest area loads fast within the scope set by LOAD-003, with an off switch.
 
 The initial inventory is [NATIVE_MODULES.md](NATIVE_MODULES.md); finite requirements are in [NEXT_NATIVE_BATCHES.md](NEXT_NATIVE_BATCHES.md). ITER-001/002 stay in progress as workstreams. Finite tasks depend on INV-001 or other finite prerequisites, not on treating an ongoing workstream as already finished.
 
@@ -289,7 +289,7 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation (Amendment 1.3): **LOAD-004 awaits the user's check.** Carrying held buttons (LOAD-005) cut an in-quest area change from about 1.7 s to about 1.0 s; a screen recording then showed the rest was the game's NOW LOADING screen lingering about 0.6 s before its fade-in. That screen is now drawn black and passes at fast-loading speed (`MHP3RD_HIDE_LOADING_SCREEN=0` restores it). The user plays `out/testing/load-measure-4`.
+Current continuation: **the loading work of Amendment 1.3 is complete and accepted by the user.** In-quest area changes now show a black screen for about 0.14 s before the game's own fade-in (about 1.7 s with the loading screen before): held buttons no longer keep loads at real time (LOAD-005), and the NOW LOADING screen is drawn black and passed at fast-loading speed (LOAD-004). A local `out/release/Yakumo.app` for this Mac packages the build. ASSET-014 remains paused; no further task is active until the user asks.
 
 G0 remains complete on the current G1a source: the latest normal and strict-fail ASan/UBSan reports each match all 41 registered input/source/build identities and pass the exact healthy-authority `NotReady` assertion, full CPU/RAM/VRAM checks, bounded calls and `transfer_readiness=false`. The pause-era `not_run` snapshot and earlier resumed reports remain historical evidence.
 
