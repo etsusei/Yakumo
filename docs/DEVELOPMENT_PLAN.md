@@ -2,7 +2,7 @@
 
 Plan version: **1.3**. Decision date: **2026-09-26**; amended **2026-09-28** ([Amendment 1.2](#amendment-12--texture-path-and-working-rules)) and **2026-09-29** ([Amendment 1.3](#amendment-13--loading-experience-first)). Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-29T01:40:00Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-29T03:00:00Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -194,8 +194,8 @@ Finite work beneath these ongoing workstreams:
 - [ ] **ASSET-018** — Close proof gaps for the observed routes only; enable authority-backed native texture loading in Verify mode for them with original fallback elsewhere; deliver a matched pair.
 - [ ] **ASSET-019** — User-led Verify texture batch; analyze, fix, and decide whether Native mode may follow.
 - [x] **LOAD-001** — Prepare the load-measurement session: an isolated data directory from the registered starting save, a launch script with load tracing, and Chinese instructions.
-- [ ] **LOAD-002** — User plays the load-measurement session.
-- [ ] **LOAD-003** — Analyze each load's real/game time, fast-loading engagement and time split; set the scope of LOAD-004/LOAD-005.
+- [x] **LOAD-002** — User plays the load-measurement session.
+- [x] **LOAD-003** — Analyze each load's real/game time, fast-loading engagement and time split; set the scope of LOAD-004/LOAD-005.
 - [ ] **LOAD-004** — Present a black fade instead of the loading screen, host-side, with an off switch.
 - [ ] **LOAD-005** — Make in-quest area loads fast within the scope set by LOAD-003, with an off switch.
 
@@ -289,7 +289,7 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation (Amendment 1.3): **LOAD-002 awaits the user**: double-click `out/testing/load-measure-1/开始测量.command` and follow `说明.md` there; LOAD-003 then analyzes the log. ASSET-014 remains paused: it was **paused by the user on 2026-09-28** while the direction is reconsidered (loading/performance was discussed). The focused review was stopped before it reported. When resuming under Amendment 1.2, **ASSET-014 needs one focused review** of the iteration-11 changes plus a rerun of the staged-B0 default-off configure; if both pass it is completed, and **ASSET-015** (observe-only live tracker and route counters) starts. Earlier: the user resumed ASSET-014 from Codex task `01a0de15-428d-71b2-becb-c93878a0cd71`. The historical [PAUSE_CHECKPOINT.md](PAUSE_CHECKPOINT.md) remains an accurate record of the earlier pause; the live status and current action are tracked in `tasks.json`.
+Current continuation (Amendment 1.3): **LOAD-005 awaits the user's check.** LOAD-003 found that holding dash while crossing an area boundary kept in-quest loads at real time (about 1.0-1.5 s); fast loading now carries buttons held since before the load (`MHP3RD_FAST_LOADING_HELD=0` restores the old rule). The user plays `out/testing/load-measure-2` for a before/after comparison; LOAD-004 (black fade) is decided afterwards.
 
 G0 remains complete on the current G1a source: the latest normal and strict-fail ASan/UBSan reports each match all 41 registered input/source/build identities and pass the exact healthy-authority `NotReady` assertion, full CPU/RAM/VRAM checks, bounded calls and `transfer_readiness=false`. The pause-era `not_run` snapshot and earlier resumed reports remain historical evidence.
 

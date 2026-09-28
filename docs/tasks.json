@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.3",
-  "revision": 163,
+  "revision": 165,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-29T01:40:00Z",
+  "updated_at": "2026-09-29T03:00:00Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -770,13 +770,13 @@
     }
   },
   "execution_state": {
-    "current_task_id": "LOAD-002",
-    "next_task_id": "LOAD-003",
-    "next_action": "Wait for the user to play out/testing/load-measure-1 (LOAD-002), then analyze the load-*.log it writes (LOAD-003).",
+    "current_task_id": "LOAD-005",
+    "next_task_id": "LOAD-004",
+    "next_action": "User plays out/testing/load-measure-2 (same route, dash held while changing areas); compare its log with LOAD-002, then decide LOAD-004.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": [
-      "LOAD-002"
+      "LOAD-005"
     ],
     "local_artifact_note": "Local-only artifacts removed at the user's request on 2026-09-28 to free disk space: out/testing/dist (all delivered app pairs), out/testing/observed-sources and out/testing/observed-builds (their source snapshots and archived binaries), out/testing/texture-read-prefix and other scratch build trees, sanitizer/test binaries and out/native-experiment (except the packaging font). Ledger deliverables at those paths are now unavailable; their recorded evidence and hashes remain historical facts. Kept: out/mhp3rd, out/testing/baselines, out/testing/runs (user records), reports, profiles/mhp3rd/analysis and out/ccache. The lobby overlay module used by the texture oracles was copied to out/testing/texture-transfer-inputs/."
   },
@@ -10712,21 +10712,28 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "awaiting_user_test",
+      "status": "completed",
       "owner_agent_id": null,
       "responsible_actor_id": null,
       "contributor_agent_ids": [],
       "created_at": "2026-09-29T01:10:00Z",
-      "updated_at": "2026-09-29T01:40:00Z",
+      "updated_at": "2026-09-29T02:20:00Z",
       "started_at": null,
-      "completed_at": null,
+      "completed_at": "2026-09-29T02:20:00Z",
       "timestamp_note": null,
       "scope": "The user plays about 10 minutes following the instructions and closes the window normally.",
       "depends_on": [
         "LOAD-001"
       ],
       "work_summary": null,
-      "deliverables": [],
+      "deliverables": [
+        {
+          "path": "out/testing/load-measure-1/load-20260929-002451.log",
+          "kind": "session_log",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
       "acceptance_criteria": [
         "The session log exists and covers the requested transitions, or the gap is recorded."
       ],
@@ -10755,6 +10762,15 @@
           "from_status": "not_started",
           "to_status": "awaiting_user_test",
           "description": "Instructions in out/testing/load-measure-1/说明.md."
+        },
+        {
+          "recorded_at": "2026-09-29T02:20:00Z",
+          "occurred_at": "2026-09-28T15:24:51Z",
+          "actor_id": "project-owner",
+          "action": "user_session_completed",
+          "from_status": "awaiting_user_test",
+          "to_status": "completed",
+          "description": "About 5 minutes on Apple M5 with a Switch Pro Controller: town transitions and one quest (map P_m12) with several area changes; normal window close (exit 4)."
         }
       ],
       "updated_by_agent_id": "/claude_code",
@@ -10766,27 +10782,36 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "completed",
+      "owner_agent_id": "/claude_code",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/claude_code"
+      ],
       "created_at": "2026-09-29T01:10:00Z",
-      "updated_at": "2026-09-29T01:10:00Z",
-      "started_at": null,
-      "completed_at": null,
+      "updated_at": "2026-09-29T03:00:00Z",
+      "started_at": "2026-09-29T02:20:00Z",
+      "completed_at": "2026-09-29T03:00:00Z",
       "timestamp_note": null,
       "scope": "Report each load's real and emulated time, fast-loading engagement and end reason, guest thread activity and disc reads; confirm or refute the in-quest sound hypothesis; set the scope of LOAD-004 and LOAD-005.",
       "depends_on": [
         "LOAD-002"
       ],
-      "work_summary": null,
+      "work_summary": "The user confirmed dash (R) was held while crossing area boundaries, which the fast-loading button guard treated as gameplay input. Scope: LOAD-005 first lets buttons held since before a load stay held while it runs fast; LOAD-004 (black fade) is decided after the user sees the faster area changes.",
       "deliverables": [],
       "acceptance_criteria": [
         "Every load in the log is listed with its measured times.",
         "The scope decision cites the measured numbers."
       ],
       "validation": {
-        "checks": [],
+        "checks": [
+          {
+            "name": "First load-timing analysis",
+            "status": "passed",
+            "evidence_path": "out/testing/load-measure-1/load-20260929-002451.log",
+            "details": "Town loads: fast loading engaged in all 9 cases (19.1 s saved before the quest). In-quest area changes (area overlays P_m12a01d, a04d, a05d, a06d, a02d): audio was exactly silent during the reads, refuting the sound hypothesis. Fast loading did not engage for a01d (~1.0 s of reads) or a04d (~1.5 s), engaged only at the end of a05d (~0.8 s) and fully for a06d (~0.4 s). The emulation thread was held to real time for about 80-90% of each non-fast window (pace 200-230 ms per 250 ms). With reads active, silence, and no menu, movie or online session, the remaining guard is 'button held'; the trace does not log the blocking reason, so this is an inference pending user confirmation."
+          }
+        ],
         "limitations": []
       },
       "implementation_commits": [],
@@ -10801,6 +10826,24 @@
           "from_status": null,
           "to_status": "not_started",
           "description": "Created from the user's Amendment 1.3 decision."
+        },
+        {
+          "recorded_at": "2026-09-29T02:20:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "analysis_started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Initial analysis recorded; awaiting user confirmation of button use during area changes."
+        },
+        {
+          "recorded_at": "2026-09-29T03:00:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "User confirmed dash was held; scope set for LOAD-005 then LOAD-004."
         }
       ],
       "updated_by_agent_id": "/claude_code",
@@ -10859,28 +10902,55 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "awaiting_user_test",
+      "owner_agent_id": "/claude_code",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/claude_code"
+      ],
       "created_at": "2026-09-29T01:10:00Z",
-      "updated_at": "2026-09-29T01:10:00Z",
-      "started_at": null,
+      "updated_at": "2026-09-29T03:00:00Z",
+      "started_at": "2026-09-29T03:00:00Z",
       "completed_at": null,
       "timestamp_note": null,
       "scope": "Within the scope set by LOAD-003: selective clock release for loader threads, then native SHA-1/decompression behind differential gates if still needed.",
       "depends_on": [
         "LOAD-003"
       ],
-      "work_summary": null,
-      "deliverables": [],
+      "work_summary": "Fast loading now carries buttons held since before a load (e.g. dash) instead of keeping the load at real time; a new press during the load still keeps real time; MHP3RD_FAST_LOADING_HELD=0 restores the old rule. Session 2 prepared in out/testing/load-measure-2 for a before/after comparison with LOAD-002.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/kernel/load_detector.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/fast_loading_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/load-measure-2/开始测量.command",
+          "kind": "script",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
       "acceptance_criteria": [
         "Measured before/after times for the same transitions.",
         "Audio and game timing unchanged outside loads.",
         "Each change has an off switch."
       ],
       "validation": {
-        "checks": [],
+        "checks": [
+          {
+            "name": "Fast-loading unit tests and headless boot",
+            "status": "passed",
+            "details": "mhp3rd_fast_loading_tests passes with four new cases (carried dash, new press, carrying off, carry reset between loads) and the unchanged guard cases; Yakumo rebuilt (74 s, no new warnings) and booted headless with 355 overlays from the session-2 data directory."
+          }
+        ],
         "limitations": []
       },
       "implementation_commits": [],
@@ -10895,6 +10965,15 @@
           "from_status": null,
           "to_status": "not_started",
           "description": "Created from the user's Amendment 1.3 decision."
+        },
+        {
+          "recorded_at": "2026-09-29T03:00:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "implemented_awaiting_user_check",
+          "from_status": "not_started",
+          "to_status": "awaiting_user_test",
+          "description": "Carried-button rule implemented, tested and handed to the user for a second session."
         }
       ],
       "updated_by_agent_id": "/claude_code",
