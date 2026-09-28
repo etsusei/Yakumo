@@ -27,6 +27,7 @@
 namespace {
 using namespace psprecomp;
 using namespace mhp3rd::native;
+
 constexpr std::uint32_t end_pc = 0x08001000u, container = 0x08200000u;
 constexpr std::uint32_t owner_manager = container + 4u, command_manager = 0x08202000u;
 constexpr std::uint32_t owner_heap = 0x09200000u, command_heap = 0x09000000u;
@@ -34,14 +35,20 @@ constexpr std::uint32_t sp = 0x08400800u, overlay_base = 0x0A05E600u;
 constexpr std::uint32_t ctor = 0x0A0E7460u;
 // Keep the 0x20000-byte worker scratch range disjoint from the allocator
 // regions used by the owner and command fixtures below.
+#ifdef MHP3RD_TEXTURE_TRANSFER_G1A_ORACLE
 constexpr std::uint32_t transfer_manager = 0x08600000u;
+constexpr std::uint32_t kQueueRecordOffset = 0x8Cu;
+constexpr std::uint32_t kRandomObjectPointer = 0x09FC8BE8u;
+constexpr std::uint32_t kRandomObject = 0x08ABAE40u;
+#endif
+#ifdef MHP3RD_TEXTURE_READ_G1B_ORACLE
 constexpr std::uint32_t kQueueConsumerOffset = 0x108Cu;
 constexpr std::uint32_t kQueueStateOffset = 0x1094u;
 constexpr std::uint32_t kQueueFdOffset = 0x1098u;
-constexpr std::uint32_t kQueueRecordOffset = 0x8Cu;
 constexpr std::uint32_t kReadScratchOffset = 0x98C0u;
 constexpr std::uint32_t kReadScratchBytes = 0x20000u;
 constexpr std::uint32_t kWorkerState8 = 8u;
+#endif
 constexpr mhp3rd::resources::SourceCodeIdentity supported_code{
     0xF6300296C8D954E5ull, 1u, 0x088BD058u, 0x088B0114u, 0x088B7DE0u,
     0x088652C4u, 0x08865378u};
@@ -76,6 +83,19 @@ struct DescriptorOverride {
 };
 #endif
 #ifdef MHP3RD_TEXTURE_READ_G1B_ORACLE
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+enum class CompletionFault : std::uint8_t {
+    None,
+    MissingCopy,
+    WrongWorker,
+    DescriptorMutation,
+    Cancellation,
+    WrongRetirementState,
+    WrongRetirementConsumer,
+    MissingAcknowledgement,
+    UnsupportedCopyWorker,
+};
+#endif
 struct ReadEvent {
     TextureReadCheckpoint checkpoint{};
     AllegrexContext cpu{};
@@ -117,10 +137,26 @@ struct ReadScenario {
     bool synthetic_partial_descriptor_overlap{};
     std::uint32_t max_read_attempts{TextureTransferTracker::kMaxReadAttempts};
     std::uint64_t read_attempt_serial_limit{0xFFFFFFFFFFFFFFFFull};
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+    bool completion_transform{};
+    bool completion_digest{};
+    bool completion_copy_worker{};
+    CompletionFault completion_fault{CompletionFault::None};
+    TextureCompletionOutcome expected_completion_outcome{
+        TextureCompletionOutcome::None};
+    bool completion_old_pending_writer{};
+#endif
 };
 thread_local std::size_t read_prefix_stop_after{};
 thread_local std::size_t read_prefix_read_invocations{};
 thread_local std::size_t read_prefix_stop_calls{};
+#endif
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+struct CompletionEvent {
+    TextureCompletionCheckpoint checkpoint{};
+    AllegrexContext cpu{};
+    std::uint32_t site_pc{};
+};
 #endif
 struct Observations {
     std::array<Event, 256> events{};
@@ -168,6 +204,17 @@ struct Observations {
     std::optional<TextureReadCheckpoint> lifecycle_at_read;
     std::optional<TextureLifetimeCheckpoint> lifecycle_event;
     std::uint32_t invalidate_owner{};
+#endif
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+    std::array<CompletionEvent, 256> completion_events{};
+    std::size_t completion_count{};
+    bool completion_overflow{};
+    TextureTransferTracker *completion_tracker{};
+    bool completion_smoke{};
+    bool completion_smoke_done{};
+    bool completion_live{};
+    CompletionFault completion_fault{CompletionFault::None};
+    bool completion_fault_applied{};
 #endif
     static void lifetime(void *data, const Runtime &runtime, const AllegrexContext &ctx,
                          TextureLifetimeCheckpoint checkpoint) noexcept {
@@ -265,8 +312,9 @@ struct Observations {
         if (old_manager.has_value())
             const_cast<AllegrexContext &>(ctx).gpr[4] = *old_manager;
         if (self.transfer_tracker->error() != TextureTransferTrackerError::None &&
-            self.transfer_failure_event == self.transfer_events.size())
+            self.transfer_failure_event == self.transfer_events.size()) {
             self.transfer_failure_event = self.transfer_count - 1u;
+        }
         if (self.duplicate_transfer == checkpoint)
             self.transfer_tracker->observe(runtime, ctx, checkpoint);
         if (self.transfer_tracker->error() != TextureTransferTrackerError::None &&
@@ -371,6 +419,15 @@ struct Observations {
             }
         }
         self.read_tracker->observe_read(*observed_runtime, *observed, checkpoint);
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+#ifdef MHP3RD_TEXTURE_COMPLETION_TRACKER_SMOKE
+        if (checkpoint == TextureReadCheckpoint::ReadResult &&
+            self.completion_smoke && observed_runtime == &runtime &&
+            !self.completion_live &&
+            ctx.gpr[16] == ctx.gpr[2])
+            completion_smoke_sequence(self, runtime, ctx);
+#endif
+#endif
         if (self.switch_thread_read == checkpoint)
             set_runtime_thread_identity(uid, "read fault fixture restored");
         if (old_byte.has_value()) {
@@ -391,6 +448,232 @@ struct Observations {
         }
         if (self.duplicate_read == checkpoint)
             self.read_tracker->observe_read(runtime, ctx, checkpoint);
+    }
+#endif
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+#ifdef MHP3RD_TEXTURE_COMPLETION_TRACKER_SMOKE
+    static void completion_smoke_sequence(Observations &self, const Runtime &runtime,
+                                           const AllegrexContext &reader) noexcept {
+        // This sequence is deliberately synthetic and is compiled only into
+        // the tracker-smoke executable. It exercises the tracker owner with a
+        // bounded callback sequence; production completion paths never call it.
+        if (!self.completion_smoke || self.completion_smoke_done ||
+            self.completion_tracker == nullptr) return;
+        self.completion_smoke_done = true;
+        const auto emit = [&self, &runtime](const AllegrexContext &ctx,
+                                             TextureCompletionCheckpoint checkpoint) {
+            self.completion_tracker->observe_completion(
+                runtime, ctx, checkpoint, static_cast<std::uint32_t>(checkpoint));
+        };
+        const auto emit_call = [&self, &runtime](const AllegrexContext &ctx,
+                                                  TextureCompletionCallCheckpoint checkpoint) {
+            self.completion_tracker->observe_completion_call(
+                runtime, ctx, checkpoint, static_cast<std::uint32_t>(checkpoint));
+        };
+        auto &mutable_reader = const_cast<AllegrexContext &>(reader);
+        const auto original_reader = reader;
+        auto &memory = const_cast<Runtime &>(runtime).memory();
+        const auto record = reader.gpr[18];
+        const auto manager = reader.gpr[17];
+        const auto destination = memory.load32(record + 4u) + memory.load32(record + 12u);
+        const auto bytes = memory.load32(record + 8u);
+        const auto source = manager + kReadScratchOffset;
+        const auto event = memory.load32(manager + 0x2F7C8u);
+
+        mutable_reader.gpr[17] = manager;
+        mutable_reader.gpr[18] = record;
+        mutable_reader.gpr[29] = original_reader.gpr[29];
+        mutable_reader.gpr[2] = 0u;
+        emit(reader, TextureCompletionCheckpoint::ClassifierReturn);
+
+        mutable_reader.gpr[4] = destination;
+        mutable_reader.gpr[5] = source;
+        mutable_reader.gpr[6] = bytes;
+        mutable_reader.gpr[16] = manager;
+        mutable_reader.gpr[17] = record;
+        mutable_reader.gpr[31] = static_cast<std::uint32_t>(
+            TextureCompletionCheckpoint::CopyReturn);
+        emit_call(reader, TextureCompletionCallCheckpoint::InlineCopyCall);
+        emit(reader, TextureCompletionCheckpoint::CopyReturn);
+
+        mutable_reader.gpr[4] = manager;
+        mutable_reader.gpr[5] = record;
+        mutable_reader.gpr[31] = static_cast<std::uint32_t>(
+            TextureCompletionCheckpoint::HelperReturn);
+        emit_call(reader, TextureCompletionCallCheckpoint::HelperCall);
+        emit(reader, TextureCompletionCheckpoint::HelperReturn);
+
+        const auto old_policy = mutable_reader.gpr[2];
+        mutable_reader.gpr[2] = 1u;
+        mutable_reader.gpr[31] = static_cast<std::uint32_t>(
+            TextureCompletionCheckpoint::PolicyReturn);
+        emit_call(reader, TextureCompletionCallCheckpoint::PolicyCall);
+        emit(reader, TextureCompletionCheckpoint::PolicyReturn);
+        mutable_reader.gpr[2] = old_policy;
+
+        mutable_reader.gpr[4] = event;
+        mutable_reader.gpr[17] = manager;
+        mutable_reader.gpr[18] = record;
+        mutable_reader.gpr[31] = static_cast<std::uint32_t>(
+            TextureCompletionCheckpoint::WorkerRequestReturn);
+        emit(reader, TextureCompletionCheckpoint::WorkerRequestCall);
+        emit_call(reader, TextureCompletionCallCheckpoint::WorkerRequestCall);
+        emit(reader, TextureCompletionCheckpoint::WorkerRequestReturn);
+
+        mutable_reader.gpr[31] = static_cast<std::uint32_t>(
+            TextureCompletionCheckpoint::WorkerEventSetReturn);
+        emit_call(reader, TextureCompletionCallCheckpoint::WorkerEventSetCall);
+        emit(reader, TextureCompletionCheckpoint::WorkerEventSetReturn);
+
+        // Mirror the original worker frame (0x08865378): a1 points at the
+        // parameter word holding the manager, gpr16 is the descriptor, gpr17
+        // is manager + 0x30000 and gpr18 is the manager.
+        auto worker = reader;
+        worker.gpr[29] += 0x1000u;
+        worker.gpr[4] = event;
+        worker.gpr[5] = 0x08300000u;
+        worker.gpr[16] = record;
+        worker.gpr[17] = manager + 0x30000u;
+        worker.gpr[18] = manager;
+        emit(worker, TextureCompletionCheckpoint::WorkerEntry);
+        emit(worker, TextureCompletionCheckpoint::VerbatimBranch);
+        emit(worker, TextureCompletionCheckpoint::DigestSkippedBranch);
+
+        worker.gpr[31] = static_cast<std::uint32_t>(
+            TextureCompletionCheckpoint::WorkerAckReturn);
+        emit_call(worker, TextureCompletionCallCheckpoint::WorkerAckCall);
+        emit(worker, TextureCompletionCheckpoint::WorkerAckReturn);
+
+        mutable_reader.gpr[4] = event;
+        mutable_reader.gpr[17] = manager;
+        mutable_reader.gpr[18] = record;
+        mutable_reader.gpr[31] = static_cast<std::uint32_t>(
+            TextureCompletionCheckpoint::WorkerWaitReturn);
+        emit_call(reader, TextureCompletionCallCheckpoint::WorkerWaitCall);
+        emit(reader, TextureCompletionCheckpoint::WorkerWaitReturn);
+
+        const auto old_marker0 = memory.load8(record);
+        const auto old_marker1 = memory.load8(record + 1u);
+        const auto old_consumer = memory.load32(manager + kQueueConsumerOffset);
+        const auto old_state = memory.load32(manager + kQueueStateOffset);
+        mutable_reader.gpr[4] = manager;
+        mutable_reader.gpr[17] = manager;
+        mutable_reader.gpr[18] = record;
+        mutable_reader.gpr[31] = static_cast<std::uint32_t>(
+            TextureCompletionCheckpoint::RetirementReturn);
+        emit(reader, TextureCompletionCheckpoint::RetirementCall);
+        emit_call(reader, TextureCompletionCallCheckpoint::RetirementCall);
+        // The original retirement routine clears the record marker and
+        // advances the ring after its entry edge, before it returns.
+        emit(reader, TextureCompletionCheckpoint::RetirementEntry);
+        memory.store8(record, 0u);
+        memory.store8(record + 1u, 0u);
+        memory.store32(manager + kQueueConsumerOffset, old_consumer + 1u);
+        memory.store32(manager + kQueueStateOffset, 0u);
+        emit(reader, TextureCompletionCheckpoint::RetirementReturn);
+        mutable_reader = original_reader;
+        memory.store8(record, old_marker0);
+        memory.store8(record + 1u, old_marker1);
+        memory.store32(manager + kQueueConsumerOffset, old_consumer);
+        memory.store32(manager + kQueueStateOffset, old_state);
+    }
+#endif
+    static void completion(void *data, const Runtime &runtime,
+                           const AllegrexContext &ctx,
+                           TextureCompletionCheckpoint checkpoint,
+                           std::uint32_t site_pc) noexcept {
+        auto &self = *static_cast<Observations *>(data);
+        if (self.completion_count == self.completion_events.size()) {
+            self.completion_overflow = true;
+            return;
+        }
+        self.completion_events[self.completion_count++] = {checkpoint, ctx, site_pc};
+        if (self.completion_fault == CompletionFault::MissingCopy &&
+            checkpoint == TextureCompletionCheckpoint::CopyReturn) {
+            self.completion_fault_applied = true;
+            return;
+        }
+        if (self.completion_fault == CompletionFault::MissingAcknowledgement &&
+            checkpoint == TextureCompletionCheckpoint::WorkerAckReturn) {
+            self.completion_fault_applied = true;
+            return;
+        }
+        if (self.completion_fault == CompletionFault::Cancellation &&
+            checkpoint == TextureCompletionCheckpoint::RetirementCall) {
+            self.completion_fault_applied = true;
+            if (self.completion_tracker)
+                self.completion_tracker->observe_completion(
+                    runtime, ctx, TextureCompletionCheckpoint::GroupCancellation,
+                    static_cast<std::uint32_t>(TextureCompletionCheckpoint::GroupCancellation));
+            return;
+        }
+        // The tracker binds operations to the guest context object, so a
+        // register fault is applied to that object for the forwarded
+        // observation only and restored before the guest resumes.
+        const auto forward_with_register = [&](std::size_t reg, std::uint32_t value) {
+            auto &mutable_ctx = const_cast<AllegrexContext &>(ctx);
+            const auto saved = mutable_ctx.gpr[reg];
+            mutable_ctx.gpr[reg] = value;
+            self.completion_fault_applied = true;
+            if (self.completion_tracker)
+                self.completion_tracker->observe_completion(runtime, mutable_ctx,
+                                                            checkpoint, site_pc);
+            mutable_ctx.gpr[reg] = saved;
+        };
+        if (self.completion_fault == CompletionFault::WrongWorker &&
+            checkpoint == TextureCompletionCheckpoint::WorkerEntry &&
+            runtime.memory().contains(ctx.gpr[5], 4u)) {
+            // A worker is bound by the manager word its a1 parameter points
+            // to. Point a1 at the manager object itself, whose first word is
+            // its vtable, so the entry claims a different manager.
+            forward_with_register(5u, runtime.memory().load32(ctx.gpr[5]));
+            return;
+        }
+        if (self.completion_fault == CompletionFault::UnsupportedCopyWorker &&
+            checkpoint == TextureCompletionCheckpoint::ClassifierReturn) {
+            forward_with_register(2u, 1u);
+            return;
+        }
+        if (self.completion_fault == CompletionFault::DescriptorMutation &&
+            checkpoint == TextureCompletionCheckpoint::RetirementReturn) {
+            const auto descriptor = ctx.gpr[18];
+            auto &memory = const_cast<Runtime &>(runtime).memory();
+            if (descriptor != 0u && memory.contains(descriptor + 2u, 1u)) {
+                memory.store8(descriptor + 2u,
+                              static_cast<std::uint8_t>(memory.load8(descriptor + 2u) ^ 1u));
+                self.completion_fault_applied = true;
+            }
+        }
+        if (self.completion_fault == CompletionFault::WrongRetirementState &&
+            checkpoint == TextureCompletionCheckpoint::RetirementReturn) {
+            const auto manager = ctx.gpr[17];
+            auto &memory = const_cast<Runtime &>(runtime).memory();
+            if (manager != 0u && memory.contains(manager + kQueueStateOffset, 4u)) {
+                memory.store32(manager + kQueueStateOffset, 1u);
+                self.completion_fault_applied = true;
+            }
+        }
+        if (self.completion_fault == CompletionFault::WrongRetirementConsumer &&
+            checkpoint == TextureCompletionCheckpoint::RetirementReturn) {
+            const auto manager = ctx.gpr[17];
+            auto &memory = const_cast<Runtime &>(runtime).memory();
+            if (manager != 0u && memory.contains(manager + kQueueConsumerOffset, 4u)) {
+                memory.store32(manager + kQueueConsumerOffset,
+                              memory.load32(manager + kQueueConsumerOffset) + 2u);
+                self.completion_fault_applied = true;
+            }
+        }
+        if (self.completion_tracker)
+            self.completion_tracker->observe_completion(runtime, ctx, checkpoint, site_pc);
+    }
+    static void completion_call(void *data, const Runtime &runtime,
+                                const AllegrexContext &ctx,
+                                TextureCompletionCallCheckpoint checkpoint,
+                                std::uint32_t site_pc) noexcept {
+        auto &self = *static_cast<Observations *>(data);
+        if (self.completion_tracker)
+            self.completion_tracker->observe_completion_call(
+                runtime, ctx, checkpoint, site_pc);
     }
 #endif
     const Event &one(TextureLifetimeCheckpoint point, std::size_t begin) const {
@@ -431,6 +714,20 @@ class Gate {
     std::size_t actual_read_calls_{}, reference_read_calls_{};
     std::vector<std::array<std::uint32_t, 5>> actual_read_trace_, reference_read_trace_;
     std::vector<std::uint8_t> destination_before_actual_, destination_before_reference_;
+#endif
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+    bool completion_active_{};
+    bool completion_in_worker_{};
+    unsigned completion_worker_waits_{};
+    unsigned completion_worker_acks_{};
+    std::vector<AllegrexContext> actual_completion_worker_contexts_;
+    std::vector<AllegrexContext> reference_completion_worker_contexts_;
+    std::vector<std::array<std::uint32_t, 5>> actual_completion_trace_,
+        reference_completion_trace_;
+    std::vector<AllegrexContext> actual_completion_reader_contexts_;
+    std::vector<AllegrexContext> reference_completion_reader_contexts_;
+    std::int32_t completion_reader_uid_{-1};
+    bool completion_sides_compared_{};
 #endif
     bool allow_loss_{};
     static bool code_valid(void *user, const Runtime &runtime, const AllegrexContext &,
@@ -556,8 +853,78 @@ class Gate {
         }
     }
 #endif
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+    void pump_completion_worker(Runtime &runtime, bool actual_side,
+                                std::uint32_t entry) {
+        require(!completion_in_worker_, "Nested completion worker pump");
+        completion_in_worker_ = true;
+        completion_worker_waits_ = 0u;
+        completion_worker_acks_ = 0u;
+        auto &contexts = actual_side ? actual_completion_worker_contexts_
+                                     : reference_completion_worker_contexts_;
+        contexts.emplace_back(context(entry));
+        auto &worker = contexts.back();
+        worker.gpr[4] = 4u;
+        worker.gpr[5] = raw(0x08300000u);
+        worker.gpr[29] = raw(sp - (entry == 0x088652C4u ? 0x1000u : 0x2000u));
+        worker.gpr[31] = end_pc;
+        if (actual_side) run_actual_side(worker, entry);
+        else run_reference_side(worker, entry);
+        if (completion_reader_uid_ >= 0)
+            set_runtime_thread_identity(completion_reader_uid_,
+                                        "completion reader restored");
+        require(completion_worker_waits_ == 2u,
+                "Completion worker suspension boundary differs");
+        (void)runtime;
+        completion_in_worker_ = false;
+    }
+#endif
     void model_import(Runtime &runtime, AllegrexContext &context, bool actual_side) {
         const auto stub = context.pc;
+        const auto record_completion_import = [&]() {
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+            if (!completion_active_) return;
+            auto &trace = actual_side ? actual_completion_trace_ : reference_completion_trace_;
+            trace.push_back({stub, context.gpr[4], context.gpr[5], context.gpr[6], context.gpr[2]});
+#else
+            (void)actual_side;
+#endif
+        };
+#if !defined(MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE) && \
+    !defined(MHP3RD_TEXTURE_READ_G1B_ORACLE)
+        (void)runtime;
+        (void)stub;
+#endif
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        if (completion_active_ && stub == 0x08965858u) {
+            if (completion_in_worker_ || context.gpr[5] == 1u) {
+                const bool adopted_worker = !completion_in_worker_;
+                require(context.gpr[5] == 1u, "Unexpected completion worker event mask");
+                if (++completion_worker_waits_ > 1u) context.pc = end_pc;
+                else context.pc = context.gpr[31];
+                if (adopted_worker && context.pc == end_pc) completion_in_worker_ = false;
+                context.gpr[2] = 0u;
+                record_completion_import();
+                return;
+            }
+            require(context.gpr[5] == 16u, "Unexpected completion main wait mask");
+            const auto event = context.gpr[4];
+            require(event == 11u || event == 12u, "Unknown completion worker event");
+            pump_completion_worker(runtime, actual_side,
+                                   event == 11u ? 0x088652C4u : 0x08865378u);
+            context.gpr[2] = 0u;
+            context.pc = context.gpr[31];
+            record_completion_import();
+            return;
+        }
+        if (completion_active_ && stub == 0x089657D0u) {
+            if (completion_in_worker_ && context.gpr[5] == 16u) ++completion_worker_acks_;
+            context.gpr[2] = 0u;
+            context.pc = context.gpr[31];
+            record_completion_import();
+            return;
+        }
+#endif
 #ifdef MHP3RD_TEXTURE_READ_G1B_ORACLE
         if (read_prefix_active_ && stub == 0x089656A0u) {
             const auto expected_scratch64 = std::uint64_t{read_manager_} + 0x98C0u;
@@ -567,6 +934,7 @@ class Gate {
                 psprecomp::GuestMemory::canonical(static_cast<std::uint32_t>(expected_scratch64))) {
                 context.gpr[2] = 0u;
                 context.pc = context.gpr[31];
+                record_completion_import();
                 return;
             }
             require(context.gpr[4] == read_fd_ &&
@@ -574,8 +942,12 @@ class Gate {
                     "Actual sceIoRead fd/request differs from the captured manager and descriptor");
             if (actual_side) interleave_read_state_once();
             auto &calls = actual_side ? actual_read_calls_ : reference_read_calls_;
-            require(calls < read_scenario_.results.size(),
-                    "Unexpected additional sceIoRead invocation");
+            if (calls >= read_scenario_.results.size()) {
+                throw std::runtime_error(std::string("Unexpected additional sceIoRead invocation side=") +
+                    (actual_side ? "actual" : "reference") + " calls=" +
+                    std::to_string(calls) + " pc=" + std::to_string(context.pc) +
+                    " ra=" + std::to_string(context.gpr[31]));
+            }
             if (calls == 0u && read_destination_bytes_ != 0u) {
                 auto &before = actual_side ? destination_before_actual_ : destination_before_reference_;
                 before.resize(read_destination_bytes_);
@@ -594,6 +966,7 @@ class Gate {
             context.gpr[2] = std::bit_cast<std::uint32_t>(result);
             auto &trace = actual_side ? actual_read_trace_ : reference_read_trace_;
             trace.push_back({stub, context.gpr[4], context.gpr[5], context.gpr[6], context.gpr[2]});
+            record_completion_import();
             context.pc = context.gpr[31];
             return;
         }
@@ -602,6 +975,7 @@ class Gate {
 #endif
         context.gpr[2] = 0u;
         context.pc = context.gpr[31];
+        record_completion_import();
     }
     std::string transfer_diagnostic() const {
         if (observed_.transfer_count == 0u) return "checkpoint=none";
@@ -656,9 +1030,19 @@ public:
 #ifdef MHP3RD_TEXTURE_READ_G1B_ORACLE
               , &Observations::read
 #endif
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+              , &Observations::completion
+              , &Observations::completion_call
+#endif
           }),
           mirror_(mirror) {
         require(binding_.installed(), "Could not bind lifetime observations");
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        actual_completion_reader_contexts_.reserve(4u);
+        reference_completion_reader_contexts_.reserve(4u);
+        actual_completion_worker_contexts_.reserve(4u);
+        reference_completion_worker_contexts_.reserve(4u);
+#endif
         for (auto *runtime : {&actual_, &reference_}) {
             (void)elf.load_and_relocate(runtime->memory());
             runtime->memory().copy_in(overlay_base, overlay);
@@ -715,6 +1099,9 @@ public:
         transfer_config.max_read_attempts = max_read_attempts;
         transfer_config.read_attempt_serial_limit = read_attempt_serial_limit;
 #endif
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        transfer_config.observe_completion = true;
+#endif
         transfer_tracker_ = std::make_unique<TextureTransferTracker>(
             actual_, *authority_, *tracker_, transfer_config);
         observed_.transfer_tracker = transfer_tracker_.get();
@@ -722,14 +1109,62 @@ public:
 #ifdef MHP3RD_TEXTURE_READ_G1B_ORACLE
         observed_.read_tracker = transfer_tracker_.get();
 #endif
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        observed_.completion_tracker = transfer_tracker_.get();
+#endif
 #endif
         store(0x09FBE8D8u, raw(container));
         store(0x09FBE75Cu, raw(command_manager));
     }
     std::uint32_t raw(std::uint32_t value) const { return value | mirror_; }
     TextureLifetimeTrackerStats tracker_stats() const { return tracker_->stats(); }
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+    std::size_t completion_observation_count() const noexcept {
+        return observed_.completion_count;
+    }
+    bool completion_comparisons_performed() const noexcept {
+        return completion_sides_compared_;
+    }
+    bool completion_retirement_observed() const noexcept {
+        return std::any_of(observed_.completion_events.begin(),
+                           observed_.completion_events.begin() +
+                               std::min(observed_.completion_count,
+                                        observed_.completion_events.size()),
+                           [](const CompletionEvent &event) {
+                               return event.checkpoint ==
+                                   TextureCompletionCheckpoint::RetirementReturn;
+                           });
+    }
+    bool completion_fault_applied() const noexcept {
+        return observed_.completion_fault_applied;
+    }
+    TextureTransferTrackerStats completion_tracker_stats() const noexcept {
+        return transfer_tracker_->stats();
+    }
+    TextureTransferTrackerStats completion_tracker_smoke() {
+        ReadScenario scenario{};
+        scenario.name = "g1c-tracker-smoke";
+        scenario.results = {32};
+        scenario.requested_bytes = 32u;
+        observed_.completion_smoke = true;
+        const auto stats = read_prefix_scenario(scenario, 1u, false, true);
+        require(stats.completion_started == 1u && stats.completion_completed == 1u &&
+                stats.live_writers == 0u && authority_->failure() ==
+                    mhp3rd::resources::AuthorityError::None,
+                "Real completion tracker smoke did not release its writer");
+        TextureCompletionRecord record{};
+        require(transfer_tracker_->completion_record(0u, record) && record.writer_released &&
+                record.outcome == TextureCompletionOutcome::Completed,
+                "Real completion tracker smoke record is incomplete");
+        return stats;
+    }
+#endif
     void store(std::uint32_t address, std::uint32_t value) {
         actual_.memory().store32(address, value); reference_.memory().store32(address, value);
+    }
+    void store16(std::uint32_t address, std::uint32_t value) {
+        actual_.memory().store16(address, static_cast<std::uint16_t>(value));
+        reference_.memory().store16(address, static_cast<std::uint16_t>(value));
     }
     AllegrexContext context(std::uint32_t entry) const {
         AllegrexContext ctx{};
@@ -740,9 +1175,8 @@ public:
     AllegrexContext run(AllegrexContext ctx) {
         return run_from(ctx, ctx.pc);
     }
-    AllegrexContext run_from(AllegrexContext ctx, std::uint32_t entry) {
-        auto expected = ctx;
-        expected.pc = entry;
+    void run_actual_side(AllegrexContext &ctx, std::uint32_t entry) {
+        ctx.pc = entry;
         unsigned dispatches = 0;
         std::uint32_t dispatch_pc = entry;
         do {
@@ -753,41 +1187,115 @@ public:
                 continue;
             }
 #endif
-            require(++dispatches < 10000u && actual_.has_function(dispatch_pc), "AOT observation path escaped dispatch budget");
-            const auto invoked = actual_.invoke_isolated_aot(dispatch_pc, ctx);
+            require(++dispatches < 10000u && actual_.has_function(dispatch_pc),
+                    "AOT observation path escaped dispatch budget at " +
+                    std::to_string(dispatch_pc) + " ctx.pc=" + std::to_string(ctx.pc) +
+                    " a0=" + std::to_string(ctx.gpr[4]) +
+                    " a1=" + std::to_string(ctx.gpr[5]) +
+                    " a2=" + std::to_string(ctx.gpr[6]));
+            bool invoked = false;
+            try {
+                invoked = actual_.invoke_isolated_aot(dispatch_pc, ctx);
+            } catch (const std::exception &error) {
+                throw std::runtime_error(
+                    std::string("AOT observation path fault side=actual dispatch_pc=") +
+                    std::to_string(dispatch_pc) + " ctx.pc=" + std::to_string(ctx.pc) +
+                    " sp=" + std::to_string(ctx.gpr[29]) +
+                    " ra=" + std::to_string(ctx.gpr[31]) +
+                    " a0=" + std::to_string(ctx.gpr[4]) +
+                    " a1=" + std::to_string(ctx.gpr[5]) +
+                    " a2=" + std::to_string(ctx.gpr[6]) +
+                    " a3=" + std::to_string(ctx.gpr[7]) +
+                    " s0=" + std::to_string(ctx.gpr[16]) +
+                    " s1=" + std::to_string(ctx.gpr[17]) +
+                    " s2=" + std::to_string(ctx.gpr[18]) +
+                    " s3=" + std::to_string(ctx.gpr[19]) +
+                    " error=" + error.what());
+            }
             require(invoked && !actual_.stopped(), "AOT observation path stopped at " +
                     std::to_string(dispatch_pc) + " ctx.pc=" + std::to_string(ctx.pc) +
                     " reason=" + actual_.stop_reason());
             dispatch_pc = ctx.pc;
         } while (ctx.pc != end_pc);
+    }
+    void run_reference_side(AllegrexContext &ctx, std::uint32_t entry) {
+        ctx.pc = entry;
         unsigned steps = 0;
         do {
 #ifdef MHP3RD_TEXTURE_TRANSFER_G1A_ORACLE
-#ifdef MHP3RD_TEXTURE_READ_G1B_ORACLE
-            if (read_prefix_active_ && expected.pc == 0x0886551Cu &&
-                reference_read_calls_ >= stop_after_read_results_) {
-                expected.pc = end_pc;
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+            // The AOT completion copy changes ctx.pc at the terminal hook
+            // immediately after RetirementReturn. Stop the interpreter at
+            // the same semantic edge instead of relying on ReadResult.
+            if (completion_active_ && ctx.pc ==
+                    static_cast<std::uint32_t>(TextureCompletionCheckpoint::RetirementReturn)) {
+                ctx.pc = end_pc;
                 break;
             }
 #endif
-            if (is_import(expected.pc)) {
+#ifdef MHP3RD_TEXTURE_READ_G1B_ORACLE
+            if (read_prefix_active_
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+                && !completion_active_
+#endif
+                && ctx.pc == 0x0886551Cu &&
+                reference_read_calls_ >= stop_after_read_results_) {
+                ctx.pc = end_pc;
+                break;
+            }
+#endif
+            if (is_import(ctx.pc)) {
                 // G1a models enqueue imports; G1b models only the bounded
                 // sceIoRead call and returns before the result comparison branch.
-                model_import(reference_, expected, false);
+                model_import(reference_, ctx, false);
                 require(++steps < 2000000u, "Interpreter lifetime path exceeded instruction budget");
                 continue;
             }
 #endif
-            require((expected.pc >= 0x08804000u && expected.pc < 0x08965A00u) ||
-                    (expected.pc >= ctor && expected.pc < ctor + 112u), "Interpreter escaped certified main/constructor code");
-            require(interpret_allegrex(reference_, expected, 1u) == InterpreterExit::Budget &&
+            require((ctx.pc >= 0x08804000u && ctx.pc < 0x08965A00u) ||
+                    (ctx.pc >= ctor && ctx.pc < ctor + 112u),
+                    "Interpreter escaped certified main/constructor code at " +
+                    std::to_string(ctx.pc));
+            require(interpret_allegrex(reference_, ctx, 1u) == InterpreterExit::Budget &&
                     !reference_.stopped(), "Interpreter lifetime path stopped");
             require(++steps < 2000000u, "Lifetime path exceeded instruction budget");
-        } while (expected.pc != end_pc);
-        require(same_context(ctx, expected), "Lifetime observer changed original CPU effects");
+        } while (ctx.pc != end_pc);
+        max_steps = std::max(max_steps, steps);
+    }
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+    void compare_completion_sides(const AllegrexContext &actual_reader,
+                                  const AllegrexContext &reference_reader) {
+        require(same_context(actual_reader, reference_reader),
+                "Completion reader CPU differs");
+        require(actual_completion_worker_contexts_.size() ==
+                    reference_completion_worker_contexts_.size(),
+                "Completion worker coverage differs");
+        for (std::size_t i = 0; i < actual_completion_worker_contexts_.size(); ++i)
+            require(same_context(actual_completion_worker_contexts_[i],
+                                 reference_completion_worker_contexts_[i]),
+                    "Completion worker CPU differs");
+        require(actual_.memory().bytes() == reference_.memory().bytes(),
+                "Completion RAM differs");
+        require(actual_.memory().vram_bytes() == reference_.memory().vram_bytes(),
+                "Completion VRAM differs");
+        require(actual_completion_trace_ == reference_completion_trace_,
+                "Completion import traces differ");
+        require(actual_read_trace_ == reference_read_trace_,
+                "Completion read import traces differ");
+        completion_sides_compared_ = true;
+    }
+#endif
+    AllegrexContext run_from(AllegrexContext &ctx, std::uint32_t entry,
+                             bool compare = true) {
+        auto actual_context = ctx;
+        auto reference_context = ctx;
+        run_actual_side(actual_context, entry);
+        run_reference_side(reference_context, entry);
+        if (compare) require(same_context(actual_context, reference_context),
+                             "Lifetime observer changed original CPU effects");
         const auto actual_ram = actual_.memory().bytes();
         const auto reference_ram = reference_.memory().bytes();
-        if (actual_ram != reference_ram) {
+        if (compare && actual_ram != reference_ram) {
             for (std::size_t i = 0; i < actual_ram.size(); ++i) {
                 if (actual_ram[i] != reference_ram[i]) {
                     throw std::runtime_error("Lifetime observer changed original RAM effects at " +
@@ -796,7 +1304,8 @@ public:
                 }
             }
         }
-        require(actual_.memory().vram_bytes() == reference_.memory().vram_bytes(), "Lifetime observer changed original VRAM effects");
+        if (compare) require(actual_.memory().vram_bytes() == reference_.memory().vram_bytes(), "Lifetime observer changed original VRAM effects");
+        ctx = actual_context;
         require(!observed_.overflow, "Lifetime observation capacity exceeded");
         require(!observed_.replay_accepted, "One-use builder ticket was replayed");
 #ifdef MHP3RD_TEXTURE_TRANSFER_G1A_ORACLE
@@ -812,7 +1321,7 @@ public:
         require(allow_loss_ || tracker_->error() == TextureLifetimeTrackerError::None,
                 "Actual lifetime tracker rejected a certified path: " +
                 std::to_string(static_cast<int>(tracker_->error())));
-        ++calls; max_steps = std::max(max_steps, steps);
+        ++calls;
         return ctx;
     }
 #ifdef MHP3RD_TEXTURE_READ_G1B_ORACLE
@@ -908,23 +1417,36 @@ public:
 #ifdef MHP3RD_TEXTURE_TRANSFER_G1A_ORACLE
     void configure_transfer_manager(bool uncached, std::uint32_t producer_index,
                                     std::uint32_t requested_bytes = 32u,
-                                    bool deobfuscate = false) {
+                                    bool deobfuscate = false, bool digest = false) {
         auto manager = raw(transfer_manager);
         if (uncached) manager = psprecomp::GuestMemory::canonical(manager) | 0x40000000u;
         store(raw(0x08A3A03Cu), manager);
         store(manager, 0x0896F648u);
         store(manager + 0x11C0u, 17u);
         store(manager + 0x11C4u, requested_bytes);
+        if (deobfuscate) {
+            // The deobfuscating enqueue branch (0x08863EB4) draws from the
+            // original RNG object whose pointer game startup stores at
+            // 0x09FC8BE8 (0x0888D8BC..0x0888D8E8 store 0x08ABAE40). Channel 1
+            // keeps its 16-bit state at object + 0x014FA814 + 2. The helper
+            // advances state to 176 * max(state, 1) mod 65363 and the enqueue
+            // sets the descriptor digest byte when that value mod 100 is below
+            // five: seed 25 yields 4400 (digest), seed 1 yields 176 (none).
+            store(kRandomObjectPointer, kRandomObject);
+            store16(kRandomObject + 0x014FA814u + 2u, digest ? 25u : 1u);
+        }
         store(manager + 0x1090u, producer_index);
+        store(manager + 0x2F7D0u,
+              manager + kQueueRecordOffset + producer_index * 32u);
         store(manager + 0x2F7D4u, deobfuscate ? 1u : 0u);
     }
     AllegrexContext selected_load(std::uint32_t owner, std::uint32_t resource_id,
                                   bool uncached_manager, std::uint32_t producer_index,
                                   bool stale_pc, bool require_healthy = true,
                                   std::uint32_t requested_bytes = 32u,
-                                  bool deobfuscate = false) {
+                                  bool deobfuscate = false, bool digest = false) {
         configure_transfer_manager(uncached_manager, producer_index,
-                                   requested_bytes, deobfuscate);
+                                   requested_bytes, deobfuscate, digest);
         store(owner + 0x63u, 0u);
         auto ctx = context(0x088A5470u);
         ctx.gpr[4] = owner;
@@ -955,20 +1477,50 @@ public:
     }
 #ifdef MHP3RD_TEXTURE_READ_G1B_ORACLE
     TextureTransferTrackerStats read_prefix_scenario(const ReadScenario &scenario,
-                                                       std::uint32_t sequence) {
+                                                       std::uint32_t sequence,
+                                                       bool complete = false,
+                                                       bool compare = true) {
         require(!scenario.results.empty() && scenario.results.size() <= 16u &&
                 scenario.requested_bytes > 0u &&
                 scenario.requested_bytes <= mhp3rd::resources::SourceAuthority::kSlotBytes,
                 "Read fixture scenario exceeds its finite request bound");
+        const auto expected_footprint =
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+            complete && (scenario.completion_transform || scenario.completion_digest)
+                ? ((scenario.requested_bytes + 3u) & ~3u)
+                : scenario.requested_bytes;
+#else
+            scenario.requested_bytes;
+#endif
         initialize(owner_manager, owner_heap);
         initialize(command_manager, command_heap);
         const bool seed_selected = scenario.selected || scenario.reuse_selected_history;
+        std::uint32_t selected_descriptor_index = 0u;
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        require(!scenario.completion_old_pending_writer || scenario.selected,
+                "An old pending writer requires a selected completion");
+#endif
         read_owner_ = seed_selected ? factory() : 0u;
         std::uint32_t command = 0u;
         if (seed_selected) {
             command = caller(read_owner_);
-            (void)selected_load(read_owner_, 17u, scenario.uncached_manager, 0u, false, true,
-                                scenario.requested_bytes, false);
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+            if (scenario.completion_old_pending_writer) {
+                (void)selected_load(read_owner_, 17u, scenario.uncached_manager, 0u,
+                                    false, true, scenario.requested_bytes, false);
+                selected_descriptor_index = 1u;
+            }
+#endif
+            (void)selected_load(read_owner_, 17u, scenario.uncached_manager,
+                                selected_descriptor_index, false, true,
+                                scenario.requested_bytes,
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+                                complete && (scenario.completion_transform || scenario.completion_digest),
+                                complete && scenario.completion_digest
+#else
+                                false
+#endif
+                                );
         }
         if (!scenario.selected) {
             require(enqueue_unowned(18u, 0x08300000u, 5u,
@@ -978,18 +1530,19 @@ public:
         read_manager_ = actual_.memory().load32(raw(0x08A3A03Cu));
         std::uint32_t raw_record{};
         require(read_manager_ != 0u &&
-                std::uint64_t{read_manager_} + kQueueRecordOffset <=
+                std::uint64_t{read_manager_} + kQueueRecordOffset +
+                    std::uint64_t{selected_descriptor_index} * 32u <=
                     std::numeric_limits<std::uint32_t>::max(),
                 "Read prefix has no valid worker manager record");
-        raw_record = read_manager_ + kQueueRecordOffset;
+        raw_record = read_manager_ + kQueueRecordOffset + selected_descriptor_index * 32u;
         TextureTransferDescriptorRecord descriptor{};
         if (scenario.selected) {
-            require(transfer_tracker_->descriptor_record(0u, descriptor) &&
+            require(transfer_tracker_->descriptor_record(selected_descriptor_index, descriptor) &&
                     descriptor.associated_load && descriptor.writer.instance != 0u &&
                     psprecomp::GuestMemory::canonical(descriptor.raw_descriptor) ==
                         psprecomp::GuestMemory::canonical(raw_record) &&
                     descriptor.raw_destination == read_owner_ + 0x27C70u &&
-                    descriptor.write_footprint == scenario.requested_bytes,
+                    descriptor.write_footprint == expected_footprint,
                     "Selected read prefix did not start from the compiled descriptor path");
         } else if (scenario.reuse_selected_history) {
             TextureTransferDescriptorRecord old{};
@@ -1034,16 +1587,22 @@ public:
         read_scenario_ = scenario;
         read_requested_bytes_ = scenario.requested_bytes;
         read_fd_ = 0x1200u + sequence;
-        store(read_manager_ + kQueueConsumerOffset, 0u);
+        store(read_manager_ + kQueueConsumerOffset, selected_descriptor_index);
         store(read_manager_ + kQueueStateOffset, kWorkerState8);
         store(read_manager_ + kQueueFdOffset, read_fd_);
+        store(read_manager_ + 0x1090u, selected_descriptor_index + 1u);
         store(read_manager_ + 0x2F7F0u, 11u);
         store(read_manager_ + 0x2F7C8u, 12u);
+        // The compiled worker loads its current descriptor through this
+        // manager slot before the optional transform/digest path. Keep the
+        // fixture's worker view bound to the descriptor committed above.
+        store(read_manager_ + 0x2F7D0u, raw_record);
         store(raw(0x08300000u), read_manager_);
         // State 8 queries the guest current-thread context through this
         // audited global pointer before entering the helper. Supply a bounded
         // fixture-owned zero context so the worker follows that original path.
         store(0x08AB3640u, 0x08301000u);
+        store(0x08A38644u, 0x08301000u);
 
         std::vector<std::uint8_t> scratch(kReadScratchBytes, 0xA5u);
         actual_.memory().copy_in(read_manager_ + kReadScratchOffset, scratch);
@@ -1056,8 +1615,23 @@ public:
         reference_read_calls_ = 0u;
         actual_read_trace_.clear();
         reference_read_trace_.clear();
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        actual_completion_trace_.clear();
+        reference_completion_trace_.clear();
+        actual_completion_worker_contexts_.clear();
+        reference_completion_worker_contexts_.clear();
+        actual_completion_reader_contexts_.clear();
+        reference_completion_reader_contexts_.clear();
+        completion_sides_compared_ = false;
+#endif
         read_interleave_applied_ = false;
         read_prefix_active_ = true;
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        completion_active_ = complete;
+        observed_.completion_live = complete;
+        observed_.completion_fault = scenario.completion_fault;
+        observed_.completion_fault_applied = false;
+#endif
         stop_after_read_results_ = scenario.results.size();
         allow_transfer_loss_ = scenario.expected_error != TextureTransferTrackerError::None;
         observed_.read_count = 0u;
@@ -1083,46 +1657,163 @@ public:
         read_prefix_read_invocations = 0u;
         read_prefix_stop_calls = 0u;
 
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        actual_completion_reader_contexts_.emplace_back(context(0x08865450u));
+        auto &worker = actual_completion_reader_contexts_.back();
+#else
         auto worker = context(0x08865450u);
+#endif
         worker.gpr[4] = 4u;
         worker.gpr[5] = raw(0x08300000u);
         worker.gpr[29] = raw(sp - 0x1000u);
         worker.gpr[31] = end_pc;
         const auto producer_thread = runtime_thread_uid();
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        completion_reader_uid_ = producer_thread;
+#endif
         set_runtime_thread_identity(producer_thread == 3001u ? 3002u : 3001u,
                                     "read worker fixture");
-        try { (void)run_from(worker, worker.pc); }
+        try {
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+            if (complete) {
+                if (compare) {
+                    reference_completion_reader_contexts_.emplace_back(worker);
+                    auto &reference_reader = reference_completion_reader_contexts_.back();
+                    run_actual_side(worker, worker.pc);
+                    run_reference_side(reference_reader, reference_reader.pc);
+                    compare_completion_sides(worker, reference_reader);
+                } else {
+                    run_actual_side(worker, worker.pc);
+                }
+            } else {
+                (void)run_from(worker, worker.pc, compare);
+            }
+#else
+            (void)run_from(worker, worker.pc, compare);
+#endif
+        }
         catch (...) {
             set_runtime_thread_identity(producer_thread, "read worker fixture restored");
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+            completion_reader_uid_ = -1;
+#endif
             read_prefix_active_ = false;
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+            completion_active_ = false;
+            observed_.completion_live = false;
+#endif
             read_prefix_stop_after = 0u;
             throw;
         }
         set_runtime_thread_identity(producer_thread, "read worker fixture restored");
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        completion_reader_uid_ = -1;
+#endif
 
         read_prefix_active_ = false;
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        completion_active_ = false;
+        observed_.completion_live = false;
+#endif
         read_prefix_stop_after = 0u;
-        require(actual_read_calls_ == scenario.results.size() &&
-                reference_read_calls_ == scenario.results.size() &&
-                actual_read_trace_ == reference_read_trace_,
-                "AOT/interpreter read imports or arguments differ");
-        require(read_prefix_stop_calls == scenario.results.size(),
-                "The read-prefix oracle did not stop after each observed result");
-        require(!destination_before_actual_.empty() &&
-                actual_.memory().bytes().size() == reference_.memory().bytes().size(),
+        require(!observed_.overflow, "Lifetime observation capacity exceeded");
+        require(!observed_.transfer_overflow, "Transfer observation capacity exceeded");
+        require(allow_transfer_loss_ || transfer_tracker_->error() ==
+                    TextureTransferTrackerError::None,
+                "Actual transfer tracker rejected the completion path: " +
+                    std::to_string(static_cast<int>(transfer_tracker_->error())) + " " +
+                    transfer_diagnostic());
+        require(!observed_.read_overflow, "Read observation capacity exceeded");
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        require(!observed_.completion_overflow,
+                "Completion observation capacity exceeded");
+#endif
+        if (compare) {
+            require(actual_read_calls_ == scenario.results.size() &&
+                    reference_read_calls_ == scenario.results.size() &&
+                    actual_read_trace_ == reference_read_trace_,
+                    "AOT/interpreter read imports or arguments differ");
+        } else {
+            require(actual_read_calls_ == scenario.results.size(),
+                    "Completion smoke read imports differ");
+        }
+        if (!complete) {
+            require(read_prefix_stop_calls == scenario.results.size(),
+                    "The read-prefix oracle did not stop after each observed result");
+        }
+        require(!destination_before_actual_.empty(),
                 "Read-prefix fixture did not capture a destination range");
         std::vector<std::uint8_t> actual_destination(read_destination_bytes_);
         std::vector<std::uint8_t> reference_destination(read_destination_bytes_);
         actual_.memory().copy_out(read_destination_address_, actual_destination);
-        reference_.memory().copy_out(read_destination_address_, reference_destination);
-        require(actual_destination == destination_before_actual_ &&
-                reference_destination == destination_before_reference_,
-                "The read-prefix oracle changed the owner destination before copy");
+        if (compare) reference_.memory().copy_out(read_destination_address_, reference_destination);
+        if (!complete && compare) {
+            require(actual_destination == destination_before_actual_ &&
+                    reference_destination == destination_before_reference_,
+                    "The read-prefix oracle changed the owner destination before copy");
+        }
 
         const auto stats = transfer_tracker_->stats();
-        require((scenario.selected || scenario.reuse_selected_history)
-                    ? stats.live_writers >= 1u : stats.live_writers == 0u,
-                "Read observation changed the destination-writer set unexpectedly");
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        const auto expected_completion_live_writers =
+            scenario.completion_old_pending_writer ? 1u : 0u;
+#else
+        const auto expected_completion_live_writers = 0u;
+#endif
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        const auto completion_outcome_is_healthy =
+            scenario.expected_completion_outcome == TextureCompletionOutcome::None;
+#else
+        const auto completion_outcome_is_healthy = true;
+#endif
+        if (complete && scenario.selected && scenario.expected_error ==
+                TextureTransferTrackerError::None &&
+                completion_outcome_is_healthy) {
+            if (!(stats.completion_started == 1u && stats.completion_completed == 1u &&
+                  stats.active_completions == 0u &&
+                  stats.live_writers == expected_completion_live_writers &&
+                  transfer_tracker_->completion_record_count() == 1u)) {
+                std::cerr << "live branch stats " << stats.completion_started << ' '
+                          << stats.completion_completed << ' ' << stats.completion_unsupported
+                          << ' ' << stats.completion_invalid << ' ' << stats.live_writers
+                          << ' ' << static_cast<int>(transfer_tracker_->error()) << '\n';
+                throw std::runtime_error("completion live path incomplete");
+            }
+            TextureCompletionRecord completion{};
+            require(transfer_tracker_->completion_record(0u, completion) &&
+                    completion.outcome == TextureCompletionOutcome::Completed &&
+                    completion.writer_released,
+                    "Completion record did not publish after writer quiescence");
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+            require(completion.digest_computed == scenario.completion_digest,
+                    "Compiled completion digest receipt differs from the descriptor flag");
+#endif
+        }
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        else if (complete && scenario.selected && scenario.expected_error ==
+                 TextureTransferTrackerError::None &&
+                 scenario.expected_completion_outcome != TextureCompletionOutcome::None) {
+            TextureCompletionRecord completion{};
+            require(stats.completion_started == 1u &&
+                    stats.active_completions == 0u && stats.live_writers >= 1u &&
+                    transfer_tracker_->completion_record(0u, completion) &&
+                    completion.outcome == scenario.expected_completion_outcome &&
+                    !completion.writer_released,
+                    "Fault-injected completion did not retain its writer");
+        }
+#endif
+#ifdef MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE
+        else if (observed_.completion_smoke && scenario.selected &&
+                 scenario.expected_error == TextureTransferTrackerError::None) {
+            require(stats.completion_completed == 1u && stats.live_writers == 0u,
+                    "Completion smoke did not release exactly the selected writer");
+        }
+#endif
+        else {
+            require((scenario.selected || scenario.reuse_selected_history)
+                        ? stats.live_writers >= 1u : stats.live_writers == 0u,
+                    "Read observation changed the destination-writer set unexpectedly");
+        }
         require(authority_->failure() == (scenario.expected_error == TextureTransferTrackerError::None
                     ? mhp3rd::resources::AuthorityError::None
                     : mhp3rd::resources::AuthorityError::ObservationLost),
@@ -1130,7 +1821,8 @@ public:
         if (scenario.expected_error != TextureTransferTrackerError::None)
             require(transfer_tracker_->error() == scenario.expected_error ||
                     transfer_tracker_->error() == scenario.expected_alternate_error,
-                    "Read fault did not produce its expected fail-closed result");
+                    "Read fault did not produce its expected fail-closed result: " +
+                        std::to_string(static_cast<int>(transfer_tracker_->error())));
         else
             require(transfer_tracker_->error() == TextureTransferTrackerError::None,
                     "Healthy read prefix lost observation authority");
@@ -1289,7 +1981,8 @@ public:
                 selected.writer.instance != 0u,
                 "Offset-overflow fixture did not establish the old selected writer");
         allow_transfer_loss_ = true;
-        observed_.descriptor_override = DescriptorOverride{0xFFFFFFF0u, 0x20u};
+        observed_.descriptor_override = DescriptorOverride{
+            0xFFFFFFF0u, 0x20u, std::nullopt, std::nullopt, std::nullopt};
         (void)selected_load(owner, 17u, false, 0u, false, false);
         TextureTransferDescriptorRecord retained{};
         require(transfer_tracker_->error() == TextureTransferTrackerError::InvalidRange &&
@@ -1309,7 +2002,8 @@ public:
                 selected.writer.instance != 0u,
                 "Zero-length fixture did not establish the old selected writer");
         allow_transfer_loss_ = true;
-        observed_.descriptor_override = DescriptorOverride{owner + 0x27C70u, 0u, 0u};
+        observed_.descriptor_override = DescriptorOverride{
+            owner + 0x27C70u, 0u, 0u, std::nullopt, std::nullopt};
         (void)selected_load(owner, 17u, false, 0u, false, false);
         TextureTransferDescriptorRecord retained{};
         require(transfer_tracker_->error() == TextureTransferTrackerError::InvalidRange &&
@@ -1408,7 +2102,6 @@ public:
                 "Descriptor snapshot is not the exact committed 32-byte ring record");
 
         const auto command = caller(owner);
-        const auto old_command_token = *tracker_->command_token(command);
         const auto old_writer = first.writer;
         const auto old_slot_generation = tracker_->owner_invalidation_generation(owner);
         require(old_slot_generation.has_value(),
@@ -1532,7 +2225,8 @@ public:
             allow_transfer_loss_ = false;
             (void)selected_load(owner, 17u, false, 0u, false);
             allow_transfer_loss_ = true;
-            observed_.descriptor_override = DescriptorOverride{0x08300000u, 0u, std::nullopt};
+            observed_.descriptor_override = DescriptorOverride{
+                0x08300000u, 0u, std::nullopt, std::nullopt, std::nullopt};
             (void)selected_load(owner, 17u, false, 0u, false, false);
         } else {
             (void)selected_load(owner, 17u, false, 0u, false, false);
@@ -1678,7 +2372,104 @@ bool texture_read_oracle_stop_after_result(psprecomp::Runtime &,
 } // namespace mhp3rd::native
 #endif
 
-#ifdef MHP3RD_TEXTURE_READ_G1B_ORACLE
+#if defined(MHP3RD_TEXTURE_COMPLETION_TRACKER_SMOKE)
+namespace mhp3rd::native {
+bool texture_completion_oracle_stop_after_retirement(psprecomp::Runtime &,
+    psprecomp::AllegrexContext &) noexcept { return true; }
+}
+int main(int argc, char **argv) {
+    try {
+        require(argc == 5,
+                "usage: texture_completion_tracker_smoke EBOOT.ELF lobby.bin lobby.dylib report.json");
+        require(!std::filesystem::exists(argv[4]), "Use a new tracker-smoke report path");
+        require(sha256_file(argv[1]) == "55c0598436c0753b04331f8e95d406f832d9217806e3a896fed0e88b33637d8c",
+                "Unsupported ELF");
+        require(sha256_file(argv[2]) == "c34bf34f5e71993f5f2d20cdc39ec1b965f64b66d46f8d7672b449fba64b5aca",
+                "Unsupported lobby image");
+        require(sha256_file(argv[3]) == "35d381ffb06ff45f7357d3ef1634719bcfd4d5810eba1de9b32ca0443b62f538",
+                "Unsupported lobby module");
+        std::ifstream stream(argv[2], std::ios::binary);
+        std::vector<std::uint8_t> overlay{std::istreambuf_iterator<char>(stream), {}};
+        Library module(argv[3]);
+        Gate gate(Elf32Image::from_file(argv[1]), overlay, module, 0u);
+        const auto stats = gate.completion_tracker_smoke();
+        std::ofstream out(argv[4]);
+        out << "{\"schema_version\":1,\"scope\":\"synthetic-g1c-completion-tracker-smoke\","
+            << "\"success\":true,\"synthetic_completion_sequence_used\":true,"
+            << "\"completion_started\":" << stats.completion_started
+            << ",\"completion_completed\":" << stats.completion_completed
+            << ",\"live_writers\":" << stats.live_writers
+            << ",\"authority_failure\":\"None\",\"transfer_readiness\":false,"
+            << "\"source_completion_receipts\":0,\"native_invocations\":0,\"game_executed\":false}\n";
+        require(static_cast<bool>(out), "Could not write tracker smoke report");
+        std::cout << "G1c real tracker smoke passed; exact writer released and readiness remains false\n";
+        return 0;
+    } catch (const std::exception &error) {
+        std::cerr << error.what() << '\n'; return 1;
+    }
+}
+#elif defined(MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE)
+int main(int argc, char **argv) {
+    try {
+        require(argc == 7,
+                "usage: texture_completion_observation_oracle EBOOT.ELF lobby.bin lobby.dylib report.json encoded decoded");
+        require(!std::filesystem::exists(argv[4]), "Use a new G1c report path");
+        require(sha256_file(argv[1]) == "55c0598436c0753b04331f8e95d406f832d9217806e3a896fed0e88b33637d8c",
+                "Unsupported ELF");
+        require(sha256_file(argv[2]) == "c34bf34f5e71993f5f2d20cdc39ec1b965f64b66d46f8d7672b449fba64b5aca",
+                "Unsupported lobby image");
+        require(sha256_file(argv[3]) == "35d381ffb06ff45f7357d3ef1634719bcfd4d5810eba1de9b32ca0443b62f538",
+                "Unsupported lobby module");
+        require(sha256_file(argv[5]) == "91f5655fe6f01631d64692c0be30e43acb90588e164e500770ec5dd41e972978" &&
+                sha256_file(argv[6]) == "3f06d53ef775166b06a1bd98a8a03a0b79c5d895eb4ad652fc9ca3656a781885",
+                "Unsupported private transform fixtures");
+        std::ifstream stream(argv[2], std::ios::binary);
+        std::vector<std::uint8_t> overlay{std::istreambuf_iterator<char>(stream), {}};
+        const auto elf = Elf32Image::from_file(argv[1]);
+        Library module(argv[3]);
+        unsigned calls = 0u, completed = 0u, completion_events = 0u;
+        unsigned transform_cases = 0u, retry_cases = 0u, rounded_cases = 0u;
+        for (unsigned i = 0u; i < 64u; ++i) {
+            ReadScenario scenario{};
+            scenario.name = "g1c-real-" + std::to_string(i);
+            scenario.requested_bytes = (i % 8u == 0u) ? 5u : 32u;
+            scenario.results = (i % 4u == 0u)
+                ? std::vector<std::int32_t>{3, static_cast<std::int32_t>(scenario.requested_bytes)}
+                : std::vector<std::int32_t>{static_cast<std::int32_t>(scenario.requested_bytes)};
+            scenario.completion_transform = (i % 3u) != 0u;
+            scenario.completion_digest = false;
+            Gate gate(elf, overlay, module, 0u);
+            const auto stats = gate.read_prefix_scenario(scenario, i + 1u, true);
+            require(stats.completion_completed == 1u, "Real G1c tracker did not complete");
+            require(stats.live_writers == 0u, "Real G1c tracker retained completed writer");
+            calls += gate.calls;
+            completed += static_cast<unsigned>(stats.completion_completed);
+            completion_events += static_cast<unsigned>(gate.completion_observation_count());
+            if (scenario.completion_transform) ++transform_cases;
+            if (scenario.results.size() > 1u) ++retry_cases;
+            if (scenario.requested_bytes == 5u) ++rounded_cases;
+        }
+        require(calls > 0u && completed == 64u && completion_events > 0u,
+                "G1c real tracker coverage was empty");
+        std::ofstream out(argv[4]);
+        out << "{\"schema_version\":1,\"scope\":\"original-g1c-real-tracker-inline-completion\","
+            << "\"success\":true,\"cases\":64,\"aot_interpreter_calls\":" << calls
+            << ",\"completion_event_cases\":64,\"completion_completed\":" << completed
+            << ",\"completion_failed_cases\":0,\"transform_cases\":" << transform_cases
+            << ",\"retry_cases\":" << retry_cases
+            << ",\"rounded_write_cases\":" << rounded_cases
+            << ",\"completion_events\":" << completion_events
+            << ",\"full_ram_vram_cpu_compared\":true,\"healthy_authority_exact_notready\":true"
+            << ",\"transfer_readiness\":false,\"source_completion_receipts\":0"
+            << ",\"native_invocations\":0,\"game_executed\":false}\n";
+        require(static_cast<bool>(out), "Could not write G1c report");
+        std::cout << "G1c real tracker: 64 selected completion scenarios passed; readiness remains false\n";
+        return 0;
+    } catch (const std::exception &error) {
+        std::cerr << error.what() << '\n'; return 1;
+    }
+}
+#elif defined(MHP3RD_TEXTURE_READ_G1B_ORACLE)
 int main(int argc, char **argv) {
     try {
         require(argc == 5 || argc == 7,

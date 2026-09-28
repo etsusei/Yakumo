@@ -37,7 +37,11 @@ class ObservedBaselineTests(unittest.TestCase):
             "cmake/TextureReadInstrumentation.cmake",
             "host/native/texture_lifetime_tracker.hpp", "host/native/texture_lifetime_tracker.cpp",
             "host/native/texture_transfer_tracker.hpp", "host/native/texture_transfer_tracker.cpp",
+            "host/native/texture_completion_decode.hpp", "host/native/texture_completion_decode.cpp",
+            "tests/texture_completion_decode_tests.cpp",
             "tests/texture_transfer_observation_oracle.cpp",
+            "tests/texture_completion_integration_oracle.cpp",
+            "tests/texture_completion_oracle_stop.hpp",
         ):
             self.assertIn(PREP.PROFILE + relative, PREP.OBSERVATION_FILES)
         self.assertNotIn(PREP.PROFILE + "host/native/texture_commands_bridge.cpp", PREP.OBSERVATION_FILES)

@@ -17,7 +17,8 @@ std::array<Slot, TextureCommandDispatch::kMaxRuntimes> slots{};
 TextureCommandDispatch::TextureCommandDispatch(psprecomp::Runtime &runtime,
         TextureCommandCallbacks callbacks) : runtime_(&runtime) {
     if ((callbacks.entry == nullptr) != (callbacks.returned == nullptr)) return;
-    if (!callbacks.entry && !callbacks.lifetime && !callbacks.transfer && !callbacks.read) return;
+    if (!callbacks.entry && !callbacks.lifetime && !callbacks.transfer &&
+        !callbacks.read && !callbacks.completion && !callbacks.completion_call) return;
     std::lock_guard lock(mutex);
     Slot *vacant = nullptr;
     for (auto &slot : slots) {
@@ -89,6 +90,32 @@ void texture_read_checkpoint(psprecomp::Runtime &runtime,
     for (const auto &slot : slots) {
         if (slot.runtime == &runtime && slot.callbacks.read) {
             slot.callbacks.read(slot.callbacks.user, runtime, context, checkpoint);
+            return;
+        }
+    }
+}
+
+void texture_completion_checkpoint(psprecomp::Runtime &runtime,
+        const psprecomp::AllegrexContext &context,
+        TextureCompletionCheckpoint checkpoint, std::uint32_t site_pc) {
+    std::lock_guard lock(mutex);
+    for (const auto &slot : slots) {
+        if (slot.runtime == &runtime && slot.callbacks.completion) {
+            slot.callbacks.completion(slot.callbacks.user, runtime, context,
+                                      checkpoint, site_pc);
+            return;
+        }
+    }
+}
+
+void texture_completion_call_boundary(psprecomp::Runtime &runtime,
+        const psprecomp::AllegrexContext &context,
+        TextureCompletionCallCheckpoint checkpoint, std::uint32_t site_pc) {
+    std::lock_guard lock(mutex);
+    for (const auto &slot : slots) {
+        if (slot.runtime == &runtime && slot.callbacks.completion_call) {
+            slot.callbacks.completion_call(slot.callbacks.user, runtime, context,
+                                            checkpoint, site_pc);
             return;
         }
     }

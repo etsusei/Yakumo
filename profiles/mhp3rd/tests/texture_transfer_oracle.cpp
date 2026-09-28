@@ -1,4 +1,6 @@
 #include "native/bridge_contracts.hpp"
+#include "native/texture_command_dispatch.hpp"
+#include "native/texture_completion_progress.hpp"
 #include "psprecomp/elf32.hpp"
 #include "recomp_units.hpp"
 #include <algorithm>
@@ -33,6 +35,88 @@ struct Boundary {
     std::function<void(std::uint32_t)> pump;
     std::vector<AllegrexContext> worker_contexts;
     bool in_worker{};unsigned worker_waits{},worker_acks{};
+    mhp3rd::native::CompletionProgress completion_progress{};
+    std::size_t completion_events{};
+    bool completion_failed{};
+    std::uint32_t completion_failed_checkpoint{};
+    std::uint32_t completion_failed_stage{};
+    std::vector<std::uint32_t> completion_trace;
+    static void completion(void *data, const Runtime &, const AllegrexContext &ctx,
+                           mhp3rd::native::TextureCompletionCheckpoint checkpoint,
+                           std::uint32_t) noexcept {
+#ifdef MHP3RD_TEXTURE_COMPLETION_ORACLE
+        auto &self = *static_cast<Boundary *>(data);
+        self.completion_trace.push_back(static_cast<std::uint32_t>(checkpoint));
+#ifdef MHP3RD_TEXTURE_COMPLETION_ORACLE
+        if (self.completion_progress.stage == mhp3rd::native::CompletionStage::Unsupported ||
+            self.completion_progress.stage == mhp3rd::native::CompletionStage::Complete)
+            return;
+#endif
+        using namespace mhp3rd::native;
+        CompletionStep step{};
+        bool no_op = false;
+        switch (checkpoint) {
+        case TextureCompletionCheckpoint::ClassifierReturn:
+            if (ctx.gpr[2] != 0u) step = CompletionStep::UnsupportedCopyRoute;
+            else {
+                (void)self.completion_progress.accept(CompletionStep::InlineClassified);
+                step = CompletionStep::CopyCall;
+            }
+            break;
+        case TextureCompletionCheckpoint::CopyReturn: step = CompletionStep::CopyReturned; break;
+        case TextureCompletionCheckpoint::HelperReturn: step = CompletionStep::HelperReturned; break;
+        case TextureCompletionCheckpoint::PolicyReturn: step = CompletionStep::PolicyAccepted; break;
+        case TextureCompletionCheckpoint::WorkerRequestCall: step = CompletionStep::WorkerRequestCall; break;
+        case TextureCompletionCheckpoint::WorkerRequestReturn:
+            step = CompletionStep::WorkerRequestReturned;
+            break;
+        case TextureCompletionCheckpoint::WorkerEventSetReturn:
+            no_op = true;
+            break;
+        case TextureCompletionCheckpoint::WorkerWaitReturn:
+            step = CompletionStep::MainWaitEntered;
+            break;
+        case TextureCompletionCheckpoint::WorkerEntry: step = CompletionStep::WorkerStarted; break;
+        case TextureCompletionCheckpoint::VerbatimBranch: step = CompletionStep::VerbatimObserved; break;
+        case TextureCompletionCheckpoint::DigestSkippedBranch:
+            if (!self.completion_progress.needs_digest)
+                step = CompletionStep::DigestSkipped;
+            else
+                no_op = true;
+            break;
+        case TextureCompletionCheckpoint::GroupCancellation:
+        case TextureCompletionCheckpoint::FullQueueCancellation:
+            no_op = true;
+            break;
+        case TextureCompletionCheckpoint::TransformCall: step = CompletionStep::TransformCall; break;
+        case TextureCompletionCheckpoint::TransformReturn: step = CompletionStep::TransformReturned; break;
+        case TextureCompletionCheckpoint::DigestCall: step = CompletionStep::DigestCall; break;
+        case TextureCompletionCheckpoint::DigestReturn: step = CompletionStep::DigestReturned; break;
+        case TextureCompletionCheckpoint::WorkerAckReturn:
+            (void)self.completion_progress.accept(CompletionStep::WorkerAckCall);
+            step = CompletionStep::WorkerAckReturned;
+            break;
+        case TextureCompletionCheckpoint::RetirementCall:
+            (void)self.completion_progress.accept(CompletionStep::MainWaitReturned);
+            step = CompletionStep::RetirementCall;
+            break;
+        case TextureCompletionCheckpoint::RetirementEntry: step = CompletionStep::RetirementEntered; break;
+        case TextureCompletionCheckpoint::RetirementReturn: step = CompletionStep::RetirementReturned; break;
+        case TextureCompletionCheckpoint::UnsupportedCopyRoute: step = CompletionStep::UnsupportedCopyRoute; break;
+        case TextureCompletionCheckpoint::WorkerCopyReturn:
+            no_op = true;
+            break;
+        }
+        ++self.completion_events;
+        if (!no_op && !self.completion_progress.accept(step)) {
+            self.completion_failed = true;
+            self.completion_failed_checkpoint = static_cast<std::uint32_t>(checkpoint);
+            self.completion_failed_stage = static_cast<std::uint32_t>(self.completion_progress.stage);
+        }
+#else
+        (void)data; (void)ctx; (void)checkpoint;
+#endif
+    }
     std::uint32_t address(std::uint32_t value)const{return value|mirror;}
     void invoke(std::uint32_t stub,Runtime &runtime,AllegrexContext &ctx){
         const auto args=std::array{ctx.gpr[4],ctx.gpr[5],ctx.gpr[6]};auto &m=runtime.memory();
@@ -75,9 +159,21 @@ struct Boundary {
 class Gate {
     Runtime aot_,interpreted_;std::vector<std::uint8_t> baseline_;
     Boundary left_,right_;std::mt19937 random_{0x5452414Eu};
+#ifdef MHP3RD_TEXTURE_COMPLETION_ORACLE
+    mhp3rd::native::TextureCommandDispatch completion_aot_;
+    mhp3rd::native::TextureCommandDispatch completion_interpreted_;
+#endif
 public:
     unsigned cases{},max_slices{},retry_cases{},marker_clears{},late_group_writes{},normal_cases{},transform_cases{},copy_worker_cases{},transform_worker_cases{},rounded_cases{},digest_cases{},digest_comparisons{};
-    explicit Gate(const Elf32Image &elf):aot_(elf.required_ram_size()),interpreted_(elf.required_ram_size()){
+    unsigned completion_event_cases{}, completion_failed_cases{};
+    explicit Gate(const Elf32Image &elf):aot_(elf.required_ram_size()),interpreted_(elf.required_ram_size())
+#ifdef MHP3RD_TEXTURE_COMPLETION_ORACLE
+        , completion_aot_(aot_, mhp3rd::native::TextureCommandCallbacks{
+            .user = &left_, .completion = &Boundary::completion}),
+        completion_interpreted_(interpreted_, mhp3rd::native::TextureCommandCallbacks{
+            .user = &right_, .completion = &Boundary::completion})
+#endif
+    {
         for(auto *r:{&aot_,&interpreted_})(void)elf.load_and_relocate(r->memory());
         register_generated_functions(aot_);baseline_=aot_.memory().bytes();
         for(const auto &imp:kImports)aot_.register_hle(imp.library,imp.nid,[this,imp](Runtime &r,AllegrexContext &c){left_.invoke(imp.address,r,c);});
@@ -98,6 +194,55 @@ public:
                 require(runtime.invoke_isolated_aot(c.pc,c)&&!runtime.stopped(),
                         "AOT stopped at "+std::to_string(c.pc)+": "+runtime.stop_reason());
             }else{
+#ifdef MHP3RD_TEXTURE_COMPLETION_ORACLE
+                switch (c.pc) {
+                case 0x0886577Cu: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::ClassifierReturn, c.pc); break;
+                case 0x088652ACu: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::CopyReturn, c.pc); break;
+                case 0x088652C4u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::UnsupportedCopyRoute, c.pc); break;
+                case 0x088659B4u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::HelperReturn, c.pc); break;
+                case 0x088659C4u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::PolicyReturn, c.pc); break;
+                case 0x088659CCu: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::WorkerRequestCall, c.pc); break;
+                case 0x088659E4u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::WorkerRequestReturn, c.pc); break;
+                case 0x088659F4u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::WorkerEventSetReturn, c.pc); break;
+                case 0x08865A10u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::WorkerWaitReturn, c.pc); break;
+                case 0x08865378u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::WorkerEntry, c.pc); break;
+                case 0x088653A0u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::VerbatimBranch, c.pc); break;
+                case 0x088653B4u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::DigestSkippedBranch, c.pc); break;
+                case 0x08865420u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::TransformCall, c.pc); break;
+                case 0x08865428u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::TransformReturn, c.pc); break;
+                case 0x08865440u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::DigestCall, c.pc); break;
+                case 0x08865448u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::DigestReturn, c.pc); break;
+                case 0x088653C4u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::WorkerAckReturn, c.pc); break;
+                case 0x08865814u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::RetirementCall, c.pc); break;
+                case 0x08865D8Cu: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::RetirementEntry, c.pc); break;
+                case 0x0886581Cu: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::RetirementReturn, c.pc); break;
+                case 0x08866044u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::GroupCancellation, c.pc); break;
+                case 0x08865F00u: Boundary::completion(&boundary, runtime, c,
+                    mhp3rd::native::TextureCompletionCheckpoint::FullQueueCancellation, c.pc); break;
+                default: break;
+                }
+#endif
                 if(c.pc==0x08865CFCu)++digest_comparisons;
                 const auto found=std::find_if(kImports.begin(),kImports.end(),[&](auto i){return i.address==c.pc;});
                 if(found!=kImports.end()){
@@ -133,7 +278,9 @@ public:
             require(mhp3rd::native::same_context(left_.worker_contexts[i],right_.worker_contexts[i]),"Secondary worker CPU differs");
     }
     void check(const Scenario &s,std::uint32_t mirror){
-        left_=Boundary{};left_.scenario=s;left_.mirror=mirror;right_=left_;
+        left_=Boundary{};left_.scenario=s;left_.mirror=mirror;
+        left_.completion_progress = mhp3rd::native::CompletionProgress(s.normal_mode, s.hash_check);
+        right_=left_;
         left_.pump=[this](auto entry){pump(aot_,left_,entry,true);};
         right_.pump=[this](auto entry){pump(interpreted_,right_,entry,false);};
         for(auto *r:{&aot_,&interpreted_}){r->memory().copy_in(GuestMemory::kPhysicalBase,baseline_);
@@ -152,6 +299,19 @@ public:
         if(s.group_cancel){auto cancel=context(0x08866044u,mirror);cancel.gpr[4]=manager;cancel.gpr[5]=5u;run(cancel);
             require(aot_.memory().load16(request)==1u,"Group cancel removed active request");}
         auto worker=context(kWorker,mirror);worker.gpr[4]=4u;worker.gpr[5]=kParam|mirror;run(worker);
+#ifdef MHP3RD_TEXTURE_COMPLETION_ORACLE
+        const bool completion_match =
+            left_.completion_events == right_.completion_events &&
+            !left_.completion_failed && !right_.completion_failed;
+        if (!completion_match) {
+            // Missing or rejected completion callbacks are evidence of an
+            // uncovered route. Keep the original execution result and record
+            // the failure instead of synthesizing the missing event.
+            ++completion_failed_cases;
+        } else if (left_.completion_events != 0u) {
+            ++completion_event_cases;
+        }
+#endif
         require(left_.reads==s.results.size()&&left_.sleeps==1u,"Read script or sleep coverage differs");
         require(left_.delays==(s.results.size()-1u+(s.injected_marker_clear?1u:0u)),"Retry coverage differs");
         const auto &m=aot_.memory();
@@ -193,9 +353,25 @@ public:
     }
 };
 }
+#ifdef MHP3RD_TEXTURE_COMPLETION_ORACLE
+namespace mhp3rd::native {
+// This oracle compares the complete original path through its terminal
+// sleep import; only the compiled integration fixture stops at retirement.
+bool texture_completion_oracle_stop_after_retirement(psprecomp::Runtime &,
+    psprecomp::AllegrexContext &) noexcept { return false; }
+}
+#endif
 int main(int argc,char **argv){try{
-    require(argc==5,"usage: texture_transfer_oracle EBOOT.ELF new-report.json encoded-01489 decoded-01489");
-    require(!std::filesystem::exists(argv[2])&&!std::filesystem::is_symlink(argv[2]),"Output exists");
+    require(argc==5 ||
+#ifdef MHP3RD_TEXTURE_COMPLETION_ORACLE
+            argc==7 ||
+#endif
+            false,
+            "usage: texture_transfer_oracle EBOOT.ELF [overlay.bin module.dylib] new-report.json encoded-01489 decoded-01489");
+    const char *report_path = argc == 7 ? argv[4] : argv[2];
+    const char *encoded_path = argc == 7 ? argv[5] : argv[3];
+    const char *decoded_path = argc == 7 ? argv[6] : argv[4];
+    require(!std::filesystem::exists(report_path) && !std::filesystem::is_symlink(report_path),"Output exists");
     require(sha256_file(argv[1])=="55c0598436c0753b04331f8e95d406f832d9217806e3a896fed0e88b33637d8c","Unsupported ELF");
     Gate gate(Elf32Image::from_file(argv[1]));
     const std::array<Scenario,7> scenarios{{{"full",{32}}, {"short_then_full",{3,32}},
@@ -208,10 +384,10 @@ int main(int argc,char **argv){try{
     for(bool protected_dest:{false,true})for(auto mirror:{0u,0x40000000u}){
         Scenario s{"rounded_five_bytes",{5},false,false,false,true,protected_dest,5u};gate.check(s,mirror);
     }
-    require(sha256_file(argv[3])=="91f5655fe6f01631d64692c0be30e43acb90588e164e500770ec5dd41e972978" &&
-            sha256_file(argv[4])=="3f06d53ef775166b06a1bd98a8a03a0b79c5d895eb4ad652fc9ca3656a781885",
+    require(sha256_file(encoded_path)=="91f5655fe6f01631d64692c0be30e43acb90588e164e500770ec5dd41e972978" &&
+            sha256_file(decoded_path)=="3f06d53ef775166b06a1bd98a8a03a0b79c5d895eb4ad652fc9ca3656a781885",
             "Private digest fixture identity differs");
-    std::ifstream encoded_file(argv[3],std::ios::binary),decoded_file(argv[4],std::ios::binary);
+    std::ifstream encoded_file(encoded_path,std::ios::binary),decoded_file(decoded_path,std::ios::binary);
     std::vector<std::uint8_t> encoded{std::istreambuf_iterator<char>(encoded_file),{}},decoded{std::istreambuf_iterator<char>(decoded_file),{}};
     require(encoded.size()==22528u&&decoded.size()==22528u,"Private fixture size differs");
     for(bool protected_dest:{false,true})for(auto mirror:{0u,0x40000000u}){
@@ -219,8 +395,14 @@ int main(int argc,char **argv){try{
         gate.check(s,mirror);
     }
     require(gate.digest_comparisons==0u,"State-eight route unexpectedly entered alternate-file digest comparison");
-    std::ofstream out(argv[2]);require(bool(out),"Cannot create report");
-    out<<"{\"schema_version\":1,\"scope\":\"original_read_copy_transform_with_modeled_imports\",\"success\":true,\"cases\":"<<gate.cases
+    std::ofstream out(report_path);require(bool(out),"Cannot create report");
+    out<<"{\"schema_version\":1,\"scope\":\""
+#ifdef MHP3RD_TEXTURE_COMPLETION_ORACLE
+       <<"original_g1c_inline_completion_observation"
+#else
+       <<"original_read_copy_transform_with_modeled_imports"
+#endif
+       <<"\",\"success\":"<<(gate.completion_failed_cases == 0u ? "true" : "false")<<",\"cases\":"<<gate.cases
        <<",\"retry_cases\":"<<gate.retry_cases<<",\"marker_clear_cases\":"<<gate.marker_clears
        <<",\"late_group_write_cases\":"<<gate.late_group_writes<<",\"max_interpreter_slices\":"<<gate.max_slices
        <<",\"digest_match_cases\":"<<gate.digest_cases<<",\"digest_comparisons_observed\":"<<gate.digest_comparisons
@@ -228,6 +410,11 @@ int main(int argc,char **argv){try{
        <<",\"copy_worker_cases\":"<<gate.copy_worker_cases<<",\"transform_worker_cases\":"<<gate.transform_worker_cases
        <<",\"rounded_write_cases\":"<<gate.rounded_cases
        <<",\"full_ram_vram_cpu_compared\":true,\"imports_modeled\":true,\"event_scheduling_modeled\":true,"
-       <<"\"transform_worker_executed\":true,\"game_executed\":false}\n";
-    out.close();require(bool(out),"Report write failed");std::cout<<"Transfer gate: "<<gate.cases<<" scenarios per path; passed\n";return 0;
+       <<"\"transform_worker_executed\":true,\"completion_event_cases\":"<<gate.completion_event_cases
+       <<",\"completion_failed_cases\":"<<gate.completion_failed_cases
+       <<",\"game_executed\":false}\n";
+    out.close();require(bool(out),"Report write failed");
+    std::cout<<"Transfer gate: "<<gate.cases<<" scenarios per path; "
+             <<(gate.completion_failed_cases == 0u ? "passed" : "completion coverage incomplete")<<'\n';
+    return gate.completion_failed_cases == 0u ? 0 : 1;
 }catch(const std::exception &e){std::cerr<<e.what()<<'\n';return 1;}}

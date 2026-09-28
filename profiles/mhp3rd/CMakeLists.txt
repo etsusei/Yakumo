@@ -98,6 +98,7 @@ include("${MHP3RD_PROFILE_DIR}/cmake/TextureCommandInstrumentation.cmake")
 include("${MHP3RD_PROFILE_DIR}/cmake/TextureLifetimeInstrumentation.cmake")
 include("${MHP3RD_PROFILE_DIR}/cmake/TextureTransferInstrumentation.cmake")
 include("${MHP3RD_PROFILE_DIR}/cmake/TextureReadInstrumentation.cmake")
+include("${MHP3RD_PROFILE_DIR}/cmake/TextureCompletionInstrumentation.cmake")
 
 # Renderer: SDL3 for the window and Vulkan for drawing. Both are optional so the
 # profile still builds headless on a machine without them.
@@ -295,6 +296,31 @@ if(MHP3RD_TEXTURE_READ_BOUNDARIES AND MHP3RD_TEXTURE_READ_INSTRUMENTED_SOURCES)
         JOB_POOL_COMPILE psprecomp_generated)
 endif()
 
+# The completion oracle runs the selected unit-0024 path beyond ReadResult.
+# Its generated copies are isolated from the application object set.
+if(MHP3RD_TEXTURE_COMPLETION_BOUNDARIES AND MHP3RD_TEXTURE_COMPLETION_INSTRUMENTED_SOURCES)
+    add_library(mhp3rd_completion_generated OBJECT EXCLUDE_FROM_ALL
+        ${MHP3RD_COMPLETION_GENERATED}
+        ${MHP3RD_TEXTURE_COMPLETION_INSTRUMENTED_SOURCES})
+    target_include_directories(mhp3rd_completion_generated PRIVATE
+        "${PROJECT_SOURCE_DIR}/include" "${MHP3RD_PROFILE_DIR}/generated"
+        "${MHP3RD_PROFILE_DIR}/host" "${MHP3RD_PROFILE_DIR}/tests")
+    set_target_properties(mhp3rd_completion_generated PROPERTIES
+        JOB_POOL_COMPILE psprecomp_generated)
+endif()
+
+add_executable(mhp3rd_texture_completion_progress_tests
+    tests/texture_completion_progress_tests.cpp)
+target_include_directories(mhp3rd_texture_completion_progress_tests PRIVATE
+    "${MHP3RD_PROFILE_DIR}/host")
+set_target_properties(mhp3rd_texture_completion_progress_tests PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(PSPRECOMP_BUILD_TESTS)
+    add_test(NAME mhp3rd_texture_completion_progress_tests
+        COMMAND mhp3rd_texture_completion_progress_tests)
+    set_tests_properties(mhp3rd_texture_completion_progress_tests PROPERTIES TIMEOUT 30)
+endif()
+
 # An Android app is a shared library, libmain.so, that SDL's Java activity
 # loads and calls; the command-line executable still builds for Android without
 # this and runs from adb shell.
@@ -476,7 +502,7 @@ if(PSPRECOMP_BUILD_TESTS)
                 ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 60)
         endforeach()
         if(NOT MHP3RD_BASELINE_B0)
-            foreach(suite observed_baseline package_test_pair test_launcher pair_readiness verify_pair_preflight texture_policy_comparison renderer_batch renderer_comparison render_discovery_case initial_case_pack native_batch native_data_case vector_discovery_case resource_bundle_inspection tmh_layout texture_command_runner)
+            foreach(suite observed_baseline package_test_pair test_launcher pair_readiness verify_pair_preflight texture_policy_comparison renderer_batch renderer_comparison render_discovery_case initial_case_pack native_batch native_data_case vector_discovery_case resource_bundle_inspection tmh_layout texture_command_runner texture_completion_instrumentation texture_completion_observation_runner)
                 add_test(NAME mhp3rd_${suite}_tests
                     COMMAND "${Python3_EXECUTABLE}" -m unittest discover
                         -s "${MHP3RD_PROFILE_DIR}/tests" -p "test_${suite}.py" -v)
@@ -611,9 +637,12 @@ list(APPEND MHP3RD_RECORDING_REVISION_INPUTS
     "${MHP3RD_PROFILE_DIR}/host/native/texture_lifetime_tracker.cpp"
     "${MHP3RD_PROFILE_DIR}/host/native/texture_transfer_tracker.hpp"
     "${MHP3RD_PROFILE_DIR}/host/native/texture_transfer_tracker.cpp"
+    "${MHP3RD_PROFILE_DIR}/host/native/texture_completion_decode.hpp"
+    "${MHP3RD_PROFILE_DIR}/host/native/texture_completion_decode.cpp"
     "${MHP3RD_PROFILE_DIR}/tools/instrument_texture_transfer.py"
     "${MHP3RD_PROFILE_DIR}/cmake/TextureTransferInstrumentation.cmake"
     "${MHP3RD_PROFILE_DIR}/tests/texture_transfer_observation_oracle.cpp"
+    "${MHP3RD_PROFILE_DIR}/tests/texture_completion_decode_tests.cpp"
     "${MHP3RD_PROFILE_DIR}/tools/check_texture_transfer_observation.py"
     "${MHP3RD_PROFILE_DIR}/host/gpu/texture_decode_policy.hpp"
     "${MHP3RD_PROFILE_DIR}/host/hle/control_delivery.hpp"
@@ -643,9 +672,24 @@ if(NOT MHP3RD_BASELINE_B0)
     add_library(mhp3rd_source_authority STATIC host/resources/source_authority.cpp)
     add_library(mhp3rd_texture_lifetime_tracker STATIC host/native/texture_lifetime_tracker.cpp)
     target_link_libraries(mhp3rd_texture_lifetime_tracker PUBLIC mhp3rd_source_authority psprecomp_core)
-    add_library(mhp3rd_texture_transfer_tracker STATIC host/native/texture_transfer_tracker.cpp)
+    add_library(mhp3rd_texture_transfer_tracker STATIC
+        host/native/texture_transfer_tracker.cpp
+        host/native/texture_completion_decode.cpp)
     target_link_libraries(mhp3rd_texture_transfer_tracker PUBLIC
         mhp3rd_texture_lifetime_tracker mhp3rd_native_probes mhp3rd_source_authority)
+    add_executable(mhp3rd_texture_completion_decode_tests EXCLUDE_FROM_ALL
+        tests/texture_completion_decode_tests.cpp
+        host/native/texture_completion_decode.cpp)
+    target_include_directories(mhp3rd_texture_completion_decode_tests PRIVATE
+        "${MHP3RD_PROFILE_DIR}/host")
+    target_link_libraries(mhp3rd_texture_completion_decode_tests PRIVATE psprecomp_core)
+    set_target_properties(mhp3rd_texture_completion_decode_tests PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    if(PSPRECOMP_BUILD_TESTS)
+        add_test(NAME mhp3rd_texture_completion_decode_tests
+            COMMAND mhp3rd_texture_completion_decode_tests)
+        set_tests_properties(mhp3rd_texture_completion_decode_tests PROPERTIES TIMEOUT 30)
+    endif()
     target_include_directories(mhp3rd_source_authority PUBLIC "${MHP3RD_PROFILE_DIR}/host")
     add_executable(mhp3rd_source_authority_tests tests/source_authority_tests.cpp)
     target_link_libraries(mhp3rd_source_authority_tests PRIVATE mhp3rd_source_authority)
@@ -985,7 +1029,8 @@ if(APPLE AND MHP3RD_TEXTURE_TRANSFER_BOUNDARIES AND
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_executable(mhp3rd_texture_transfer_observation_sanitized EXCLUDE_FROM_ALL
             tests/texture_transfer_observation_oracle.cpp
-            host/native/texture_transfer_tracker.cpp host/native/texture_lifetime_tracker.cpp
+            host/native/texture_transfer_tracker.cpp host/native/texture_completion_decode.cpp
+            host/native/texture_lifetime_tracker.cpp
             host/native/texture_command_dispatch.cpp host/resources/source_authority.cpp
             $<TARGET_OBJECTS:mhp3rd_generated>)
         target_compile_definitions(mhp3rd_texture_transfer_observation_sanitized PRIVATE
@@ -1020,7 +1065,8 @@ if(APPLE AND MHP3RD_TEXTURE_READ_BOUNDARIES AND
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_executable(mhp3rd_texture_read_observation_sanitized EXCLUDE_FROM_ALL
             tests/texture_read_observation_oracle.cpp
-            host/native/texture_transfer_tracker.cpp host/native/texture_lifetime_tracker.cpp
+            host/native/texture_transfer_tracker.cpp host/native/texture_completion_decode.cpp
+            host/native/texture_lifetime_tracker.cpp
             host/native/texture_command_dispatch.cpp host/resources/source_authority.cpp
             $<TARGET_OBJECTS:mhp3rd_read_prefix_generated>)
         target_compile_definitions(mhp3rd_texture_read_observation_sanitized PRIVATE
@@ -1035,6 +1081,173 @@ if(APPLE AND MHP3RD_TEXTURE_READ_BOUNDARIES AND
         target_link_options(mhp3rd_texture_read_observation_sanitized PRIVATE
             -fsanitize=address,undefined)
         set_target_properties(mhp3rd_texture_read_observation_sanitized PROPERTIES
+            ENABLE_EXPORTS TRUE RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    endif()
+endif()
+if(APPLE AND MHP3RD_TEXTURE_COMPLETION_BOUNDARIES AND
+   TARGET mhp3rd_completion_generated AND TARGET mhp3rd_texture_transfer_tracker AND
+   TARGET mhp3rd_texture_lifetime_tracker AND TARGET mhp3rd_native_probes)
+    add_executable(mhp3rd_texture_completion_observation_oracle EXCLUDE_FROM_ALL
+        tests/texture_completion_observation_oracle.cpp
+        $<TARGET_OBJECTS:mhp3rd_completion_generated>)
+    target_compile_definitions(mhp3rd_texture_completion_observation_oracle PRIVATE
+        MHP3RD_TEXTURE_COMPLETION_ORACLE=1)
+    target_include_directories(mhp3rd_texture_completion_observation_oracle PRIVATE
+        "${MHP3RD_PROFILE_DIR}/generated" "${MHP3RD_PROFILE_DIR}/host"
+        "${MHP3RD_PROFILE_DIR}/tests")
+    target_link_libraries(mhp3rd_texture_completion_observation_oracle PRIVATE
+        mhp3rd_texture_transfer_tracker mhp3rd_texture_lifetime_tracker
+        mhp3rd_native_probes ${CMAKE_DL_LIBS})
+    target_sources(mhp3rd_texture_completion_observation_oracle PRIVATE
+        host/native/texture_transfer_completion.cpp)
+    set_target_properties(mhp3rd_texture_completion_observation_oracle PROPERTIES
+        ENABLE_EXPORTS TRUE RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_executable(mhp3rd_texture_completion_observation_sanitized EXCLUDE_FROM_ALL
+            tests/texture_completion_observation_oracle.cpp
+            host/native/texture_transfer_tracker.cpp
+            host/native/texture_completion_decode.cpp
+            host/native/texture_transfer_completion.cpp
+            host/native/texture_lifetime_tracker.cpp
+            host/native/texture_command_dispatch.cpp
+            host/resources/source_authority.cpp
+            $<TARGET_OBJECTS:mhp3rd_completion_generated>)
+        target_compile_definitions(mhp3rd_texture_completion_observation_sanitized PRIVATE
+            MHP3RD_TEXTURE_COMPLETION_ORACLE=1)
+        target_include_directories(mhp3rd_texture_completion_observation_sanitized PRIVATE
+            "${MHP3RD_PROFILE_DIR}/generated" "${MHP3RD_PROFILE_DIR}/host"
+            "${MHP3RD_PROFILE_DIR}/tests")
+        target_link_libraries(mhp3rd_texture_completion_observation_sanitized PRIVATE
+            mhp3rd_native_probes ${CMAKE_DL_LIBS})
+        target_compile_options(mhp3rd_texture_completion_observation_sanitized PRIVATE
+            -fsanitize=address,undefined -fno-omit-frame-pointer)
+        target_link_options(mhp3rd_texture_completion_observation_sanitized PRIVATE
+            -fsanitize=address,undefined)
+        set_target_properties(mhp3rd_texture_completion_observation_sanitized PROPERTIES
+            ENABLE_EXPORTS TRUE RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    endif()
+endif()
+# The original 64-case oracle and the synthetic tracker smoke above remain
+# separate from the integration fixture. The decoder is compiled into the
+# tracker library exactly once; the sanitized variants compile the same source
+# beside their direct tracker sources. This keeps the optional object set out
+# of Yakumo and makes a missing interface a configure-time omission rather than
+# an accidental application dependency.
+set(MHP3RD_TEXTURE_COMPLETION_INTEGRATION_ORACLE_SOURCE
+    "${MHP3RD_PROFILE_DIR}/tests/texture_completion_integration_oracle.cpp"
+    CACHE FILEPATH
+    "Integration-oracle entry point supplied by the completion fixture workflow")
+set(MHP3RD_TEXTURE_COMPLETION_DECODER_SOURCE
+    "${MHP3RD_PROFILE_DIR}/host/native/texture_completion_decode.cpp" CACHE FILEPATH
+    "Completion decoder implementation source supplied by workflow B")
+set(MHP3RD_TEXTURE_COMPLETION_STOP_HEADER
+    "${MHP3RD_PROFILE_DIR}/tests/texture_completion_oracle_stop.hpp" CACHE FILEPATH
+    "Completion-oracle terminal-stop header")
+set(MHP3RD_TEXTURE_COMPLETION_INTEGRATION_DECODER_READY FALSE)
+if(NOT MHP3RD_TEXTURE_COMPLETION_DECODER_SOURCE STREQUAL "" AND
+   EXISTS "${MHP3RD_TEXTURE_COMPLETION_DECODER_SOURCE}")
+    set(MHP3RD_TEXTURE_COMPLETION_INTEGRATION_DECODER_READY TRUE)
+endif()
+if(APPLE AND MHP3RD_TEXTURE_COMPLETION_BOUNDARIES AND
+   MHP3RD_TEXTURE_COMPLETION_INTEGRATION_DECODER_READY AND
+   EXISTS "${MHP3RD_TEXTURE_COMPLETION_INTEGRATION_ORACLE_SOURCE}" AND
+   EXISTS "${MHP3RD_TEXTURE_COMPLETION_STOP_HEADER}" AND
+   TARGET mhp3rd_completion_generated AND
+   TARGET mhp3rd_texture_transfer_tracker AND
+   TARGET mhp3rd_texture_lifetime_tracker AND
+   TARGET mhp3rd_texture_commands AND
+   TARGET mhp3rd_texture_commands_bridge AND
+   TARGET mhp3rd_source_authority AND
+   TARGET mhp3rd_native_probes)
+    set(MHP3RD_TEXTURE_COMPLETION_INTEGRATION_SOURCES
+        "${MHP3RD_TEXTURE_COMPLETION_INTEGRATION_ORACLE_SOURCE}"
+        "${MHP3RD_TEXTURE_COMPLETION_STOP_HEADER}")
+    add_executable(mhp3rd_texture_completion_integration_oracle EXCLUDE_FROM_ALL
+        ${MHP3RD_TEXTURE_COMPLETION_INTEGRATION_SOURCES}
+        $<TARGET_OBJECTS:mhp3rd_completion_generated>)
+    target_compile_definitions(mhp3rd_texture_completion_integration_oracle PRIVATE
+        MHP3RD_TEXTURE_COMPLETION_INTEGRATION_ORACLE=1)
+    target_include_directories(mhp3rd_texture_completion_integration_oracle PRIVATE
+        "${MHP3RD_PROFILE_DIR}/generated" "${MHP3RD_PROFILE_DIR}/host"
+        "${MHP3RD_PROFILE_DIR}/tests")
+    target_link_libraries(mhp3rd_texture_completion_integration_oracle PRIVATE
+        mhp3rd_texture_transfer_tracker mhp3rd_texture_lifetime_tracker
+        mhp3rd_texture_commands mhp3rd_texture_commands_bridge
+        mhp3rd_source_authority mhp3rd_native_probes ${CMAKE_DL_LIBS})
+    set_target_properties(mhp3rd_texture_completion_integration_oracle PROPERTIES
+        ENABLE_EXPORTS TRUE RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_executable(mhp3rd_texture_completion_integration_sanitized EXCLUDE_FROM_ALL
+            ${MHP3RD_TEXTURE_COMPLETION_INTEGRATION_SOURCES}
+            host/native/texture_transfer_tracker.cpp
+            host/native/texture_completion_decode.cpp
+            host/native/texture_transfer_completion.cpp
+            host/native/texture_lifetime_tracker.cpp
+            host/native/texture_command_dispatch.cpp
+            host/resources/source_authority.cpp
+            $<TARGET_OBJECTS:mhp3rd_completion_generated>)
+        target_compile_definitions(mhp3rd_texture_completion_integration_sanitized PRIVATE
+            MHP3RD_TEXTURE_COMPLETION_INTEGRATION_ORACLE=1)
+        target_include_directories(mhp3rd_texture_completion_integration_sanitized PRIVATE
+            "${MHP3RD_PROFILE_DIR}/generated" "${MHP3RD_PROFILE_DIR}/host"
+            "${MHP3RD_PROFILE_DIR}/tests")
+        target_link_libraries(mhp3rd_texture_completion_integration_sanitized PRIVATE
+            mhp3rd_texture_lifetime_tracker
+            mhp3rd_texture_commands mhp3rd_texture_commands_bridge
+            mhp3rd_source_authority mhp3rd_native_probes ${CMAKE_DL_LIBS})
+        target_compile_options(mhp3rd_texture_completion_integration_sanitized PRIVATE
+            -fsanitize=address,undefined -fno-omit-frame-pointer)
+        target_link_options(mhp3rd_texture_completion_integration_sanitized PRIVATE
+            -fsanitize=address,undefined)
+        set_target_properties(mhp3rd_texture_completion_integration_sanitized PROPERTIES
+            ENABLE_EXPORTS TRUE RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    endif()
+endif()
+if(APPLE AND TARGET mhp3rd_read_prefix_generated AND
+   TARGET mhp3rd_texture_transfer_tracker AND
+   TARGET mhp3rd_texture_lifetime_tracker AND TARGET mhp3rd_native_probes)
+    add_executable(mhp3rd_texture_completion_tracker_smoke EXCLUDE_FROM_ALL
+        tests/texture_completion_tracker_smoke.cpp
+        $<TARGET_OBJECTS:mhp3rd_read_prefix_generated>)
+    target_compile_definitions(mhp3rd_texture_completion_tracker_smoke PRIVATE
+        MHP3RD_TEXTURE_TRANSFER_G1A_ORACLE=1
+        MHP3RD_TEXTURE_READ_G1B_ORACLE=1
+        MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE=1
+        MHP3RD_TEXTURE_COMPLETION_TRACKER_SMOKE=1)
+    target_include_directories(mhp3rd_texture_completion_tracker_smoke PRIVATE
+        "${MHP3RD_PROFILE_DIR}/generated" "${MHP3RD_PROFILE_DIR}/host"
+        "${MHP3RD_PROFILE_DIR}/tests")
+    target_link_libraries(mhp3rd_texture_completion_tracker_smoke PRIVATE
+        mhp3rd_texture_transfer_tracker mhp3rd_texture_lifetime_tracker
+        mhp3rd_native_probes ${CMAKE_DL_LIBS})
+    set_target_properties(mhp3rd_texture_completion_tracker_smoke PROPERTIES
+        ENABLE_EXPORTS TRUE RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_executable(mhp3rd_texture_completion_tracker_smoke_sanitized EXCLUDE_FROM_ALL
+            tests/texture_completion_tracker_smoke.cpp
+            host/native/texture_transfer_tracker.cpp
+            host/native/texture_completion_decode.cpp
+            host/native/texture_transfer_completion.cpp
+            host/native/texture_lifetime_tracker.cpp
+            host/native/texture_command_dispatch.cpp
+            host/resources/source_authority.cpp
+            $<TARGET_OBJECTS:mhp3rd_read_prefix_generated>)
+        target_compile_definitions(mhp3rd_texture_completion_tracker_smoke_sanitized PRIVATE
+            MHP3RD_TEXTURE_TRANSFER_G1A_ORACLE=1
+            MHP3RD_TEXTURE_READ_G1B_ORACLE=1
+            MHP3RD_TEXTURE_COMPLETION_G1C_ORACLE=1
+            MHP3RD_TEXTURE_COMPLETION_TRACKER_SMOKE=1)
+        target_include_directories(mhp3rd_texture_completion_tracker_smoke_sanitized PRIVATE
+            "${MHP3RD_PROFILE_DIR}/generated" "${MHP3RD_PROFILE_DIR}/host"
+            "${MHP3RD_PROFILE_DIR}/tests")
+        target_link_libraries(mhp3rd_texture_completion_tracker_smoke_sanitized PRIVATE
+            mhp3rd_native_probes ${CMAKE_DL_LIBS})
+        target_compile_options(mhp3rd_texture_completion_tracker_smoke_sanitized PRIVATE
+            -fsanitize=address,undefined -fno-omit-frame-pointer)
+        target_link_options(mhp3rd_texture_completion_tracker_smoke_sanitized PRIVATE
+            -fsanitize=address,undefined)
+        set_target_properties(mhp3rd_texture_completion_tracker_smoke_sanitized PROPERTIES
             ENABLE_EXPORTS TRUE RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
     endif()
 endif()

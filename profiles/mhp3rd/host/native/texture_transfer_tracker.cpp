@@ -16,6 +16,7 @@ constexpr std::uint32_t kQueueConsumerOffset = 0x108Cu;
 constexpr std::uint32_t kQueueStateOffset = 0x1094u;
 constexpr std::uint32_t kQueueFdOffset = 0x1098u;
 constexpr std::uint32_t kQueueRecordOffset = 0x8Cu;
+constexpr std::uint32_t kTransformEventOffset = 0x2F7C8u;
 constexpr std::uint32_t kReadScratchOffset = 0x98C0u;
 constexpr std::uint32_t kReadScratchBytes = 0x20000u;
 constexpr std::uint32_t kReadQueueRecords = 128u;
@@ -48,12 +49,39 @@ bool valid_ram(const psprecomp::Runtime &runtime, std::uint32_t raw,
 }
 
 std::uint16_t read16(const std::uint8_t *p) noexcept {
-    return std::uint16_t{p[0]} | (std::uint16_t{p[1]} << 8u);
+    return static_cast<std::uint16_t>(std::uint16_t{p[0]} |
+        static_cast<std::uint16_t>(std::uint16_t{p[1]} << 8u));
 }
 
 std::uint32_t read32(const std::uint8_t *p) noexcept {
     return std::uint32_t{p[0]} | (std::uint32_t{p[1]} << 8u) |
            (std::uint32_t{p[2]} << 16u) | (std::uint32_t{p[3]} << 24u);
+}
+
+bool canonical_equal(std::uint32_t lhs, std::uint32_t rhs) noexcept {
+    return psprecomp::GuestMemory::canonical(lhs) ==
+           psprecomp::GuestMemory::canonical(rhs);
+}
+
+bool same_call_arguments(const CompletionCallArguments &left,
+                         const CompletionCallArguments &right) noexcept {
+    return left.checkpoint == right.checkpoint &&
+           left.site_pc == right.site_pc && left.callee_pc == right.callee_pc &&
+           left.return_pc == right.return_pc && left.sp == right.sp &&
+           left.ra == right.ra && left.a0 == right.a0 && left.a1 == right.a1 &&
+           left.a2 == right.a2 && left.a3 == right.a3 &&
+           left.manager == right.manager && left.descriptor == right.descriptor &&
+           left.destination == right.destination && left.source == right.source &&
+           left.bytes == right.bytes && left.logical_length == right.logical_length &&
+           left.footprint == right.footprint &&
+           left.event == right.event && left.has_manager == right.has_manager &&
+           left.has_descriptor == right.has_descriptor &&
+           left.has_destination == right.has_destination &&
+           left.has_source == right.has_source && left.has_bytes == right.has_bytes &&
+           left.has_logical_length == right.has_logical_length &&
+           left.has_footprint == right.has_footprint &&
+           left.has_event == right.has_event &&
+           left.after_delay_slot == right.after_delay_slot;
 }
 
 } // namespace
@@ -96,9 +124,14 @@ void TextureTransferTracker::fail(TextureTransferTrackerError error,
     for (auto &load : loads_) load = LoadFrame{};
     for (auto &queue : queues_) queue = QueueFrame{};
     for (auto &read : read_frames_) read = ReadFrame{};
+    for (auto &completion : completion_frames_) completion = CompletionFrame{};
+    for (auto &receipt : completion_call_receipts_) receipt = CompletionCallReceipt{};
+    completion_decoder_.reset();
     stats_.active_loads = 0u;
     stats_.active_queue_frames = 0u;
     stats_.active_read_frames = 0u;
+    stats_.active_completions = 0u;
+    completion_call_receipt_count_ = 0u;
     // Keep the Authority's external-writer records: observation loss must not
     // silently retire an asynchronous writer hazard.
 }
@@ -352,6 +385,1244 @@ bool TextureTransferTracker::read_attempt_record(std::size_t index,
     return out.serial != 0u;
 }
 
+bool TextureTransferTracker::completion_record(std::size_t index,
+    TextureCompletionRecord &out) const noexcept {
+    if (index >= completion_record_count_) return false;
+    out = completion_records_[index];
+    return out.operation_serial != 0u;
+}
+
+bool TextureTransferTracker::completion_site_matches(
+    TextureCompletionCheckpoint checkpoint, std::uint32_t site_pc) const noexcept {
+    const auto *info = texture_completion_checkpoint_info(checkpoint);
+    return info != nullptr && info->site_pc == site_pc;
+}
+
+namespace {
+
+bool completion_worker_checkpoint(TextureCompletionCheckpoint checkpoint) noexcept {
+    return checkpoint == TextureCompletionCheckpoint::WorkerEntry ||
+        checkpoint == TextureCompletionCheckpoint::VerbatimBranch ||
+        checkpoint == TextureCompletionCheckpoint::DigestSkippedBranch ||
+        checkpoint == TextureCompletionCheckpoint::TransformCall ||
+        checkpoint == TextureCompletionCheckpoint::TransformReturn ||
+        checkpoint == TextureCompletionCheckpoint::DigestCall ||
+        checkpoint == TextureCompletionCheckpoint::DigestReturn ||
+        checkpoint == TextureCompletionCheckpoint::WorkerAckReturn ||
+        checkpoint == TextureCompletionCheckpoint::UnsupportedCopyRoute ||
+        checkpoint == TextureCompletionCheckpoint::WorkerCopyReturn;
+}
+
+bool completion_reader_checkpoint(TextureCompletionCheckpoint checkpoint) noexcept {
+    return !completion_worker_checkpoint(checkpoint) &&
+        checkpoint != TextureCompletionCheckpoint::GroupCancellation &&
+        checkpoint != TextureCompletionCheckpoint::FullQueueCancellation;
+}
+
+} // namespace
+
+TextureTransferTracker::CompletionFrame *TextureTransferTracker::find_completion(
+    const psprecomp::Runtime &runtime, const psprecomp::AllegrexContext &context,
+    TextureCompletionCheckpoint checkpoint) noexcept {
+    CompletionFrame *found = nullptr;
+    for (auto &frame : completion_frames_) {
+        if (!frame.active || frame.runtime != &runtime) continue;
+        if (completion_worker_checkpoint(checkpoint)) {
+            if (frame.worker_context != nullptr && frame.worker_context != &context) continue;
+            if (checkpoint != TextureCompletionCheckpoint::WorkerEntry &&
+                frame.worker_context == nullptr) continue;
+            if (!completion_worker_identity_valid(frame, runtime, context)) continue;
+        } else if (completion_reader_checkpoint(checkpoint) &&
+                   frame.reader_context != &context) {
+            const bool wait_alias = checkpoint == TextureCompletionCheckpoint::WorkerWaitReturn &&
+                frame.reader_context != nullptr &&
+                frame.reader_context->gpr[29] == context.gpr[29] &&
+                psprecomp::runtime_thread_uid() == frame.reader_execution.thread_uid;
+            if (!wait_alias) continue;
+        }
+        if (found != nullptr) {
+            fail(TextureTransferTrackerError::ConflictingFrame, true);
+            return nullptr;
+        }
+        found = &frame;
+    }
+    return found;
+}
+
+bool TextureTransferTracker::completion_worker_identity_valid(
+    const CompletionFrame &frame, const psprecomp::Runtime &runtime,
+    const psprecomp::AllegrexContext &context) const noexcept {
+    if (frame.runtime != &runtime || frame.origin.descriptor_index >= descriptor_count_)
+        return false;
+    if (frame.worker_context == nullptr) {
+        // The audited worker entry receives a pointer to the current manager
+        // object in a1 (gpr5).  The first word is the manager identity.  A
+        // copied reader context does not satisfy this production shape.
+        if (!valid_ram(runtime, context.gpr[5], 4u)) return false;
+        const auto *p = runtime.memory().raw_pointer(context.gpr[5], 4u);
+        return p != nullptr && canonical_equal(read32(p), frame.raw_manager);
+    }
+    // The worker's saved registers are repurposed while it processes the
+    // descriptor. Once WorkerEntry has bound this stable execution context to
+    // the operation, later branch/copy/ack callbacks use that binding plus
+    // the resampled descriptor snapshot rather than treating arbitrary
+    // worker registers as a second manager/descriptor claim.
+    return frame.worker_context == &context;
+}
+
+bool TextureTransferTracker::completion_context_valid(
+    const CompletionFrame &frame, const psprecomp::Runtime &runtime,
+    const psprecomp::AllegrexContext &context,
+    TextureCompletionCheckpoint checkpoint) const noexcept {
+    if (frame.runtime != &runtime) return false;
+    if (completion_worker_checkpoint(checkpoint)) {
+        if (frame.worker_context != &context ||
+            !same_execution(frame.worker_execution)) return false;
+        if (!completion_worker_identity_valid(frame, runtime, context)) return false;
+    } else if (completion_reader_checkpoint(checkpoint)) {
+        if (frame.reader_context != &context) {
+            const bool wait_alias = checkpoint == TextureCompletionCheckpoint::WorkerWaitReturn &&
+                frame.reader_context != nullptr &&
+                frame.reader_context->gpr[29] == context.gpr[29] &&
+                psprecomp::runtime_thread_uid() == frame.reader_execution.thread_uid;
+            if (!wait_alias) return false;
+        }
+        // The main thread may resume under a new runtime execution token while
+        // the worker owns the guest. WorkerWaitReturn is the boundary that
+        // revalidates and refreshes that token; every later reader edge uses it.
+        if (checkpoint != TextureCompletionCheckpoint::WorkerWaitReturn &&
+            !same_execution(frame.reader_execution)) return false;
+    }
+    return true;
+}
+
+bool TextureTransferTracker::completion_attempt_valid(
+    const CompletionFrame &frame) const noexcept {
+    if (frame.result_index >= read_attempt_count_ ||
+        frame.completion_record_index >= completion_record_count_) return false;
+    const auto &attempt = read_attempts_[frame.result_index];
+    const auto &record = completion_records_[frame.completion_record_index];
+    if (attempt.serial == 0u || attempt.serial != frame.operation_serial ||
+        !attempt.result_observed || attempt.outcome != TextureReadOutcome::ExactReadObserved ||
+        attempt.result <= 0 || attempt.descriptor_generation != frame.origin.descriptor_generation ||
+        attempt.request_generation != frame.origin.request_generation ||
+        attempt.owner_invalidation_generation != frame.origin.owner_invalidation_generation ||
+        attempt.owner != frame.origin.owner || attempt.descriptor != record.descriptor ||
+        attempt.writer != record.writer || record.operation_serial != frame.operation_serial ||
+        record.descriptor_generation != frame.origin.descriptor_generation ||
+        record.request_generation != frame.origin.request_generation) return false;
+    return true;
+}
+
+bool TextureTransferTracker::completion_identity_valid(
+    const CompletionFrame &frame, const psprecomp::Runtime &runtime,
+    const psprecomp::AllegrexContext &context,
+    TextureCompletionCheckpoint checkpoint,
+    const CompletionSample &sample) noexcept {
+    if (frame.origin.descriptor_index >= descriptor_count_)
+        return false;
+    if (!completion_context_valid(frame, runtime, context, checkpoint)) return false;
+    if (!completion_attempt_valid(frame)) return false;
+    const auto *info = texture_completion_checkpoint_info(checkpoint);
+    if (info == nullptr || sample.status == CompletionDecodeStatus::Invalid)
+        return false;
+    const auto syscall_call = sample.has_call &&
+        (sample.call_checkpoint == TextureCompletionCallCheckpoint::WorkerRequestCall ||
+         sample.call_checkpoint == TextureCompletionCallCheckpoint::WorkerEventSetCall ||
+         sample.call_checkpoint == TextureCompletionCallCheckpoint::WorkerWaitCall ||
+         sample.call_checkpoint == TextureCompletionCallCheckpoint::WorkerAckCall);
+    if (info->requires_call_receipt) {
+        if (!sample.has_call || sample.call_checkpoint != info->call_checkpoint)
+            return false;
+        if (!syscall_call &&
+            (!sample.call.has_manager || !sample.call.has_descriptor ||
+             !canonical_equal(sample.call.manager, frame.raw_manager) ||
+             !canonical_equal(sample.call.descriptor, frame.raw_record))) return false;
+        if (checkpoint == TextureCompletionCheckpoint::WorkerRequestReturn ||
+            checkpoint == TextureCompletionCheckpoint::WorkerEventSetReturn ||
+            checkpoint == TextureCompletionCheckpoint::WorkerWaitReturn ||
+            checkpoint == TextureCompletionCheckpoint::WorkerAckReturn) {
+            if (!sample.call.has_event || sample.call.event != frame.event_uid)
+                return false;
+        }
+    } else if (sample.has_manager &&
+               !canonical_equal(sample.manager, frame.raw_manager)) return false;
+    if (sample.has_descriptor && !syscall_call &&
+        !canonical_equal(sample.descriptor, frame.raw_record)) return false;
+    if (sample.has_call && !syscall_call) {
+        const auto call_checkpoint = sample.call_checkpoint;
+        if (call_checkpoint == TextureCompletionCallCheckpoint::InlineCopyCall ||
+            call_checkpoint == TextureCompletionCallCheckpoint::WorkerCopyCall) {
+            if (!sample.call.has_destination || !sample.call.has_source ||
+                !sample.call.has_logical_length || !sample.call.has_footprint ||
+                !canonical_equal(sample.call.destination, frame.raw_destination) ||
+                !canonical_equal(sample.call.source, frame.origin.raw_scratch) ||
+                sample.call.logical_length != frame.logical_bytes ||
+                sample.call.footprint != frame.logical_bytes) return false;
+        } else if (call_checkpoint == TextureCompletionCallCheckpoint::TransformCall) {
+            if (!sample.call.has_destination || !sample.call.has_logical_length ||
+                !sample.call.has_footprint ||
+                !canonical_equal(sample.call.destination, frame.raw_destination) ||
+                sample.call.logical_length != frame.logical_bytes ||
+                sample.call.footprint != frame.write_footprint) return false;
+        } else if (call_checkpoint == TextureCompletionCallCheckpoint::DigestCall) {
+            if (!sample.call.has_destination || !sample.call.has_logical_length ||
+                !sample.call.has_footprint ||
+                !canonical_equal(sample.call.destination, frame.raw_destination) ||
+                sample.call.logical_length != frame.logical_bytes ||
+                sample.call.footprint != frame.logical_bytes) return false;
+        }
+    }
+    if (checkpoint == TextureCompletionCheckpoint::WorkerRequestCall) {
+        std::uint32_t address{};
+        if (!add_u32(frame.raw_manager, kTransformEventOffset, address) ||
+            !valid_ram(runtime, address, 4u)) return false;
+        const auto *event = runtime.memory().raw_pointer(address, 4u);
+        if (event == nullptr || read32(event) != frame.event_uid) return false;
+    }
+    const auto &descriptor = descriptors_[frame.origin.descriptor_index];
+    if (!descriptor.current || descriptor.generation != frame.origin.descriptor_generation ||
+        descriptor.load_generation != frame.origin.request_generation ||
+        descriptor.snapshot != frame.origin.descriptor_snapshot ||
+        descriptor.raw_destination != frame.raw_destination ||
+        descriptor.write_footprint != frame.write_footprint) {
+        return false;
+    }
+    DescriptorSnapshot current;
+    if (!read_descriptor(runtime, descriptor.raw_descriptor, current)) return false;
+    if (checkpoint == TextureCompletionCheckpoint::RetirementReturn) {
+        if (!frame.retirement_snapshot_valid || current.bytes[0] != 0u ||
+            current.bytes[1] != 0u ||
+            !std::equal(current.bytes.begin() + 2u, current.bytes.end(),
+                        frame.origin.descriptor_snapshot.begin() + 2u)) return false;
+    } else if (current.bytes != frame.origin.descriptor_snapshot) {
+        return false;
+    }
+    const auto expected_writer = frame.completion_record_index < completion_record_count_
+        ? completion_records_[frame.completion_record_index].writer
+        : resources::AuthorityToken{};
+    if (frame.origin.owner.instance == 0u || descriptor.owner != frame.origin.owner ||
+        descriptor.writer != expected_writer || descriptor.writer.instance == 0u) {
+        return false;
+    }
+    const auto owner = lifetime_->owner_token(frame.origin.raw_owner);
+    const auto invalidation = lifetime_->owner_invalidation_generation(frame.origin.raw_owner);
+    const auto watched = std::find_if(owners_.begin(), owners_.end(),
+        [&frame](const WatchedOwner &candidate) {
+            return candidate.used && candidate.owner == frame.origin.owner;
+        });
+    if (!owner || *owner != frame.origin.owner || !invalidation ||
+        *invalidation != frame.origin.owner_invalidation_generation ||
+        watched == owners_.end() ||
+        watched->request_generation != frame.origin.request_generation) {
+        return false;
+    }
+    bool writer_pending = false;
+    for (const auto &writer : writers_) {
+        if (writer.pending && writer.writer == descriptor.writer &&
+            writer.generation == descriptor.generation &&
+            writer.raw_destination == descriptor.raw_destination &&
+            writer.bytes == descriptor.write_footprint) {
+            writer_pending = true;
+            break;
+        }
+    }
+    if (!writer_pending) return false;
+    return true;
+}
+
+bool TextureTransferTracker::begin_completion(const ReadFrame &frame,
+    const TextureReadAttemptRecord &attempt) noexcept {
+    if (!config_.observe_completion) return true;
+    if (!frame.selected || frame.descriptor_index >= descriptor_count_ ||
+        completion_record_count_ >= completion_records_.size()) {
+        fail(TextureTransferTrackerError::NoCapacity, true);
+        return false;
+    }
+    const auto &descriptor = descriptors_[frame.descriptor_index];
+    if (!descriptor.current || !descriptor.associated_load ||
+        descriptor.writer.instance == 0u || !attempt.result_observed ||
+        attempt.outcome != TextureReadOutcome::ExactReadObserved ||
+        attempt.serial == 0u || attempt.descriptor_generation != descriptor.generation ||
+        attempt.request_generation != descriptor.load_generation ||
+        attempt.descriptor != descriptor.descriptor || attempt.writer != descriptor.writer ||
+        attempt.requested_bytes != read32(descriptor.snapshot.data() + 8u)) {
+        fail(TextureTransferTrackerError::UnpairedSelectedLoad, true);
+        return false;
+    }
+    DescriptorSnapshot current;
+    if (frame.raw_manager == 0u || frame.raw_record == 0u ||
+        !read_descriptor(*runtime_, frame.raw_record, current) ||
+        current.bytes != descriptor.snapshot) {
+        fail(TextureTransferTrackerError::InvalidDescriptor, true);
+        return false;
+    }
+    CompletionFrame *slot = nullptr;
+    for (auto &candidate : completion_frames_) {
+        if (!candidate.active) { slot = &candidate; break; }
+    }
+    if (slot == nullptr) {
+        fail(TextureTransferTrackerError::NoCapacity, true);
+        return false;
+    }
+    slot->active = true;
+    slot->origin = frame;
+    slot->runtime = runtime_;
+    slot->reader_context = frame.context;
+    slot->reader_execution = frame.execution;
+    slot->raw_manager = frame.raw_manager;
+    slot->raw_record = frame.raw_record;
+    slot->fd = frame.fd;
+    slot->worker_sp = frame.worker_sp;
+    slot->worker_return_pc = frame.helper_return_pc;
+    slot->event_uid = 0u;
+    slot->operation_serial = attempt.serial;
+    slot->result_index = static_cast<std::size_t>(&attempt - read_attempts_.data());
+    slot->completion_record_index = completion_record_count_;
+    slot->raw_destination = descriptor.raw_destination;
+    slot->logical_bytes = attempt.requested_bytes;
+    slot->write_footprint = descriptor.write_footprint;
+    slot->progress = CompletionProgress(
+        descriptor.snapshot[27u] != 0u, descriptor.snapshot[28u] != 0u);
+    auto &record = completion_records_[completion_record_count_++];
+    record = TextureCompletionRecord{};
+    record.operation_serial = attempt.serial;
+    record.descriptor_generation = attempt.descriptor_generation;
+    record.request_generation = attempt.request_generation;
+    record.owner = attempt.owner;
+    record.descriptor = attempt.descriptor;
+    record.writer = attempt.writer;
+    record.raw_destination = descriptor.raw_destination;
+    record.logical_bytes = attempt.requested_bytes;
+    record.write_footprint = descriptor.write_footprint;
+    ++stats_.completion_started;
+    ++stats_.active_completions;
+    stats_.completion_records = completion_record_count_;
+    return true;
+}
+
+bool TextureTransferTracker::retire_writer(const CompletionFrame &frame) noexcept {
+    if (frame.origin.descriptor_index >= descriptor_count_) return false;
+    const auto &descriptor = descriptors_[frame.origin.descriptor_index];
+    const auto expected_writer = frame.completion_record_index < completion_record_count_
+        ? completion_records_[frame.completion_record_index].writer
+        : resources::AuthorityToken{};
+    if (!descriptor.current || descriptor.generation != frame.origin.descriptor_generation ||
+        descriptor.owner != frame.origin.owner || descriptor.writer != expected_writer)
+        return false;
+    const auto owner = lifetime_->owner_token(frame.origin.raw_owner);
+    const auto invalidation = lifetime_->owner_invalidation_generation(frame.origin.raw_owner);
+    if (!owner || *owner != frame.origin.owner || !invalidation ||
+        *invalidation != frame.origin.owner_invalidation_generation)
+        return false;
+    for (auto &writer : writers_) {
+        if (!writer.pending || writer.writer != descriptor.writer ||
+            writer.generation != descriptor.generation ||
+            writer.raw_destination != descriptor.raw_destination ||
+            writer.bytes != descriptor.write_footprint) continue;
+        const auto event = authority_->prove_external_quiescent(writer.writer);
+        if (!event.ok()) return false;
+        writer.pending = false;
+        if (stats_.live_writers != 0u) --stats_.live_writers;
+        if (frame.completion_record_index < completion_record_count_)
+            completion_records_[frame.completion_record_index].writer_released = true;
+        return true;
+    }
+    return false;
+}
+
+bool TextureTransferTracker::finish_completion(CompletionFrame &frame,
+    TextureCompletionOutcome outcome) noexcept {
+    if (frame.completion_record_index >= completion_record_count_) return false;
+    // A terminal observation must leave a bounded identity record behind for
+    // the original worker/reader continuation.  If that record cannot be
+    // retained, keep the frame and its writer live and report the loss to the
+    // caller instead of closing an operation that late callbacks cannot
+    // correlate safely.
+    if (closed_completion_count_ >= closed_completions_.size()) return false;
+    auto &record = completion_records_[frame.completion_record_index];
+    if (outcome == TextureCompletionOutcome::Completed) {
+        if (!retire_writer(frame)) return false;
+        ++stats_.completion_completed;
+    } else if (outcome == TextureCompletionOutcome::Unsupported) {
+        ++stats_.completion_unsupported;
+    } else if (outcome == TextureCompletionOutcome::Aborted) {
+        ++stats_.completion_aborted;
+    } else if (outcome == TextureCompletionOutcome::Cancelled) {
+        ++stats_.completion_cancelled;
+    } else if (outcome == TextureCompletionOutcome::Invalid) {
+        ++stats_.completion_invalid;
+    }
+    record.outcome = outcome;
+    record.digest_computed = frame.digest_computed;
+    if (closed_completion_count_ < closed_completions_.size()) {
+        auto &closed = closed_completions_[closed_completion_count_++];
+        closed = ClosedCompletion{};
+        closed.used = true;
+        closed.runtime = frame.runtime;
+        closed.reader_context = frame.reader_context;
+        closed.worker_context = frame.worker_context;
+        closed.operation_serial = frame.operation_serial;
+        closed.descriptor_generation = frame.origin.descriptor_generation;
+        closed.request_generation = frame.origin.request_generation;
+        closed.owner_invalidation_generation = frame.origin.owner_invalidation_generation;
+        closed.owner = frame.origin.owner;
+        if (frame.origin.descriptor_index < descriptor_count_) {
+            const auto &descriptor = descriptors_[frame.origin.descriptor_index];
+            closed.descriptor = descriptor.descriptor;
+            closed.writer = descriptor.writer;
+            closed.snapshot = descriptor.snapshot;
+        }
+        closed.raw_manager = frame.raw_manager;
+        closed.raw_owner = frame.origin.raw_owner;
+        closed.raw_record = frame.raw_record;
+        closed.event_uid = frame.event_uid;
+        if (closed.event_uid == 0u && frame.runtime != nullptr) {
+            // A route closed before its first worker syscall (for example an
+            // unsupported classifier result) still lets the original reader
+            // issue that syscall. Resolve the manager's event handle the same
+            // way the active path does so the late call can be correlated; a
+            // changed handle simply fails to match and fails closed.
+            std::uint32_t address{};
+            if (add_u32(frame.raw_manager, kTransformEventOffset, address) &&
+                valid_ram(*frame.runtime, address, 4u)) {
+                if (const auto *event = frame.runtime->memory().raw_pointer(address, 4u))
+                    closed.event_uid = read32(event);
+            }
+        }
+        closed.raw_scratch = frame.origin.raw_scratch;
+        closed.raw_destination = frame.raw_destination;
+        closed.logical_bytes = frame.logical_bytes;
+        closed.write_footprint = frame.write_footprint;
+        closed.reader_execution = frame.reader_execution;
+        closed.worker_execution = frame.worker_execution;
+        closed.last_call = frame.last_call;
+        closed.outcome = outcome;
+    }
+    // Keep operation call receipts alive until a matching late return is
+    // observed.  Their operation/generation tokens prevent a new operation
+    // from borrowing the closure, while dropping them here would make the
+    // original continuation fail before ClosedCompletion can classify it.
+    frame = CompletionFrame{};
+    if (stats_.active_completions != 0u) --stats_.active_completions;
+    return true;
+}
+
+void TextureTransferTracker::cancel_completions_for_descriptor(
+    std::uint64_t generation) noexcept {
+    for (auto &frame : completion_frames_) {
+        if (!frame.active || frame.origin.descriptor_generation != generation) continue;
+        (void)frame.progress.accept(CompletionStep::Cancel);
+        (void)finish_completion(frame, TextureCompletionOutcome::Cancelled);
+    }
+}
+
+bool TextureTransferTracker::completion_closed_matches(
+    ClosedCompletion &closed, const psprecomp::Runtime &runtime,
+    const psprecomp::AllegrexContext &context,
+    TextureCompletionCheckpoint checkpoint,
+    const CompletionSample &sample) noexcept {
+    if (!closed.used || closed.runtime != &runtime) return false;
+    if (completion_worker_checkpoint(checkpoint)) {
+        // A copy-worker continuation can be the first callback after an
+        // unsupported terminal branch, so bind its worker context only after
+        // the decoded manager/descriptor identity matches this closure.
+        if (closed.worker_context == nullptr) {
+            if (!sample.has_manager ||
+                !canonical_equal(sample.manager, closed.raw_manager)) return false;
+            closed.worker_context = &context;
+            closed.worker_execution = psprecomp::capture_runtime_execution_context();
+        } else if (closed.worker_context != &context ||
+                   !same_execution(closed.worker_execution)) return false;
+    } else if (completion_reader_checkpoint(checkpoint)) {
+        const bool wait_alias = checkpoint == TextureCompletionCheckpoint::WorkerWaitReturn &&
+            closed.reader_context != nullptr &&
+            closed.reader_context->gpr[29] == context.gpr[29] &&
+            psprecomp::runtime_thread_uid() == closed.reader_execution.thread_uid;
+        if ((closed.reader_context != &context && !wait_alias) ||
+            (checkpoint != TextureCompletionCheckpoint::WorkerWaitReturn &&
+             !same_execution(closed.reader_execution))) return false;
+    }
+    const auto *info = texture_completion_checkpoint_info(checkpoint);
+    if (info == nullptr) return false;
+    if (info->requires_call_receipt) {
+        if (!sample.has_call || sample.call_checkpoint != info->call_checkpoint)
+            return false;
+        CompletionCallReceipt *receipt = nullptr;
+        const auto current_execution = psprecomp::capture_runtime_execution_context();
+        const auto *receipt_context =
+            sample.call_checkpoint == TextureCompletionCallCheckpoint::WorkerWaitCall &&
+                    closed.reader_context != nullptr
+                ? closed.reader_context : &context;
+        for (auto &candidate : completion_call_receipts_) {
+            if (!candidate.active || candidate.runtime != &runtime ||
+                candidate.operation_serial != closed.operation_serial ||
+                candidate.descriptor_generation != closed.descriptor_generation ||
+                candidate.request_generation != closed.request_generation ||
+                candidate.context != receipt_context ||
+                !same_call_arguments(candidate.call, sample.call) ||
+                candidate.execution.thread_uid != current_execution.thread_uid ||
+                (sample.call_checkpoint != TextureCompletionCallCheckpoint::WorkerWaitCall &&
+                 candidate.execution.switch_generation != current_execution.switch_generation))
+                continue;
+            if (receipt != nullptr) return false;
+            receipt = &candidate;
+        }
+        if (receipt == nullptr) return false;
+        if (checkpoint != TextureCompletionCheckpoint::RetirementEntry) {
+            receipt->active = false;
+            if (completion_call_receipt_count_ != 0u) --completion_call_receipt_count_;
+            closed.late_return_call = sample.call;
+            closed.has_late_return_call = true;
+        }
+    }
+    if (sample.has_manager && !canonical_equal(sample.manager, closed.raw_manager))
+        return false;
+    if (sample.has_descriptor && !canonical_equal(sample.descriptor, closed.raw_record))
+        return false;
+    if (sample.has_call) {
+        const auto &call = sample.call;
+        if (call.has_manager && !canonical_equal(call.manager, closed.raw_manager))
+            return false;
+        if (call.has_descriptor && !canonical_equal(call.descriptor, closed.raw_record))
+            return false;
+        if (call.has_destination &&
+            !canonical_equal(call.destination, closed.raw_destination)) return false;
+        if (call.has_source &&
+            !canonical_equal(call.source, closed.raw_scratch)) return false;
+        if (call.has_logical_length && call.logical_length != closed.logical_bytes)
+            return false;
+        if (call.has_footprint) {
+            const auto expected = call.checkpoint == TextureCompletionCallCheckpoint::TransformCall
+                ? closed.write_footprint : closed.logical_bytes;
+            if (call.footprint != expected) return false;
+        }
+    }
+    if (sample.has_call &&
+        (checkpoint == TextureCompletionCheckpoint::WorkerRequestReturn ||
+         checkpoint == TextureCompletionCheckpoint::WorkerEventSetReturn ||
+         checkpoint == TextureCompletionCheckpoint::WorkerWaitReturn ||
+         checkpoint == TextureCompletionCheckpoint::WorkerAckReturn) &&
+        (!sample.call.has_event || sample.call.event != closed.event_uid)) return false;
+    const TextureTransferDescriptorRecord *current_descriptor = nullptr;
+    for (const auto &descriptor : descriptors_) {
+        if (!descriptor.current || descriptor.generation != closed.descriptor_generation ||
+            !canonical_equal(descriptor.raw_descriptor, closed.raw_record)) continue;
+        current_descriptor = &descriptor;
+        break;
+    }
+    if (current_descriptor == nullptr || current_descriptor->owner != closed.owner ||
+        current_descriptor->descriptor != closed.descriptor ||
+        current_descriptor->writer != closed.writer) return false;
+    if (closed.owner.instance != 0u) {
+        const auto owner = lifetime_->owner_token(closed.raw_owner);
+        const auto invalidation = lifetime_->owner_invalidation_generation(closed.raw_owner);
+        if (!owner || *owner != closed.owner || !invalidation ||
+            *invalidation != closed.owner_invalidation_generation) return false;
+    }
+    if (checkpoint == TextureCompletionCheckpoint::WorkerWaitReturn) {
+        closed.reader_context = &context;
+        closed.reader_execution = psprecomp::capture_runtime_execution_context();
+    }
+    if (closed.outcome == TextureCompletionOutcome::Completed) {
+        const auto *bytes = runtime.memory().raw_pointer(closed.raw_record, 32u);
+        if (bytes == nullptr || bytes[0] != 0u || bytes[1] != 0u ||
+            !std::equal(closed.snapshot.begin() + 2u, closed.snapshot.end(), bytes + 2u))
+            return false;
+    }
+    return true;
+}
+
+bool TextureTransferTracker::completion_closed_call_matches(
+    ClosedCompletion &closed, const psprecomp::Runtime &runtime,
+    const psprecomp::AllegrexContext &context,
+    const CompletionSample &sample) noexcept {
+    if (!sample.has_call || !closed.used || closed.runtime != &runtime) return false;
+    const auto checkpoint = sample.call_checkpoint;
+    const bool worker = checkpoint == TextureCompletionCallCheckpoint::WorkerCopyCall ||
+        checkpoint == TextureCompletionCallCheckpoint::WorkerAckCall ||
+        checkpoint == TextureCompletionCallCheckpoint::TransformCall ||
+        checkpoint == TextureCompletionCallCheckpoint::DigestCall;
+    if (worker) {
+        if (closed.worker_context == nullptr) {
+            if (!sample.call.has_manager || !sample.call.has_descriptor ||
+                !canonical_equal(sample.call.manager, closed.raw_manager) ||
+                !canonical_equal(sample.call.descriptor, closed.raw_record)) return false;
+            closed.worker_context = &context;
+            closed.worker_execution = psprecomp::capture_runtime_execution_context();
+        } else if (closed.worker_context != &context ||
+                   !same_execution(closed.worker_execution)) return false;
+    } else if (closed.reader_context != &context || !same_execution(closed.reader_execution)) {
+        return false;
+    }
+    const auto *info = texture_completion_call_boundary_info(checkpoint);
+    if (info == nullptr) return false;
+    if (sample.call.return_pc != info->return_pc ||
+        sample.call.sp != context.gpr[29] || context.gpr[31] != info->return_pc)
+        return false;
+    if (sample.call.has_manager && !canonical_equal(sample.call.manager, closed.raw_manager))
+        return false;
+    if (sample.call.has_descriptor &&
+        !canonical_equal(sample.call.descriptor, closed.raw_record)) return false;
+    if (sample.call.has_destination &&
+        !canonical_equal(sample.call.destination, closed.raw_destination)) return false;
+    if (sample.call.has_source &&
+        !canonical_equal(sample.call.source, closed.raw_scratch)) return false;
+    if (sample.call.has_logical_length && sample.call.logical_length != closed.logical_bytes)
+        return false;
+    if (sample.call.has_footprint) {
+        const auto expected = checkpoint == TextureCompletionCallCheckpoint::TransformCall
+            ? closed.write_footprint : closed.logical_bytes;
+        if (sample.call.footprint != expected) return false;
+    }
+    if ((checkpoint == TextureCompletionCallCheckpoint::WorkerRequestCall ||
+         checkpoint == TextureCompletionCallCheckpoint::WorkerEventSetCall ||
+         checkpoint == TextureCompletionCallCheckpoint::WorkerWaitCall ||
+         checkpoint == TextureCompletionCallCheckpoint::WorkerAckCall) &&
+        (!sample.call.has_event || sample.call.event != closed.event_uid)) return false;
+    const TextureTransferDescriptorRecord *descriptor = nullptr;
+    for (const auto &candidate : descriptors_) {
+        if (candidate.current && candidate.generation == closed.descriptor_generation &&
+            canonical_equal(candidate.raw_descriptor, closed.raw_record)) {
+            descriptor = &candidate;
+            break;
+        }
+    }
+    if (descriptor == nullptr || descriptor->owner != closed.owner ||
+        descriptor->descriptor != closed.descriptor || descriptor->writer != closed.writer)
+        return false;
+    if (closed.owner.instance != 0u) {
+        const auto owner = lifetime_->owner_token(closed.raw_owner);
+        const auto invalidation = lifetime_->owner_invalidation_generation(closed.raw_owner);
+        if (!owner || *owner != closed.owner || !invalidation ||
+            *invalidation != closed.owner_invalidation_generation) return false;
+    }
+    DescriptorSnapshot current;
+    if (!read_descriptor(runtime, closed.raw_record, current)) return false;
+    if (closed.outcome == TextureCompletionOutcome::Completed) {
+        if (current.bytes[0] != 0u || current.bytes[1] != 0u ||
+            !std::equal(current.bytes.begin() + 2u, current.bytes.end(),
+                        closed.snapshot.begin() + 2u)) return false;
+    } else if (current.bytes != closed.snapshot) {
+        return false;
+    }
+    return true;
+}
+
+bool TextureTransferTracker::completion_closed_late_return_matches(
+    const ClosedCompletion &closed, const psprecomp::Runtime &runtime,
+    const psprecomp::AllegrexContext &context,
+    TextureCompletionCheckpoint checkpoint) const noexcept {
+    if (!closed.used || closed.runtime != &runtime || !closed.has_late_return_call)
+        return false;
+    const auto *info = texture_completion_checkpoint_info(checkpoint);
+    if (info == nullptr || !info->requires_call_receipt ||
+        closed.late_return_call.checkpoint != info->call_checkpoint ||
+        closed.late_return_call.sp != context.gpr[29] ||
+        context.gpr[31] != closed.late_return_call.return_pc) return false;
+    const bool worker = checkpoint == TextureCompletionCheckpoint::WorkerCopyReturn ||
+        checkpoint == TextureCompletionCheckpoint::TransformReturn ||
+        checkpoint == TextureCompletionCheckpoint::DigestReturn ||
+        checkpoint == TextureCompletionCheckpoint::WorkerAckReturn;
+    const auto *expected_context = worker ? closed.worker_context : closed.reader_context;
+    const auto expected_execution = worker ? closed.worker_execution : closed.reader_execution;
+    if (worker) return expected_context == &context && same_execution(expected_execution);
+    const bool wait_alias = checkpoint == TextureCompletionCheckpoint::WorkerWaitReturn &&
+        expected_context != nullptr && expected_context->gpr[29] == context.gpr[29] &&
+        psprecomp::runtime_thread_uid() == expected_execution.thread_uid;
+    return (expected_context == &context || wait_alias) &&
+        (checkpoint == TextureCompletionCheckpoint::WorkerWaitReturn ||
+         same_execution(expected_execution));
+}
+
+bool TextureTransferTracker::retain_closed_completion_call(
+    ClosedCompletion &closed, const psprecomp::Runtime &runtime,
+    const psprecomp::AllegrexContext &context,
+    const CompletionSample &sample) noexcept {
+    if (!completion_closed_call_matches(closed, runtime, context, sample)) return false;
+    for (const auto &receipt : completion_call_receipts_) {
+        if (receipt.active && receipt.operation_serial == closed.operation_serial &&
+            receipt.context == &context && same_call_arguments(receipt.call, sample.call))
+            return false;
+    }
+    CompletionCallReceipt *slot = nullptr;
+    for (auto &candidate : completion_call_receipts_) {
+        if (!candidate.active) { slot = &candidate; break; }
+    }
+    if (slot == nullptr) return false;
+    slot->active = true;
+    slot->runtime = &runtime;
+    slot->context = &context;
+    slot->execution = psprecomp::capture_runtime_execution_context();
+    slot->call = sample.call;
+    slot->operation_serial = closed.operation_serial;
+    slot->descriptor_generation = closed.descriptor_generation;
+    slot->request_generation = closed.request_generation;
+    slot->owner = closed.owner;
+    slot->descriptor = closed.descriptor;
+    slot->writer = closed.writer;
+    slot->raw_manager = closed.raw_manager;
+    slot->raw_record = closed.raw_record;
+    slot->event_uid = closed.event_uid;
+    ++completion_call_receipt_count_;
+    closed.last_call = sample.call;
+    return true;
+}
+
+void TextureTransferTracker::cancel_completions_for_manager(
+    const psprecomp::Runtime &runtime,
+    const psprecomp::AllegrexContext &context) noexcept {
+    const auto manager = context.gpr[4];
+    if (manager == 0u) {
+        fail(TextureTransferTrackerError::InvalidObservation, true);
+        return;
+    }
+    std::size_t matched = 0u;
+    for (auto &frame : completion_frames_) {
+        if (!frame.active || frame.runtime != &runtime ||
+            frame.reader_context != &context || !same_execution(frame.reader_execution) ||
+            !canonical_equal(frame.raw_manager, manager)) continue;
+        ++matched;
+        if (!frame.progress.accept(CompletionStep::Cancel) ||
+            !finish_completion(frame, TextureCompletionOutcome::Cancelled)) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+    }
+    if (matched == 0u) {
+        for (const auto &closed : closed_completions_) {
+            if (closed.used && closed.runtime == &runtime &&
+                closed.reader_context == &context && same_execution(closed.reader_execution) &&
+                canonical_equal(closed.raw_manager, manager)) return;
+        }
+        fail(TextureTransferTrackerError::InvalidObservation, true);
+        return;
+    }
+}
+
+TextureTransferTracker::CompletionFrame *TextureTransferTracker::find_completion_for_call(
+    const psprecomp::Runtime &runtime,
+    const psprecomp::AllegrexContext &context,
+    TextureCompletionCallCheckpoint checkpoint) noexcept {
+    const bool worker = checkpoint == TextureCompletionCallCheckpoint::WorkerCopyCall ||
+        checkpoint == TextureCompletionCallCheckpoint::WorkerAckCall ||
+        checkpoint == TextureCompletionCallCheckpoint::TransformCall ||
+        checkpoint == TextureCompletionCallCheckpoint::DigestCall;
+    CompletionFrame *found = nullptr;
+    for (auto &frame : completion_frames_) {
+        if (!frame.active || frame.runtime != &runtime) continue;
+        if (worker) {
+            if (frame.worker_context != &context ||
+                !same_execution(frame.worker_execution) ||
+                !completion_worker_identity_valid(frame, runtime, context)) continue;
+        } else {
+            if (frame.reader_context != &context ||
+                !same_execution(frame.reader_execution)) continue;
+        }
+        if (found != nullptr) {
+            fail(TextureTransferTrackerError::ConflictingFrame, true);
+            return nullptr;
+        }
+        found = &frame;
+    }
+    return found;
+}
+
+bool TextureTransferTracker::consume_completion_call(
+    const CompletionFrame &frame,
+    const CompletionSample &sample) noexcept {
+    if (!sample.has_call) return false;
+    const auto checkpoint = sample.call_checkpoint;
+    const bool worker = checkpoint == TextureCompletionCallCheckpoint::WorkerCopyCall ||
+        checkpoint == TextureCompletionCallCheckpoint::WorkerAckCall ||
+        checkpoint == TextureCompletionCallCheckpoint::TransformCall ||
+        checkpoint == TextureCompletionCallCheckpoint::DigestCall;
+    const auto *context = worker ? frame.worker_context : frame.reader_context;
+    const auto current_execution = psprecomp::capture_runtime_execution_context();
+    CompletionCallReceipt *found = nullptr;
+    for (auto &receipt : completion_call_receipts_) {
+        if (!receipt.active || receipt.runtime != frame.runtime ||
+            receipt.context != context || receipt.call.checkpoint != checkpoint ||
+            receipt.operation_serial != frame.operation_serial ||
+            receipt.descriptor_generation != frame.origin.descriptor_generation ||
+            receipt.request_generation != frame.origin.request_generation ||
+            !same_call_arguments(receipt.call, sample.call) ||
+            receipt.execution.thread_uid != current_execution.thread_uid ||
+            (checkpoint != TextureCompletionCallCheckpoint::WorkerWaitCall &&
+             receipt.execution.switch_generation != current_execution.switch_generation)) continue;
+        if (found != nullptr) return false;
+        found = &receipt;
+    }
+    if (found == nullptr) return false;
+    found->active = false;
+    if (completion_call_receipt_count_ != 0u) --completion_call_receipt_count_;
+    return true;
+}
+
+bool TextureTransferTracker::has_completion_call(
+    const CompletionFrame &frame,
+    TextureCompletionCallCheckpoint checkpoint) const noexcept {
+    const bool worker = checkpoint == TextureCompletionCallCheckpoint::WorkerCopyCall ||
+        checkpoint == TextureCompletionCallCheckpoint::WorkerAckCall ||
+        checkpoint == TextureCompletionCallCheckpoint::TransformCall ||
+        checkpoint == TextureCompletionCallCheckpoint::DigestCall;
+    const auto execution = worker ? frame.worker_execution : frame.reader_execution;
+    const auto *context = worker ? frame.worker_context : frame.reader_context;
+    for (const auto &receipt : completion_call_receipts_) {
+        if (receipt.active && receipt.runtime == frame.runtime &&
+            receipt.context == context && receipt.call.checkpoint == checkpoint &&
+            receipt.operation_serial == frame.operation_serial &&
+            receipt.execution.thread_uid == execution.thread_uid &&
+            receipt.execution.switch_generation == execution.switch_generation) return true;
+    }
+    return false;
+}
+
+void TextureTransferTracker::observe_completion_call_impl(
+    const psprecomp::Runtime &runtime,
+    const psprecomp::AllegrexContext &context,
+    const CompletionSample &sample) {
+    if (sample.status != CompletionDecodeStatus::Observed || !sample.has_call) {
+        fail(TextureTransferTrackerError::InvalidObservation, true);
+        return;
+    }
+    const auto checkpoint = sample.call_checkpoint;
+    auto *frame = find_completion_for_call(runtime, context, checkpoint);
+    if (frame == nullptr) {
+        for (auto &closed : closed_completions_) {
+            if (!closed.used || closed.runtime != &runtime) continue;
+            if (retain_closed_completion_call(closed, runtime, context, sample)) return;
+        }
+        fail(TextureTransferTrackerError::UnpairedSelectedLoad, true);
+        return;
+    }
+    if ((checkpoint == TextureCompletionCallCheckpoint::WorkerRequestCall ||
+         checkpoint == TextureCompletionCallCheckpoint::WorkerEventSetCall ||
+         checkpoint == TextureCompletionCallCheckpoint::WorkerWaitCall ||
+         checkpoint == TextureCompletionCallCheckpoint::WorkerAckCall) &&
+        frame->event_uid == 0u) {
+        std::uint32_t address{};
+        if (!add_u32(frame->raw_manager, kTransformEventOffset, address) ||
+            !valid_ram(runtime, address, 4u)) {
+            fail(TextureTransferTrackerError::InvalidRange, true);
+            return;
+        }
+        const auto *event = runtime.memory().raw_pointer(address, 4u);
+        if (event == nullptr || (frame->event_uid = read32(event)) == 0u) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+    }
+    const auto syscall_call =
+        checkpoint == TextureCompletionCallCheckpoint::WorkerRequestCall ||
+        checkpoint == TextureCompletionCallCheckpoint::WorkerEventSetCall ||
+        checkpoint == TextureCompletionCallCheckpoint::WorkerWaitCall ||
+        checkpoint == TextureCompletionCallCheckpoint::WorkerAckCall;
+    if ((!syscall_call && (!sample.call.has_manager || !sample.call.has_descriptor)) ||
+        (!syscall_call && sample.call.has_manager &&
+         !canonical_equal(sample.call.manager, frame->raw_manager)) ||
+        (!syscall_call && sample.call.has_descriptor &&
+         !canonical_equal(sample.call.descriptor, frame->raw_record)) ||
+        (checkpoint == TextureCompletionCallCheckpoint::InlineCopyCall &&
+         (!sample.call.has_destination || !sample.call.has_source ||
+          !sample.call.has_logical_length ||
+          !canonical_equal(sample.call.destination, frame->raw_destination) ||
+          sample.call.logical_length != frame->logical_bytes)) ||
+        (checkpoint == TextureCompletionCallCheckpoint::WorkerCopyCall &&
+         (!sample.call.has_destination || !sample.call.has_source ||
+          !sample.call.has_logical_length ||
+          !canonical_equal(sample.call.destination, frame->raw_destination) ||
+          sample.call.logical_length != frame->logical_bytes)) ||
+        ((checkpoint == TextureCompletionCallCheckpoint::WorkerRequestCall ||
+          checkpoint == TextureCompletionCallCheckpoint::WorkerEventSetCall ||
+          checkpoint == TextureCompletionCallCheckpoint::WorkerWaitCall ||
+          checkpoint == TextureCompletionCallCheckpoint::WorkerAckCall) &&
+         (!sample.call.has_event || sample.call.event != frame->event_uid))) {
+        fail(TextureTransferTrackerError::InvalidObservation, true);
+        return;
+    }
+    for (const auto &receipt : completion_call_receipts_) {
+        if (receipt.active && receipt.runtime == &runtime && receipt.context == &context &&
+            receipt.call.checkpoint == checkpoint && receipt.operation_serial == frame->operation_serial &&
+            same_execution(receipt.execution) &&
+            same_call_arguments(receipt.call, sample.call)) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+    }
+    CompletionCallReceipt *slot = nullptr;
+    for (auto &candidate : completion_call_receipts_) {
+        if (!candidate.active) { slot = &candidate; break; }
+    }
+    if (slot == nullptr) {
+        fail(TextureTransferTrackerError::NoCapacity, true);
+        return;
+    }
+    slot->active = true;
+    slot->runtime = &runtime;
+    slot->context = &context;
+    slot->execution = psprecomp::capture_runtime_execution_context();
+    slot->call = sample.call;
+    slot->operation_serial = frame->operation_serial;
+    slot->descriptor_generation = frame->origin.descriptor_generation;
+    slot->request_generation = frame->origin.request_generation;
+    slot->owner = frame->origin.owner;
+    slot->descriptor = frame->completion_record_index < completion_record_count_
+        ? completion_records_[frame->completion_record_index].descriptor
+        : resources::AuthorityToken{};
+    slot->writer = frame->completion_record_index < completion_record_count_
+        ? completion_records_[frame->completion_record_index].writer
+        : resources::AuthorityToken{};
+    slot->raw_manager = frame->raw_manager;
+    slot->raw_record = frame->raw_record;
+    slot->event_uid = frame->event_uid;
+    ++completion_call_receipt_count_;
+    if (checkpoint == TextureCompletionCallCheckpoint::WorkerRequestCall ||
+        checkpoint == TextureCompletionCallCheckpoint::WorkerEventSetCall ||
+        checkpoint == TextureCompletionCallCheckpoint::WorkerWaitCall ||
+        checkpoint == TextureCompletionCallCheckpoint::WorkerAckCall) {
+        if (slot->event_uid == 0u) {
+            const std::uint32_t address = frame->raw_manager + kTransformEventOffset;
+            if (!valid_ram(runtime, address, 4u)) {
+                slot->active = false;
+                if (completion_call_receipt_count_ != 0u) --completion_call_receipt_count_;
+                fail(TextureTransferTrackerError::InvalidRange, true);
+                return;
+            }
+            const auto *event = runtime.memory().raw_pointer(address, 4u);
+            if (event == nullptr || (slot->event_uid = read32(event)) == 0u) {
+                slot->active = false;
+                if (completion_call_receipt_count_ != 0u) --completion_call_receipt_count_;
+                fail(TextureTransferTrackerError::InvalidObservation, true);
+                return;
+            }
+        }
+    }
+    frame->last_call = sample.call;
+    if (checkpoint == TextureCompletionCallCheckpoint::TransformCall ||
+        checkpoint == TextureCompletionCallCheckpoint::DigestCall) {
+        frame->worker_bound = true;
+    }
+    if (checkpoint == TextureCompletionCallCheckpoint::WorkerWaitCall)
+        frame->wait_call_observed = true;
+}
+
+void TextureTransferTracker::observe_completion_impl(
+    const psprecomp::Runtime &runtime, const psprecomp::AllegrexContext &context,
+    const CompletionSample &sample) {
+    if (!config_.observe_completion) return;
+    if (sample.status == CompletionDecodeStatus::Invalid) {
+        fail(TextureTransferTrackerError::InvalidObservation, true);
+        return;
+    }
+    const auto checkpoint = sample.checkpoint;
+    if (checkpoint == TextureCompletionCheckpoint::GroupCancellation ||
+        checkpoint == TextureCompletionCheckpoint::FullQueueCancellation) {
+        cancel_completions_for_manager(runtime, context);
+        return;
+    }
+    auto *frame = find_completion(runtime, context, checkpoint);
+    if (frame == nullptr) {
+        for (auto &closed : closed_completions_)
+            if (completion_closed_matches(closed, runtime, context, checkpoint, sample)) return;
+        fail(TextureTransferTrackerError::UnpairedSelectedLoad, true);
+        return;
+    }
+
+    if (checkpoint == TextureCompletionCheckpoint::WorkerEntry) {
+        if (frame->worker_context != nullptr ||
+            !completion_worker_identity_valid(*frame, runtime, context)) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        frame->worker_context = &context;
+        frame->worker_execution = psprecomp::capture_runtime_execution_context();
+        frame->worker_registered = true;
+        DescriptorSnapshot worker_descriptor;
+        if (!read_descriptor(runtime, frame->raw_record, worker_descriptor) ||
+            worker_descriptor.bytes != frame->origin.descriptor_snapshot) {
+            fail(TextureTransferTrackerError::InvalidDescriptor, true);
+            return;
+        }
+        // WorkerEntry only registers a scheduler context. It is not a request
+        // receipt and cannot move CompletionProgress to WorkerRunning.
+        return;
+    }
+
+    if (checkpoint == TextureCompletionCheckpoint::WorkerRequestCall &&
+        frame->event_uid == 0u) {
+        std::uint32_t address{};
+        if (!add_u32(frame->raw_manager, kTransformEventOffset, address) ||
+            !valid_ram(runtime, address, 4u)) {
+            fail(TextureTransferTrackerError::InvalidRange, true);
+            return;
+        }
+        const auto *event = runtime.memory().raw_pointer(address, 4u);
+        if (event == nullptr || (frame->event_uid = read32(event)) == 0u) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+    }
+    if (!completion_identity_valid(*frame, runtime, context, checkpoint, sample)) {
+        fail(TextureTransferTrackerError::InvalidObservation, true);
+        return;
+    }
+    auto accept = [this, frame](CompletionStep step) {
+        if (!frame->progress.accept(step)) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return false;
+        }
+        return true;
+    };
+    switch (checkpoint) {
+    case TextureCompletionCheckpoint::ClassifierReturn:
+        // The bounded selected route is the inline branch. A nonzero
+        // classifier result is conservatively unsupported and retains writer.
+        if (!sample.has_result || sample.result != 0u) {
+            if (!frame->progress.accept(CompletionStep::UnsupportedCopyRoute) ||
+                !finish_completion(*frame, TextureCompletionOutcome::Unsupported))
+                fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        if (!frame->progress.observe_inline_classified()) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        break;
+    case TextureCompletionCheckpoint::CopyReturn:
+        if (frame->copy_return_observed ||
+            !consume_completion_call(*frame, sample) ||
+            !frame->progress.observe_copy_return()) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        frame->copy_return_observed = true;
+        break;
+    case TextureCompletionCheckpoint::HelperReturn:
+        if (!consume_completion_call(*frame, sample) ||
+            !accept(CompletionStep::HelperReturned)) return;
+        break;
+    case TextureCompletionCheckpoint::PolicyReturn:
+        if (!sample.has_result || sample.result == 0u) {
+            if (!frame->progress.accept(CompletionStep::Abort) ||
+                !finish_completion(*frame, TextureCompletionOutcome::Aborted))
+                fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        if (!consume_completion_call(*frame, sample) ||
+            !accept(CompletionStep::PolicyAccepted)) return;
+        break;
+    case TextureCompletionCheckpoint::WorkerRequestCall:
+        if (frame->request_call_observed || !accept(CompletionStep::WorkerRequestCall)) return;
+        frame->request_call_observed = true;
+        break;
+    case TextureCompletionCheckpoint::WorkerRequestReturn:
+        if (!frame->request_call_observed || frame->request_return_observed ||
+            !consume_completion_call(*frame, sample)) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        frame->request_return_observed = true;
+        break;
+    case TextureCompletionCheckpoint::WorkerEventSetReturn:
+        if (!consume_completion_call(*frame,
+                sample)) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        break;
+    case TextureCompletionCheckpoint::WorkerWaitReturn:
+        if (frame->wait_return_observed || !frame->request_call_observed ||
+            !frame->request_return_observed || !frame->wait_call_observed ||
+            !frame->worker_bound || !frame->ack_return_observed ||
+            !consume_completion_call(*frame, sample) ||
+            !frame->progress.observe_main_wait_return()) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        frame->wait_return_observed = true;
+        frame->reader_execution = psprecomp::capture_runtime_execution_context();
+        break;
+    case TextureCompletionCheckpoint::WorkerEntry:
+        if (frame->worker_context != nullptr ||
+            !completion_worker_identity_valid(*frame, runtime, context)) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        frame->worker_context = &context;
+        frame->worker_execution = psprecomp::capture_runtime_execution_context();
+        frame->worker_registered = true;
+        {
+            DescriptorSnapshot worker_descriptor;
+            if (!read_descriptor(runtime, frame->raw_record, worker_descriptor) ||
+                worker_descriptor.bytes != frame->origin.descriptor_snapshot) {
+                fail(TextureTransferTrackerError::InvalidDescriptor, true);
+                return;
+            }
+        }
+        return;
+    case TextureCompletionCheckpoint::VerbatimBranch:
+        if (sample.status != CompletionDecodeStatus::Skip ||
+            sample.skip_reason != CompletionSkipReason::VerbatimBranch ||
+            frame->progress.needs_transform) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        if (frame->progress.stage == CompletionStage::WorkerArmed) {
+            if (!frame->worker_registered || frame->worker_bound ||
+                !frame->progress.observe_worker_accept()) {
+                fail(TextureTransferTrackerError::InvalidObservation, true);
+                return;
+            }
+            frame->worker_bound = true;
+        }
+        if (!accept(CompletionStep::VerbatimObserved)) return;
+        break;
+    case TextureCompletionCheckpoint::DigestSkippedBranch:
+        if (sample.status != CompletionDecodeStatus::Skip ||
+            sample.skip_reason != (frame->progress.needs_digest
+                                       ? CompletionSkipReason::DigestJoined
+                                       : CompletionSkipReason::DigestNotRequested)) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        if (frame->progress.needs_digest) {
+            if (frame->progress.stage != CompletionStage::DigestReady) {
+                fail(TextureTransferTrackerError::InvalidObservation, true);
+                return;
+            }
+        } else {
+            if (frame->progress.stage == CompletionStage::WorkerArmed) {
+                if (!frame->worker_registered || frame->worker_bound ||
+                    !frame->progress.observe_worker_accept()) {
+                    fail(TextureTransferTrackerError::InvalidObservation, true);
+                    return;
+                }
+                frame->worker_bound = true;
+            }
+            if (!accept(CompletionStep::DigestSkipped)) return;
+        }
+        break;
+    case TextureCompletionCheckpoint::TransformCall:
+        if (frame->progress.stage == CompletionStage::WorkerArmed) {
+            if (!frame->worker_registered || frame->worker_bound ||
+                !frame->progress.observe_worker_accept()) {
+                fail(TextureTransferTrackerError::InvalidObservation, true);
+                return;
+            }
+            frame->worker_bound = true;
+        }
+        if (!accept(CompletionStep::TransformCall)) return;
+        break;
+    case TextureCompletionCheckpoint::TransformReturn:
+        if (!consume_completion_call(*frame, sample) ||
+            !accept(CompletionStep::TransformReturned)) return;
+        break;
+    case TextureCompletionCheckpoint::DigestCall:
+        frame->digest_computed = true;
+        if (!accept(CompletionStep::DigestCall)) return;
+        break;
+    case TextureCompletionCheckpoint::DigestReturn:
+        if (!consume_completion_call(*frame, sample) ||
+            !accept(CompletionStep::DigestReturned)) return;
+        break;
+    case TextureCompletionCheckpoint::WorkerAckReturn:
+        if (!frame->worker_bound || frame->ack_return_observed ||
+            !consume_completion_call(*frame, sample) ||
+            !frame->progress.observe_worker_ack_return()) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        frame->ack_return_observed = true;
+        break;
+    case TextureCompletionCheckpoint::RetirementCall:
+        if (frame->origin.descriptor_index >= descriptor_count_) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        {
+            const auto &descriptor = descriptors_[frame->origin.descriptor_index];
+            const auto *bytes = runtime.memory().raw_pointer(descriptor.raw_descriptor, 32u);
+            if (bytes == nullptr || !descriptor.current ||
+                !std::equal(bytes, bytes + 32u, descriptor.snapshot.begin())) {
+                fail(TextureTransferTrackerError::InvalidDescriptor, true);
+                return;
+            }
+            std::copy_n(bytes, frame->retirement_snapshot.size(),
+                        frame->retirement_snapshot.begin());
+            const auto *consumer = runtime.memory().raw_pointer(
+                frame->raw_manager + kQueueConsumerOffset, 4u);
+            const auto *state = runtime.memory().raw_pointer(
+                frame->raw_manager + kQueueStateOffset, 4u);
+            if (consumer == nullptr || state == nullptr) {
+                fail(TextureTransferTrackerError::InvalidRange, true);
+                return;
+            }
+            frame->retirement_consumer = read32(consumer);
+            if (frame->retirement_consumer >= kReadQueueRecords) {
+                fail(TextureTransferTrackerError::InvalidObservation, true);
+                return;
+            }
+            frame->retirement_expected_consumer =
+                (frame->retirement_consumer + 1u) % kReadQueueRecords;
+            frame->retirement_state = read32(state);
+            frame->retirement_snapshot_valid = true;
+        }
+        if (!frame->wait_return_observed || !frame->progress.observe_retirement_call()) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        break;
+    case TextureCompletionCheckpoint::RetirementEntry:
+        if (!has_completion_call(*frame,
+                 TextureCompletionCallCheckpoint::RetirementCall) ||
+            !accept(CompletionStep::RetirementEntered)) return;
+        break;
+    case TextureCompletionCheckpoint::RetirementReturn:
+        if (!frame->retirement_snapshot_valid) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        {
+            const auto &descriptor = descriptors_[frame->origin.descriptor_index];
+            const auto *bytes = runtime.memory().raw_pointer(descriptor.raw_descriptor, 32u);
+            const auto *consumer = runtime.memory().raw_pointer(
+                frame->raw_manager + kQueueConsumerOffset, 4u);
+            const auto *state = runtime.memory().raw_pointer(
+                frame->raw_manager + kQueueStateOffset, 4u);
+            if (bytes == nullptr || consumer == nullptr || state == nullptr ||
+                frame->retirement_snapshot[0] != 1u || frame->retirement_snapshot[1] != 0u ||
+                bytes[0] != 0u || bytes[1] != 0u ||
+                !std::equal(frame->retirement_snapshot.begin() + 2,
+                            frame->retirement_snapshot.end(), bytes + 2u) ||
+                read32(state) != 0u ||
+                read32(consumer) != frame->retirement_expected_consumer) {
+                fail(TextureTransferTrackerError::InvalidObservation, true);
+                return;
+            }
+        }
+        if (!consume_completion_call(*frame, sample) ||
+            !accept(CompletionStep::RetirementReturned) ||
+            !finish_completion(*frame, TextureCompletionOutcome::Completed))
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+        break;
+    case TextureCompletionCheckpoint::UnsupportedCopyRoute:
+        if (!frame->progress.accept(CompletionStep::UnsupportedCopyRoute) ||
+            !finish_completion(*frame, TextureCompletionOutcome::Unsupported))
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+        break;
+    case TextureCompletionCheckpoint::WorkerCopyReturn:
+        if (!consume_completion_call(*frame, sample) ||
+            !frame->progress.accept(CompletionStep::UnsupportedCopyRoute) ||
+            !finish_completion(*frame, TextureCompletionOutcome::Unsupported))
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+        break;
+    case TextureCompletionCheckpoint::GroupCancellation:
+    case TextureCompletionCheckpoint::FullQueueCancellation:
+        break;
+    }
+}
+
 bool TextureTransferTracker::validate_read_frame(ReadFrame &frame,
     const psprecomp::Runtime &runtime, const psprecomp::AllegrexContext &context,
     std::uint32_t raw_manager, std::uint32_t raw_record) noexcept {
@@ -481,6 +1752,10 @@ void TextureTransferTracker::observe_load_entry(const psprecomp::Runtime &runtim
             fail(TextureTransferTrackerError::ConflictingFrame, true);
             return;
         }
+    }
+    for (const auto &descriptor : descriptors_) {
+        if (descriptor.current && descriptor.owner == *owner)
+            cancel_completions_for_descriptor(descriptor.generation);
     }
     // Reload invalidation is observed immediately, but this checkpoint lacks
     // a proven route/length; never manufacture SourceAuthority::begin_load.
@@ -773,6 +2048,7 @@ void TextureTransferTracker::observe_descriptor_commit(const psprecomp::Runtime 
         const auto old_end = old_start + 32u;
         if (new_start >= old_end || old_start >= new_end) continue;
         any_overlap = true;
+        cancel_completions_for_descriptor(descriptors_[i].generation);
         descriptors_[i].current = false;
         if (old_raw == record.raw_descriptor) raw_reuse = true;
         else if (old_start == new_start) alias_reuse = true;
@@ -1229,6 +2505,7 @@ void TextureTransferTracker::observe_read_result(const psprecomp::Runtime &runti
     if (result > 0 && static_cast<std::uint32_t>(result) == attempt.requested_bytes) {
         attempt.outcome = TextureReadOutcome::ExactReadObserved;
         if (!count(stats_.exact_read_results)) return;
+        if (!begin_completion(*frame, attempt)) return;
         *frame = ReadFrame{};
         --stats_.active_read_frames;
         return;
@@ -1249,6 +2526,7 @@ void TextureTransferTracker::observe_read(const psprecomp::Runtime &runtime,
         fail(TextureTransferTrackerError::InvalidObservation, true);
         return;
     }
+    if (!code_ok(runtime, context)) return;
     if (!count(stats_.callbacks)) return;
     try { observe_read_impl(runtime, context, checkpoint); }
     catch (...) { fail(TextureTransferTrackerError::ObservationLost, true); }
@@ -1268,6 +2546,58 @@ void TextureTransferTracker::observe_read_impl(const psprecomp::Runtime &runtime
     default:
         fail(TextureTransferTrackerError::InvalidObservation, true); break;
     }
+}
+
+void TextureTransferTracker::observe_completion(
+    const psprecomp::Runtime &runtime, const psprecomp::AllegrexContext &context,
+    TextureCompletionCheckpoint checkpoint, std::uint32_t site_pc) noexcept {
+    if (error_ != TextureTransferTrackerError::None || !config_.observe_completion) {
+        return;
+    }
+    if (&runtime != runtime_) {
+        fail(TextureTransferTrackerError::InvalidObservation, true);
+        return;
+    }
+    if (!code_ok(runtime, context)) return;
+    if (!count(stats_.callbacks)) return;
+    try {
+        const auto sample = completion_decoder_.decode_checkpoint(
+            runtime, context, checkpoint, site_pc);
+        if (sample.status == CompletionDecodeStatus::Invalid) {
+            if (sample.error == CompletionDecodeError::MissingCallReceipt)
+                for (const auto &closed : closed_completions_)
+                    if (completion_closed_late_return_matches(
+                            closed, runtime, context, checkpoint)) return;
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        observe_completion_impl(runtime, context, sample);
+    }
+    catch (...) { fail(TextureTransferTrackerError::ObservationLost, true); }
+}
+
+void TextureTransferTracker::observe_completion_call(
+    const psprecomp::Runtime &runtime, const psprecomp::AllegrexContext &context,
+    TextureCompletionCallCheckpoint checkpoint, std::uint32_t site_pc) noexcept {
+    if (error_ != TextureTransferTrackerError::None || !config_.observe_completion) {
+        return;
+    }
+    if (&runtime != runtime_) {
+        fail(TextureTransferTrackerError::InvalidObservation, true);
+        return;
+    }
+    if (!code_ok(runtime, context)) return;
+    if (!count(stats_.callbacks)) return;
+    try {
+        const auto sample = completion_decoder_.decode_call(
+            runtime, context, checkpoint, site_pc);
+        if (sample.status == CompletionDecodeStatus::Invalid) {
+            fail(TextureTransferTrackerError::InvalidObservation, true);
+            return;
+        }
+        observe_completion_call_impl(runtime, context, sample);
+    }
+    catch (...) { fail(TextureTransferTrackerError::ObservationLost, true); }
 }
 
 void TextureTransferTracker::observe(const psprecomp::Runtime &runtime,

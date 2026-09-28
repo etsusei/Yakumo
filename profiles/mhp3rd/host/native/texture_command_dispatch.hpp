@@ -41,6 +41,54 @@ enum class TextureReadCheckpoint : std::uint32_t {
     ReadResult = 0x0886551Cu,
 };
 
+// Completion callbacks cover the selected inline state-8 route after an
+// exact read. They are independent from read callbacks so the R1 read-prefix
+// stop can remain unchanged while the completion oracle runs to retirement.
+enum class TextureCompletionCheckpoint : std::uint32_t {
+    ClassifierReturn = 0x0886577Cu,
+    CopyReturn = 0x088652ACu,
+    HelperReturn = 0x088659B4u,
+    PolicyReturn = 0x088659C4u,
+    WorkerRequestCall = 0x088659CCu,
+    WorkerWaitReturn = 0x08865A10u,
+    WorkerEntry = 0x08865378u,
+    VerbatimBranch = 0x088653A0u,
+    DigestSkippedBranch = 0x088653B4u,
+    TransformCall = 0x08865420u,
+    TransformReturn = 0x08865428u,
+    DigestCall = 0x08865440u,
+    DigestReturn = 0x08865448u,
+    WorkerAckReturn = 0x088653C4u,
+    RetirementCall = 0x08865814u,
+    RetirementEntry = 0x08865D8Cu,
+    RetirementReturn = 0x0886581Cu,
+    GroupCancellation = 0x08866044u,
+    FullQueueCancellation = 0x08865F00u,
+    UnsupportedCopyRoute = 0x088652C4u,
+    WorkerCopyReturn = 0x08865368u,
+    WorkerRequestReturn = 0x088659E4u,
+    WorkerEventSetReturn = 0x088659F4u,
+};
+
+// Call-boundary observations are emitted after the original call's delay
+// slot, while a0..a3 and the callee return address still contain the actual
+// arguments.  They are intentionally a separate callback family: existing
+// completion checkpoints are return/branch observations and their ABI stays
+// stable for the tracker and the lower oracle.
+enum class TextureCompletionCallCheckpoint : std::uint32_t {
+    InlineCopyCall = 0x088652A4u,
+    HelperCall = 0x088659ACu,
+    WorkerCopyCall = 0x08865360u,
+    WorkerAckCall = 0x088653BCu,
+    TransformCall = 0x08865420u,
+    DigestCall = 0x08865440u,
+    RetirementCall = 0x08865814u,
+    PolicyCall = 0x088659BCu,
+    WorkerRequestCall = 0x088659DCu,
+    WorkerEventSetCall = 0x088659ECu,
+    WorkerWaitCall = 0x08865A08u,
+};
+
 // Callbacks may prepare/compare a plan but must not dispatch guest code,
 // register/unregister callbacks, or let exceptions cross this boundary. A
 // false entry result must preserve guest state. True means the entry has been
@@ -56,6 +104,14 @@ struct TextureCommandCallbacks {
                      TextureTransferCheckpoint) noexcept{};
     void (*read)(void *, const psprecomp::Runtime &, const psprecomp::AllegrexContext &,
                  TextureReadCheckpoint) noexcept{};
+    void (*completion)(void *, const psprecomp::Runtime &,
+                      const psprecomp::AllegrexContext &,
+                      TextureCompletionCheckpoint,
+                      std::uint32_t site_pc) noexcept{};
+    void (*completion_call)(void *, const psprecomp::Runtime &,
+                           const psprecomp::AllegrexContext &,
+                           TextureCompletionCallCheckpoint,
+                           std::uint32_t site_pc) noexcept{};
 };
 
 // Bounded, runtime-specific callback ownership. Construct after Runtime and
@@ -91,5 +147,11 @@ void texture_transfer_checkpoint(psprecomp::Runtime &runtime,
     const psprecomp::AllegrexContext &context, TextureTransferCheckpoint checkpoint);
 void texture_read_checkpoint(psprecomp::Runtime &runtime,
     const psprecomp::AllegrexContext &context, TextureReadCheckpoint checkpoint);
+void texture_completion_checkpoint(psprecomp::Runtime &runtime,
+    const psprecomp::AllegrexContext &context,
+    TextureCompletionCheckpoint checkpoint, std::uint32_t site_pc);
+void texture_completion_call_boundary(psprecomp::Runtime &runtime,
+    const psprecomp::AllegrexContext &context,
+    TextureCompletionCallCheckpoint checkpoint, std::uint32_t site_pc);
 
 } // namespace mhp3rd::native

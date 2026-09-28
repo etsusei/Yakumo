@@ -85,10 +85,11 @@ def _next_line(source: str, match: re.Match[str]) -> int:
     return end + 1
 
 
-def _snippet(unit: int, name: str, address: int) -> str:
+def _snippet(unit: int, name: str, address: int,
+             *, stop_after_read_result: bool = True) -> str:
     result = (f"    {READ_CALLBACK}(rt, ctx, "
               f"mhp3rd::native::TextureReadCheckpoint::{name});\n")
-    if unit == 24 and name == "ReadResult":
+    if unit == 24 and name == "ReadResult" and stop_after_read_result:
         result += (
             f"    if ({STOP_CALLBACK}(rt, ctx)) {{\n"
             "        ctx.pc = 0x08001000u;\n"
@@ -99,7 +100,8 @@ def _snippet(unit: int, name: str, address: int) -> str:
 
 
 def instrument_source(source: str,
-                      checkpoint_specs: dict[int, tuple[tuple[str, int, str], ...]] | None = None
+                      checkpoint_specs: dict[int, tuple[tuple[str, int, str], ...]] | None = None,
+                      *, stop_after_read_result: bool = True
                       ) -> tuple[str, dict]:
     specs = CHECKPOINTS if checkpoint_specs is None else checkpoint_specs
     if READ_CALLBACK in source or STOP_CALLBACK in source:
@@ -158,7 +160,8 @@ def instrument_source(source: str,
         if actual_hash != expected_hash:
             raise TextureReadInstrumentationError(
                 f"checkpoint block changed at 0x{address:08X}: {actual_hash}")
-        additions.append((body_start, _snippet(unit, name, address)))
+        additions.append((body_start, _snippet(
+            unit, name, address, stop_after_read_result=stop_after_read_result)))
         normalized_checkpoints.append({"name": name, "address": f"0x{address:08X}",
                                        "sha256": actual_hash})
     if unit != 24 and STOP_CALLBACK in source:
@@ -175,7 +178,7 @@ def instrument_source(source: str,
         "checkpoint_calls": len(normalized_checkpoints),
         "dispatcher_include_added": dispatcher_include_added,
         "stop_include_added": stop_include_added,
-        "oracle_stop_after_read_result": unit == 24,
+        "oracle_stop_after_read_result": unit == 24 and stop_after_read_result,
         "checkpoints": normalized_checkpoints,
     }
     return result, metadata
@@ -192,7 +195,9 @@ def _strip_owned_callbacks(source: str, metadata: dict,
         raise TextureReadInstrumentationError("read manifest unit unsupported")
     for name, address, _ in specs[unit]:
         label = f"L_{address:08X}:\n"
-        snippet = _snippet(unit, name, address)
+        snippet = _snippet(
+            unit, name, address,
+            stop_after_read_result=metadata.get("oracle_stop_after_read_result", True))
         marker = label + snippet
         if source.count(marker) != 1:
             raise TextureReadInstrumentationError(f"owned callback missing at 0x{address:08X}")
@@ -222,7 +227,9 @@ def _valid_owned_pair(output_path: Path, manifest_path: Path,
         source = _strip_owned_callbacks(output.decode("utf-8"), metadata, checkpoint_specs)
         if metadata.get("source_sha256") != _sha(source.encode("utf-8")):
             return False
-        reproduced, regenerated = instrument_source(source, checkpoint_specs)
+        reproduced, regenerated = instrument_source(
+            source, checkpoint_specs,
+            stop_after_read_result=metadata.get("oracle_stop_after_read_result", True))
         if reproduced.encode("utf-8") != output:
             return False
         return all(metadata.get(key) == value for key, value in regenerated.items())
