@@ -1,8 +1,8 @@
 # MHP3 Native Migration and Paired Validation Plan
 
-Plan version: **1.2**. Decision date: **2026-09-26**; amended **2026-09-28** (see [Amendment 1.2](#amendment-12--texture-path-and-working-rules)). Task ledger: [tasks.json](tasks.json).
+Plan version: **1.3**. Decision date: **2026-09-26**; amended **2026-09-28** ([Amendment 1.2](#amendment-12--texture-path-and-working-rules)) and **2026-09-29** ([Amendment 1.3](#amendment-13--loading-experience-first)). Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-28T12:47:00Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-29T01:40:00Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -42,6 +42,17 @@ Decided by the user on 2026-09-28 after the G1c integration repair (iteration 11
    - Fixture constants and guest addresses must cite a traced original instruction or a recorded fact. Do not seed arbitrary addresses to make a fault disappear.
    - Temporary diagnostics are removed before evidence runs and never change fixture semantics. Check the radix of any value copied from trace output.
    - Keep the ledger proportional: one concise history entry per meaningful result; detail belongs in the reports it references.
+
+### Amendment 1.3 — loading experience first
+
+Decided by the user on 2026-09-29. The active focus moves from full texture de-PSP work to what players feel: loading. ASSET-014 stays paused and ASSET-015..ASSET-019 are deferred; the Amendment 1.2 working rules still apply.
+
+The goal is that area changes, including those inside quests, show only a short black fade instead of a loading screen or animation. Work proceeds in measured steps, each with an off switch:
+
+1. **Measure** (LOAD-001..LOAD-003). The user plays one short session with `MHP3RD_TRACE_LOAD` on, from a copy of the registered starting save, covering town transitions and several in-quest area changes. The analysis reports each load's real and game time, whether fast loading engaged, and where the time went. Hypothesis to test: in-quest area changes keep sound playing, so the silence-based fast-loading detector does not engage.
+2. **Black fade instead of the loading screen** (LOAD-004). Host-side presentation only: fade to black when a load starts, hold, and fade back in on the first game frame after it. No guest code changes.
+3. **Faster in-quest loads** (LOAD-005). Scope set by the measurement. Candidates, in order: let only the identified loader threads stop waiting on the emulated clock while the main thread and audio keep real time; then native replacements for the load's own CPU work (SHA-1 check, decompression) behind the existing differential gates.
+4. **Prefetch on approach** stays out of scope unless the earlier steps leave a noticeable wait: it changes the game's own transition logic and competes with its 32 MB memory management.
 
 ### What already exists
 
@@ -182,6 +193,11 @@ Finite work beneath these ongoing workstreams:
 - [ ] **ASSET-017** — Analyze live route coverage and define the minimal proof set for the first enablement.
 - [ ] **ASSET-018** — Close proof gaps for the observed routes only; enable authority-backed native texture loading in Verify mode for them with original fallback elsewhere; deliver a matched pair.
 - [ ] **ASSET-019** — User-led Verify texture batch; analyze, fix, and decide whether Native mode may follow.
+- [x] **LOAD-001** — Prepare the load-measurement session: an isolated data directory from the registered starting save, a launch script with load tracing, and Chinese instructions.
+- [ ] **LOAD-002** — User plays the load-measurement session.
+- [ ] **LOAD-003** — Analyze each load's real/game time, fast-loading engagement and time split; set the scope of LOAD-004/LOAD-005.
+- [ ] **LOAD-004** — Present a black fade instead of the loading screen, host-side, with an off switch.
+- [ ] **LOAD-005** — Make in-quest area loads fast within the scope set by LOAD-003, with an off switch.
 
 The initial inventory is [NATIVE_MODULES.md](NATIVE_MODULES.md); finite requirements are in [NEXT_NATIVE_BATCHES.md](NEXT_NATIVE_BATCHES.md). ITER-001/002 stay in progress as workstreams. Finite tasks depend on INV-001 or other finite prerequisites, not on treating an ongoing workstream as already finished.
 
@@ -273,7 +289,7 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation: **paused by the user on 2026-09-28** while the direction is reconsidered (loading/performance was discussed). The focused review was stopped before it reported. When resuming under Amendment 1.2, **ASSET-014 needs one focused review** of the iteration-11 changes plus a rerun of the staged-B0 default-off configure; if both pass it is completed, and **ASSET-015** (observe-only live tracker and route counters) starts. Earlier: the user resumed ASSET-014 from Codex task `01a0de15-428d-71b2-becb-c93878a0cd71`. The historical [PAUSE_CHECKPOINT.md](PAUSE_CHECKPOINT.md) remains an accurate record of the earlier pause; the live status and current action are tracked in `tasks.json`.
+Current continuation (Amendment 1.3): **LOAD-002 awaits the user**: double-click `out/testing/load-measure-1/开始测量.command` and follow `说明.md` there; LOAD-003 then analyzes the log. ASSET-014 remains paused: it was **paused by the user on 2026-09-28** while the direction is reconsidered (loading/performance was discussed). The focused review was stopped before it reported. When resuming under Amendment 1.2, **ASSET-014 needs one focused review** of the iteration-11 changes plus a rerun of the staged-B0 default-off configure; if both pass it is completed, and **ASSET-015** (observe-only live tracker and route counters) starts. Earlier: the user resumed ASSET-014 from Codex task `01a0de15-428d-71b2-becb-c93878a0cd71`. The historical [PAUSE_CHECKPOINT.md](PAUSE_CHECKPOINT.md) remains an accurate record of the earlier pause; the live status and current action are tracked in `tasks.json`.
 
 G0 remains complete on the current G1a source: the latest normal and strict-fail ASan/UBSan reports each match all 41 registered input/source/build identities and pass the exact healthy-authority `NotReady` assertion, full CPU/RAM/VRAM checks, bounded calls and `transfer_readiness=false`. The pause-era `not_run` snapshot and earlier resumed reports remain historical evidence.
 

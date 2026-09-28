@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "plan_version": "1.2",
-  "revision": 161,
+  "plan_version": "1.3",
+  "revision": 163,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-28T13:05:00Z",
+  "updated_at": "2026-09-29T01:40:00Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -761,16 +761,22 @@
       "decided_by": "project-owner",
       "summary": "Close G1c with one focused review plus the staged-B0 default-off configure; measure live texture routes in observe-only mode before proving the remaining G1 routes; first enable observed, proved routes in Verify mode with original fallback, then Native; tool-neutral agents; working rules for fresh rebuilds, frozen evidence trees, one editor per file, traced constants and a proportional ledger.",
       "plan_section": "docs/DEVELOPMENT_PLAN.md#amendment-12--texture-path-and-working-rules"
+    },
+    "amendment_1_3": {
+      "decided_at": "2026-09-29T01:10:00Z",
+      "decided_by": "project-owner",
+      "summary": "Focus on loading experience: measure loads (including in-quest area changes), replace the loading screen with a host-side black fade, then make in-quest loads fast within the measured scope. ASSET-014 stays paused; ASSET-015..019 deferred; prefetch on approach out of scope unless needed.",
+      "plan_section": "docs/DEVELOPMENT_PLAN.md#amendment-13--loading-experience-first"
     }
   },
   "execution_state": {
-    "current_task_id": "ASSET-014",
-    "next_task_id": "ASSET-015",
-    "next_action": "Paused by the user on 2026-09-28. ASSET-014 needs the Amendment 1.2 focused review (stopped before reporting) and the staged-B0 default-off configure. ASSET-015..019 are not started; the user is reconsidering the direction (e.g. loading/performance). Confirm direction with the user before further work.",
+    "current_task_id": "LOAD-002",
+    "next_task_id": "LOAD-003",
+    "next_action": "Wait for the user to play out/testing/load-measure-1 (LOAD-002), then analyze the load-*.log it writes (LOAD-003).",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": [
-      "ASSET-014"
+      "LOAD-002"
     ],
     "local_artifact_note": "Local-only artifacts removed at the user's request on 2026-09-28 to free disk space: out/testing/dist (all delivered app pairs), out/testing/observed-sources and out/testing/observed-builds (their source snapshots and archived binaries), out/testing/texture-read-prefix and other scratch build trees, sanitizer/test binaries and out/native-experiment (except the packaging font). Ledger deliverables at those paths are now unavailable; their recorded evidence and hashes remain historical facts. Kept: out/mhp3rd, out/testing/baselines, out/testing/runs (user records), reports, profiles/mhp3rd/analysis and out/ccache. The lobby overlay module used by the texture oracles was copied to out/testing/texture-transfer-inputs/."
   },
@@ -10339,12 +10345,12 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "paused",
       "owner_agent_id": null,
       "responsible_actor_id": null,
       "contributor_agent_ids": [],
       "created_at": "2026-09-28T12:40:00Z",
-      "updated_at": "2026-09-28T12:40:00Z",
+      "updated_at": "2026-09-29T01:10:00Z",
       "started_at": null,
       "completed_at": null,
       "timestamp_note": null,
@@ -10364,7 +10370,7 @@
         "limitations": []
       },
       "implementation_commits": [],
-      "pause_reason": null,
+      "pause_reason": "Deferred by Amendment 1.3 (loading experience first).",
       "blockers": [],
       "history": [
         {
@@ -10375,6 +10381,15 @@
           "from_status": null,
           "to_status": "not_started",
           "description": "Created from the user's Amendment 1.2 decision."
+        },
+        {
+          "recorded_at": "2026-09-29T01:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "deferred_by_amendment_1_3",
+          "from_status": "not_started",
+          "to_status": "paused",
+          "description": "User moved the focus to loading experience (Amendment 1.3)."
         }
       ],
       "updated_by_agent_id": "/claude_code",
@@ -10386,12 +10401,12 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "paused",
       "owner_agent_id": null,
       "responsible_actor_id": null,
       "contributor_agent_ids": [],
       "created_at": "2026-09-28T12:40:00Z",
-      "updated_at": "2026-09-28T12:40:00Z",
+      "updated_at": "2026-09-29T01:10:00Z",
       "started_at": null,
       "completed_at": null,
       "timestamp_note": null,
@@ -10409,7 +10424,7 @@
         "limitations": []
       },
       "implementation_commits": [],
-      "pause_reason": null,
+      "pause_reason": "Deferred by Amendment 1.3 (loading experience first).",
       "blockers": [],
       "history": [
         {
@@ -10420,6 +10435,15 @@
           "from_status": null,
           "to_status": "not_started",
           "description": "Created from the user's Amendment 1.2 decision."
+        },
+        {
+          "recorded_at": "2026-09-29T01:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "deferred_by_amendment_1_3",
+          "from_status": "not_started",
+          "to_status": "paused",
+          "description": "User moved the focus to loading experience (Amendment 1.3)."
         }
       ],
       "updated_by_agent_id": "/claude_code",
@@ -10431,12 +10455,12 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "paused",
       "owner_agent_id": null,
       "responsible_actor_id": null,
       "contributor_agent_ids": [],
       "created_at": "2026-09-28T12:40:00Z",
-      "updated_at": "2026-09-28T12:40:00Z",
+      "updated_at": "2026-09-29T01:10:00Z",
       "started_at": null,
       "completed_at": null,
       "timestamp_note": null,
@@ -10455,7 +10479,7 @@
         "limitations": []
       },
       "implementation_commits": [],
-      "pause_reason": null,
+      "pause_reason": "Deferred by Amendment 1.3 (loading experience first).",
       "blockers": [],
       "history": [
         {
@@ -10466,6 +10490,15 @@
           "from_status": null,
           "to_status": "not_started",
           "description": "Created from the user's Amendment 1.2 decision."
+        },
+        {
+          "recorded_at": "2026-09-29T01:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "deferred_by_amendment_1_3",
+          "from_status": "not_started",
+          "to_status": "paused",
+          "description": "User moved the focus to loading experience (Amendment 1.3)."
         }
       ],
       "updated_by_agent_id": "/claude_code",
@@ -10477,12 +10510,12 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "paused",
       "owner_agent_id": null,
       "responsible_actor_id": null,
       "contributor_agent_ids": [],
       "created_at": "2026-09-28T12:40:00Z",
-      "updated_at": "2026-09-28T12:40:00Z",
+      "updated_at": "2026-09-29T01:10:00Z",
       "started_at": null,
       "completed_at": null,
       "timestamp_note": null,
@@ -10502,7 +10535,7 @@
         "limitations": []
       },
       "implementation_commits": [],
-      "pause_reason": null,
+      "pause_reason": "Deferred by Amendment 1.3 (loading experience first).",
       "blockers": [],
       "history": [
         {
@@ -10513,6 +10546,15 @@
           "from_status": null,
           "to_status": "not_started",
           "description": "Created from the user's Amendment 1.2 decision."
+        },
+        {
+          "recorded_at": "2026-09-29T01:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "deferred_by_amendment_1_3",
+          "from_status": "not_started",
+          "to_status": "paused",
+          "description": "User moved the focus to loading experience (Amendment 1.3)."
         }
       ],
       "updated_by_agent_id": "/claude_code",
@@ -10524,12 +10566,12 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
+      "status": "paused",
       "owner_agent_id": null,
       "responsible_actor_id": null,
       "contributor_agent_ids": [],
       "created_at": "2026-09-28T12:40:00Z",
-      "updated_at": "2026-09-28T12:40:00Z",
+      "updated_at": "2026-09-29T01:10:00Z",
       "started_at": null,
       "completed_at": null,
       "timestamp_note": null,
@@ -10548,7 +10590,7 @@
         "limitations": []
       },
       "implementation_commits": [],
-      "pause_reason": null,
+      "pause_reason": "Deferred by Amendment 1.3 (loading experience first).",
       "blockers": [],
       "history": [
         {
@@ -10559,6 +10601,300 @@
           "from_status": null,
           "to_status": "not_started",
           "description": "Created from the user's Amendment 1.2 decision."
+        },
+        {
+          "recorded_at": "2026-09-29T01:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "deferred_by_amendment_1_3",
+          "from_status": "not_started",
+          "to_status": "paused",
+          "description": "User moved the focus to loading experience (Amendment 1.3)."
+        }
+      ],
+      "updated_by_agent_id": "/claude_code",
+      "limitations": []
+    },
+    {
+      "id": "LOAD-001",
+      "title": "Prepare the load-measurement session",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "completed",
+      "owner_agent_id": "/claude_code",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/claude_code"
+      ],
+      "created_at": "2026-09-29T01:10:00Z",
+      "updated_at": "2026-09-29T01:40:00Z",
+      "started_at": "2026-09-29T01:10:00Z",
+      "completed_at": "2026-09-29T01:40:00Z",
+      "timestamp_note": null,
+      "scope": "Create an isolated data directory from the registered starting save (profiles/mhp3rd/analysis/testing/start-saves), a launch script running the existing build with MHP3RD_TRACE_LOAD and performance logging, and Chinese instructions covering town transitions and in-quest area changes.",
+      "depends_on": [],
+      "work_summary": "Prepared out/testing/load-measure-1: data/ with EBOOT.ELF, the paired-run settings (zh-CN, STHeiti font) and a copy of the registered starting save (hashes match the snapshot manifest); 开始测量.command launching out/mhp3rd/bin/Yakumo with MHP3RD_TRACE_LOAD=1 and MHP3RD_PERF=log into a timestamped log; and Chinese instructions (说明.md). out/mhp3rd/bin has no overlay libraries, so the script uses the 355 B0 overlays in out/testing/baselines/B0/historical-build/overlays; include/psprecomp is unchanged since 4292eb6, so they are compatible. A bounded headless boot (no input) loaded the save, installed recompiled overlays with no interpreter fallback, and left the save unchanged.",
+      "deliverables": [
+        {
+          "path": "out/testing/load-measure-1/开始测量.command",
+          "kind": "script",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/load-measure-1/说明.md",
+          "kind": "instructions",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/load-measure-1/data",
+          "kind": "isolated_data_directory",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "The original save snapshot and the user's own data are untouched.",
+        "The script writes one log file per session and needs no manual file handling."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "Bounded headless boot from the measurement data directory",
+            "status": "passed",
+            "details": "MHP3RD_NO_RENDER/NO_AUDIO, about 20 s, no input: Overlay corpora 355, demo_task/demo_sub installed, save autoload from the isolated copy, loadtrace lines emitted, MHP3RD.BIN hash unchanged."
+          }
+        ],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-29T01:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "created_by_amendment_1_3",
+          "from_status": null,
+          "to_status": "not_started",
+          "description": "Created from the user's Amendment 1.3 decision."
+        },
+        {
+          "recorded_at": "2026-09-29T01:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "claimed",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Claimed by the Claude Code session."
+        },
+        {
+          "recorded_at": "2026-09-29T01:40:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "completed",
+          "from_status": "in_progress",
+          "to_status": "completed",
+          "description": "Measurement session prepared and boot-checked headless; handed to the user as LOAD-002."
+        }
+      ],
+      "updated_by_agent_id": "/claude_code",
+      "limitations": [
+        "The rendered, audible session has not been run by the assistant; the user performs it in LOAD-002."
+      ]
+    },
+    {
+      "id": "LOAD-002",
+      "title": "User plays the load-measurement session",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "awaiting_user_test",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-29T01:10:00Z",
+      "updated_at": "2026-09-29T01:40:00Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "The user plays about 10 minutes following the instructions and closes the window normally.",
+      "depends_on": [
+        "LOAD-001"
+      ],
+      "work_summary": null,
+      "deliverables": [],
+      "acceptance_criteria": [
+        "The session log exists and covers the requested transitions, or the gap is recorded."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-29T01:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "created_by_amendment_1_3",
+          "from_status": null,
+          "to_status": "not_started",
+          "description": "Created from the user's Amendment 1.3 decision."
+        },
+        {
+          "recorded_at": "2026-09-29T01:40:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "handed_to_user",
+          "from_status": "not_started",
+          "to_status": "awaiting_user_test",
+          "description": "Instructions in out/testing/load-measure-1/说明.md."
+        }
+      ],
+      "updated_by_agent_id": "/claude_code",
+      "limitations": []
+    },
+    {
+      "id": "LOAD-003",
+      "title": "Analyze load timing and set the loading-work scope",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-29T01:10:00Z",
+      "updated_at": "2026-09-29T01:10:00Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Report each load's real and emulated time, fast-loading engagement and end reason, guest thread activity and disc reads; confirm or refute the in-quest sound hypothesis; set the scope of LOAD-004 and LOAD-005.",
+      "depends_on": [
+        "LOAD-002"
+      ],
+      "work_summary": null,
+      "deliverables": [],
+      "acceptance_criteria": [
+        "Every load in the log is listed with its measured times.",
+        "The scope decision cites the measured numbers."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-29T01:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "created_by_amendment_1_3",
+          "from_status": null,
+          "to_status": "not_started",
+          "description": "Created from the user's Amendment 1.3 decision."
+        }
+      ],
+      "updated_by_agent_id": "/claude_code",
+      "limitations": []
+    },
+    {
+      "id": "LOAD-004",
+      "title": "Black fade instead of the loading screen",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-29T01:10:00Z",
+      "updated_at": "2026-09-29T01:10:00Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Host-side presentation: fade to black at load start, hold, fade in on the first game frame after it; setting and environment switch to turn it off.",
+      "depends_on": [
+        "LOAD-003"
+      ],
+      "work_summary": null,
+      "deliverables": [],
+      "acceptance_criteria": [
+        "Off restores the original presentation exactly.",
+        "No guest code or game timing changes.",
+        "Verified in a bounded run and by the user."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-29T01:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "created_by_amendment_1_3",
+          "from_status": null,
+          "to_status": "not_started",
+          "description": "Created from the user's Amendment 1.3 decision."
+        }
+      ],
+      "updated_by_agent_id": "/claude_code",
+      "limitations": []
+    },
+    {
+      "id": "LOAD-005",
+      "title": "Faster in-quest area loads",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-29T01:10:00Z",
+      "updated_at": "2026-09-29T01:10:00Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Within the scope set by LOAD-003: selective clock release for loader threads, then native SHA-1/decompression behind differential gates if still needed.",
+      "depends_on": [
+        "LOAD-003"
+      ],
+      "work_summary": null,
+      "deliverables": [],
+      "acceptance_criteria": [
+        "Measured before/after times for the same transitions.",
+        "Audio and game timing unchanged outside loads.",
+        "Each change has an off switch."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-29T01:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "created_by_amendment_1_3",
+          "from_status": null,
+          "to_status": "not_started",
+          "description": "Created from the user's Amendment 1.3 decision."
         }
       ],
       "updated_by_agent_id": "/claude_code",
