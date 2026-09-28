@@ -72,7 +72,7 @@ void test_guards() {
     Guards off = open_guards();
     off.enabled = false;
     Guards buttons = open_guards();
-    buttons.buttons_held = true;
+    buttons.buttons = 0x0200u;
     Guards movie = open_guards();
     movie.movie = true;
     Guards online = open_guards();
@@ -95,6 +95,56 @@ void test_guards() {
     }
 }
 
+constexpr std::uint32_t kDash = 0x0200u;  // any button bit: the detector only compares masks
+constexpr std::uint32_t kAttack = 0x1000u;
+
+Guards carrying(std::uint32_t buttons) {
+    Guards guards = open_guards();
+    guards.carry_held_buttons = true;
+    guards.buttons = buttons;
+    return guards;
+}
+
+void test_button_held_into_a_load_is_carried() {
+    Detector detector;
+    check(!detector.update(990 * kMs, carrying(kDash)), "dash held before the load: nothing loads yet");
+    detector.disc_read(1000 * kMs);
+    check(detector.update(1001 * kMs, carrying(kDash)), "dash held since before the load runs fast");
+    check(detector.update(1100 * kMs, carrying(0u)), "releasing it keeps the load fast");
+    check(!detector.update(1101 * kMs, carrying(kDash)), "pressing it again is a new press");
+    check(detector.reason() == Reason::Buttons, "the reason is the button");
+}
+
+void test_new_press_during_a_load_keeps_real_time() {
+    Detector detector;
+    check(!detector.update(990 * kMs, carrying(kDash)), "dash held before the load");
+    detector.disc_read(1000 * kMs);
+    check(detector.update(1001 * kMs, carrying(kDash)), "fast with the carried dash");
+    check(!detector.update(1002 * kMs, carrying(kDash | kAttack)), "a new press during the load keeps real time");
+    check(detector.reason() == Reason::Buttons, "because of the new press");
+    check(detector.update(1003 * kMs, carrying(kDash)), "fast again once the new press is released");
+}
+
+void test_carrying_off_keeps_the_old_rule() {
+    Detector detector;
+    Guards held = open_guards();
+    held.buttons = kDash;
+    check(!detector.update(990 * kMs, held), "dash held before the load");
+    detector.disc_read(1000 * kMs);
+    check(!detector.update(1001 * kMs, held), "with carrying off any held button keeps real time");
+    check(detector.reason() == Reason::Buttons, "because of the button");
+}
+
+void test_carried_buttons_restart_between_loads() {
+    Detector detector;
+    check(!detector.update(990 * kMs, carrying(0u)), "nothing held before the first load");
+    detector.disc_read(1000 * kMs);
+    check(!detector.update(1001 * kMs, carrying(kDash)), "dash pressed during the load keeps real time");
+    check(!detector.update(1000 * kMs + kReadWindowUs + 1u, carrying(kDash)), "the load is over");
+    detector.disc_read(2000 * kMs);
+    check(detector.update(2001 * kMs, carrying(kDash)), "dash held since before the next load is carried");
+}
+
 } // namespace
 
 int main() {
@@ -103,6 +153,10 @@ int main() {
     test_sound_ends_it_at_once();
     test_silence_before_is_needed();
     test_guards();
+    test_button_held_into_a_load_is_carried();
+    test_new_press_during_a_load_keeps_real_time();
+    test_carrying_off_keeps_the_old_rule();
+    test_carried_buttons_restart_between_loads();
     if (failures != 0) {
         std::cerr << failures << " failure(s)\n";
         return 1;

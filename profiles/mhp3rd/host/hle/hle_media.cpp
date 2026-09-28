@@ -383,7 +383,7 @@ void register_display_ctrl(HleRegistrar &hle) {
             if (!at_flip) media().renderer->sample_pad();
             const gpu::PadState pad = media().renderer->pad();
             buttons = pad.buttons;
-            fast_loading::note_buttons(buttons != 0u);
+            fast_loading::note_buttons(buttons);
             analog_x = pad.analog_x;
             analog_y = pad.analog_y;
             right_x = pad.right_x;

@@ -13,9 +13,12 @@
 //
 // A load is recognised from what the game does, not from a timer: it is
 // reading the disc (DATA.BIN and the rest), and it is silent. Anything that
-// could be gameplay keeps real time: sound coming out, a button held, a movie,
-// the in-game menu, ad hoc play (other players' time must stay real) and the
-// Game speed setting, which already lets time run free.
+// could be gameplay keeps real time: sound coming out, a button pressed
+// during the load, a movie, the in-game menu, ad hoc play (other players' time
+// must stay real) and the Game speed setting, which already lets time run
+// free. Buttons already held when the load began, such as dash held while
+// running into the next area, may stay held: the game cannot act on them while
+// it loads, and their release still reaches it at the next poll.
 namespace mhp3rd::fast_loading {
 
 // How long after its last disc read the game still counts as loading, in
@@ -39,7 +42,10 @@ inline constexpr double kMaxSpeed = 16.0;
 // What keeps real time regardless of the loading, sampled at each update.
 struct Guards {
     bool enabled{};       // the setting is on, Game speed is Normal and there is a window
-    bool buttons_held{};  // a button or a D-pad direction is down (the sticks do not count)
+    std::uint32_t buttons{};  // the buttons and D-pad directions down now (the sticks do not count)
+    // Let buttons held since before the load stay held while it runs fast.
+    // Off (MHP3RD_FAST_LOADING_HELD=0): any button down keeps real time.
+    bool carry_held_buttons{};
     bool movie{};         // a movie is playing
     bool online{};        // ad hoc networking is on, or a session is going
     bool menu{};          // the in-game menu is open over the game
@@ -73,6 +79,9 @@ private:
     std::uint64_t last_sound_us_{};
     bool fast_{};
     Reason reason_{Reason::NotLoading};
+    // Buttons held since before the current load; releases drop out of it,
+    // so pressing one again counts as a new press.
+    std::uint32_t carried_buttons_{};
 };
 
 // The running game's detector and what goes with it: the log lines, the
@@ -81,7 +90,8 @@ private:
 void note_disc_read();
 // See Detector::audio. `peak` already has the channel's volume applied.
 [[nodiscard]] bool note_audio(int peak);
-void note_buttons(bool held);
+// The buttons and D-pad directions the game just read.
+void note_buttons(std::uint32_t buttons);
 // Re-evaluates at a vblank and tells the kernel whether it may run ahead.
 void update();
 // Whether emulated time runs ahead of real time at the moment.

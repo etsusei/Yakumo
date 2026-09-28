@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <string_view>
 
 namespace mhp3rd::fast_loading {
 
@@ -19,7 +20,7 @@ using Clock = std::chrono::steady_clock;
 
 struct State {
     Detector detector;
-    bool buttons_held{};
+    std::uint32_t buttons{};
     // The episode running fast now: when it started, in both clocks.
     Clock::time_point real_start{};
     std::uint64_t emulated_start{};
@@ -42,7 +43,12 @@ Guards sample_guards() {
     const settings::Settings &s = settings::current();
     Guards guards;
     guards.enabled = s.fast_loading && !s.unthrottled && windowed();
-    guards.buttons_held = state().buttons_held;
+    guards.buttons = state().buttons;
+    static const bool carry = [] {
+        const char *value = std::getenv("MHP3RD_FAST_LOADING_HELD");
+        return value == nullptr || std::string_view(value) != "0";
+    }();
+    guards.carry_held_buttons = carry;
     guards.movie = mpeg_active();
     guards.online = adhoc_networking_on() || adhoc_session_active();
 #if defined(MHP3RD_HAS_RENDERER)
@@ -81,7 +87,7 @@ bool note_audio(int peak) {
     return drop;
 }
 
-void note_buttons(bool held) { state().buttons_held = held; }
+void note_buttons(std::uint32_t buttons) { state().buttons = buttons; }
 
 void update() {
     Detector &detector = state().detector;

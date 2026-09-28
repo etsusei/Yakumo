@@ -662,6 +662,7 @@ The settings a player needs are in the [in-game menu](#in-game-menu). Environmen
 | `MHP3RD_WINDOW_TITLE` | `Yakumo` | Title of the game window, to tell instances apart |
 | `MHP3RD_UNTHROTTLED` | off | Let emulated time run ahead of real time, so the game runs as fast as it can be drawn (menu: Game speed) |
 | `MHP3RD_FAST_LOADING` | on | `0` keeps loads at the PSP's pace (menu: Fast loading). See [Fast loading](#fast-loading) |
+| `MHP3RD_FAST_LOADING_HELD` | on | `0` keeps a load at real time while any button is down, even one held since before the load began. See [Fast loading](#fast-loading) |
 | `MHP3RD_FRAME_RATE` | `30` | `45`, `60`, `90`, `120` or `display`: present frames in between the game's 30 (menu: Frame rate). See [Frame rate](#frame-rate) |
 | `MHP3RD_FRAME_RATE_AUTO` | on | `0` keeps the chosen frame rate even when the game falls behind (menu: Lower when behind) |
 | `MHP3RD_NO_MATERIAL_COLOR` | off | Leave unlit geometry without vertex colours white instead of taking the material colour |
@@ -766,7 +767,7 @@ Reading the disc costs nothing here, yet a load takes as long as on a PSP: the g
 A load is recognised from what the game does rather than from a timer: it has read from the disc within the last half second of game time, and for a quarter of a second everything it has handed to `sceAudio` has been exact silence once the channel's volume is applied (a loading screen's sound is nothing but zeros). Anything else keeps real time, and ends a fast stretch at once:
 
 - any sound, however quiet: the buffer that carries it plays in full, and so does everything after it. Only the buffers of zeros a fast stretch hands over are dropped, so no sound is ever cut or sped up, and the audio stays in step afterwards;
-- a button or a D-pad direction held (moving a stick is fine), so a press never lasts longer in the game than on the pad;
+- a button or a D-pad direction pressed during the load (moving a stick is fine), so a press never lasts longer in the game than on the pad. A button already held when the load began may stay held: running into the next area of a quest with dash held no longer keeps that load at the PSP's pace. Releasing it is fine; pressing it again counts as a new press. `MHP3RD_FAST_LOADING_HELD=0` returns to keeping real time whenever any button is down;
 - a movie, the in-game menu, and ad hoc play: once the game has started its ad hoc networking, or a session is going, time stays real for the other players;
 - Game speed set to Unlimited, which already runs everything unpaced, and runs without a window.
 

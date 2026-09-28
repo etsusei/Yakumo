@@ -37,13 +37,20 @@ bool Detector::audio(std::uint64_t now_us, int peak) {
 }
 
 bool Detector::update(std::uint64_t now_us, const Guards &guards) {
+    const bool loading = read_seen_ && now_us - last_read_us_ <= kReadWindowUs;
+    // Outside a load every held button is a candidate to carry into the next
+    // one; inside it only releases are followed.
+    if (loading) carried_buttons_ &= guards.buttons;
+    else carried_buttons_ = guards.buttons;
+    const std::uint32_t pressed = guards.carry_held_buttons
+        ? guards.buttons & ~carried_buttons_ : guards.buttons;
     Reason reason = Reason::None;
     if (!guards.enabled) reason = Reason::Disabled;
     else if (guards.online) reason = Reason::Online;
     else if (guards.movie) reason = Reason::Movie;
     else if (guards.menu) reason = Reason::Menu;
-    else if (guards.buttons_held) reason = Reason::Buttons;
-    else if (!read_seen_ || now_us - last_read_us_ > kReadWindowUs) reason = Reason::NotLoading;
+    else if (pressed != 0u) reason = Reason::Buttons;
+    else if (!loading) reason = Reason::NotLoading;
     else if (sound_seen_ && now_us - last_sound_us_ < kQuietUs) reason = Reason::Sound;
     fast_ = reason == Reason::None;
     reason_ = reason;
