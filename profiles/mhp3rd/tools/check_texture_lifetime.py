@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 from check_texture_allocation import digest, unique_object
@@ -27,10 +28,42 @@ def validate(report):
         raise ValueError("Lifetime interpreter bound not met")
 
 
+def transfer_instrumentation_paths(profile: Path, build_dir: Path) -> dict[str, Path]:
+    """Resolve and validate final 0023/0040 copies when the local build enables G1a."""
+    prior = ("texture_lifetime_generated", "texture_command_generated",
+             "probe_generated", "generated")
+    paths: dict[str, Path] = {}
+    for unit, count in (("0023", 3), ("0040", 2)):
+        filename = f"generated_unit_{unit}.cpp"
+        generated = build_dir / "profiles/mhp3rd/texture_transfer_generated" / filename
+        manifest = generated.with_suffix(".cpp.json")
+        metadata = json.loads(manifest.read_text(), object_pairs_hook=unique_object)
+        candidates = [build_dir / "profiles/mhp3rd" / folder / filename
+                      for folder in prior]
+        candidates.append(profile / "generated" / filename)
+        transfer_input = next((candidate for candidate in candidates
+                               if candidate.is_file() and
+                               digest(candidate) == metadata.get("source_sha256")), None)
+        if transfer_input is None:
+            raise ValueError("Could not resolve transfer instrumentation input: " + unit)
+        if (metadata.get("schema") != "mhp3rd-texture-transfer-instrumentation-v1" or
+                metadata.get("unit") != f"generated_unit_{unit}" or
+                type(metadata.get("checkpoint_calls")) is not int or
+                metadata["checkpoint_calls"] != count or
+                metadata.get("source_sha256") != digest(transfer_input) or
+                metadata.get("output_sha256") != digest(generated)):
+            raise ValueError("Build-local transfer identity differs: " + unit)
+        paths.update({f"transfer_{unit}_input": transfer_input,
+                      f"transfer_{unit}_output": generated,
+                      f"transfer_{unit}_manifest": manifest})
+    return paths
+
+
 def check(elf, overlay, module, oracle, build_dir, output):
     if output.exists() or output.is_symlink():
         raise ValueError("Refusing to overwrite existing evidence")
     profile = Path(__file__).resolve().parents[1]
+    build_dir = build_dir.resolve()
     paths = dict(elf=elf.resolve(), lobby_image=overlay.resolve(), lobby_module=module.resolve(),
                  oracle_binary=oracle.resolve(), runner=Path(__file__).resolve(),
                  hash_helpers=Path(__file__).with_name("check_texture_allocation.py"))
@@ -57,6 +90,17 @@ def check(elf, overlay, module, oracle, build_dir, output):
             raise ValueError("Build-local lifetime identity differs: " + unit)
         paths.update({unit + "_original": original, unit + "_input": input_copy,
                       unit + "_output": generated, unit + "_manifest": manifest})
+    cache = build_dir / "CMakeCache.txt"
+    if not cache.is_file():
+        raise ValueError("Build-local CMake cache is missing")
+    paths["build_configuration"] = cache
+    transfer_enabled = re.search(
+        r"(?m)^MHP3RD_TEXTURE_TRANSFER_BOUNDARIES:BOOL=ON$", cache.read_text()) is not None
+    if transfer_enabled:
+        for relative in ("cmake/TextureTransferInstrumentation.cmake",
+                         "tools/instrument_texture_transfer.py"):
+            paths[relative] = profile / relative
+        paths.update(transfer_instrumentation_paths(profile, build_dir))
     before = {name: digest(path) for name, path in paths.items()}
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="lifetime-gate-", dir=output.parent) as temporary:
@@ -82,7 +126,7 @@ def check(elf, overlay, module, oracle, build_dir, output):
                                   "No application installs the tracker. No gameplay or new paired delivery."])
         staged = stage / "report.json"; staged.write_text(json.dumps(final, indent=2) + "\n")
         os.link(staged, output)
-    print("Original lifecycle gate: 34 calls per path, 8 factory chains, 4 one-use tickets; passed")
+    print("Original lifecycle gate: 34 calls per path, 8 factory chains, four receipts issued once per observed frame; passed")
     return final
 
 

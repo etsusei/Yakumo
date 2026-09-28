@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.1",
-  "revision": 127,
+  "revision": 145,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-27T14:13:40Z",
+  "updated_at": "2026-09-28T02:04:24Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -747,7 +747,7 @@
   "execution_state": {
     "current_task_id": "ASSET-014",
     "next_task_id": "ASSET-014",
-    "next_action": "PAUSED at explicit user request. Do not continue until the user resumes. Then rerun normal and sanitized lifecycle gates for the final exact-NotReady assertion and refresh bound reports; continue descriptor/read/copy/transform/terminal/cancellation receipts and epoch/writer integration before authority-backed mode control. Existing delivered apps and user records remain unchanged.",
+    "next_action": "Iteration 7 G1b-read-R1 is accepted in scope. Do not start another phase until the user requests a concrete implementation-ready batch; keep readiness false, pending writers retained and Native Off.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": []
@@ -4437,7 +4437,7 @@
       "title": "Maintain migration inventory and finite batch specifications",
       "phase": "milestone_4",
       "kind": "workstream",
-      "status": "paused",
+      "status": "in_progress",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -4446,7 +4446,7 @@
         "/root/native_rollout_audit"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-27T14:13:40Z",
+      "updated_at": "2026-09-27T14:33:44Z",
       "started_at": "2026-09-27T04:19:28Z",
       "completed_at": null,
       "timestamp_note": null,
@@ -4479,7 +4479,7 @@
         "limitations": []
       },
       "implementation_commits": [],
-      "pause_reason": "Explicit user request to checkpoint progress and stop running.",
+      "pause_reason": null,
       "blockers": [],
       "history": [
         {
@@ -4517,6 +4517,15 @@
           "from_status": "in_progress",
           "to_status": "paused",
           "description": "User requested a stage checkpoint, completed/remaining-work report and cessation of execution. Known build/test handles finished and all subagents are completed. No new tests or development started after this request."
+        },
+        {
+          "recorded_at": "2026-09-27T14:33:44Z",
+          "occurred_at": "2026-09-27T14:33:44Z",
+          "actor_id": "/root",
+          "action": "resumed_by_user",
+          "from_status": "paused",
+          "to_status": "in_progress",
+          "description": "User explicitly resumed development from Codex task 01a0de15-428d-71b2-becb-c93878a0cd71. Resume ASSET-014 at its pending exact-NotReady lifecycle gate before adding transfer receipts, writer exclusion and authority-backed mode control."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -4526,14 +4535,14 @@
       "title": "User-led gameplay and resource migration batches",
       "phase": "milestone_4",
       "kind": "workstream",
-      "status": "paused",
+      "status": "in_progress",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
         "/root"
       ],
       "created_at": "2026-09-26T14:31:18Z",
-      "updated_at": "2026-09-27T14:13:40Z",
+      "updated_at": "2026-09-27T14:33:44Z",
       "started_at": "2026-09-27T04:32:05Z",
       "completed_at": null,
       "timestamp_note": null,
@@ -4572,7 +4581,7 @@
         "limitations": []
       },
       "implementation_commits": [],
-      "pause_reason": "Explicit user request to checkpoint progress and stop running.",
+      "pause_reason": null,
       "blockers": [],
       "history": [
         {
@@ -4592,6 +4601,15 @@
           "from_status": "in_progress",
           "to_status": "paused",
           "description": "User requested a stage checkpoint, completed/remaining-work report and cessation of execution. Known build/test handles finished and all subagents are completed. No new tests or development started after this request."
+        },
+        {
+          "recorded_at": "2026-09-27T14:33:44Z",
+          "occurred_at": "2026-09-27T14:33:44Z",
+          "actor_id": "/root",
+          "action": "resumed_by_user",
+          "from_status": "paused",
+          "to_status": "in_progress",
+          "description": "User explicitly resumed development from Codex task 01a0de15-428d-71b2-becb-c93878a0cd71. Resume ASSET-014 at its pending exact-NotReady lifecycle gate before adding transfer receipts, writer exclusion and authority-backed mode control."
         }
       ],
       "updated_by_agent_id": "/root"
@@ -8450,7 +8468,7 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "paused",
+      "status": "in_progress",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -8463,7 +8481,7 @@
         "/root/texture_lifetime_tracker"
       ],
       "created_at": "2026-09-27T12:54:25Z",
-      "updated_at": "2026-09-27T14:13:40Z",
+      "updated_at": "2026-09-28T02:04:24Z",
       "started_at": "2026-09-27T13:16:30Z",
       "completed_at": null,
       "scope": "Connect certified original owner/command allocation, descriptor, transfer and invalidation observations to the source authority. Prepare a non-mutating guest command plan for verification and guarded commit, with explicit off/verify/native behavior, original fallback and scoped recording. Prove actual production call paths offline before a new user delivery.",
@@ -8471,7 +8489,7 @@
         "ASSET-013",
         "ASSET-011"
       ],
-      "work_summary": "Implemented14 actual original allocation/factory/caller/reset/free checkpoints and a bounded owner/command lease and caller-receipt tracker. The last executed gate passed34 AOT/interpreter calls,8 factory branches,7 owner leases,4 issued receipts, reuse/reset and3 loss cases; no source readiness is created. Sanitized new metadata components and unowned4512-call regression passed. A final stricter NotReady assertion and receipt documentation were compiled but not rerun before the user requested a pause.",
+      "work_summary": "Iteration 7 G1b-read-R1 is implemented, source-bound and independently accepted in scope. Normal and strict ASan/UBSan pass the frozen 75-scenario matrix in three contiguous shards, with 450 AOT/interpreter calls and a verified 52-identity input/build/manifest closure. Refreshed G0/G1a normal/strict, the 2,256-input unowned corpus, 53 focused Python tests, two CTests, and staged-B0 default-off configure pass. Exact NotReady, pending writers and transfer_readiness=false remain. ASSET-014 stays in_progress; G1 is incomplete and no later phase is authorized until the user requests another concrete batch.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
@@ -8736,6 +8754,378 @@
           "kind": "validation_report",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i0-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i0-sanitized.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i2-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/cmake/TextureTransferInstrumentation.cmake",
+          "kind": "build_configuration",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/texture_transfer_tracker.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/texture_transfer_tracker.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_transfer_observation_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/instrument_texture_transfer.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_texture_transfer_observation.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_transfer_instrumentation.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_transfer_observation_runner.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i3-final-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i3-final-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i3-final-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i3-final-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-instrumented-corpus-c2c_a27f-i3.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i3-reviewed-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i3-reviewed-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i3-reviewed-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i3-reviewed-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i3-final2-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i3-final2-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i3-final3-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i3-final3-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i3-final3-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i3-final3-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-instrumented-corpus-c2c_a27f-i3-final.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i4-r1-final6-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i4-r1-final6-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i4-r1-final6-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i4-r1-final6-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-instrumented-corpus-c2c_a27f-i4-r1-final6.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-boundaries-no-probes/CMakeCache.txt",
+          "kind": "build_configuration",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-boundaries-no-probes/CMakeFiles/TargetDirectories.txt",
+          "kind": "build_target_inventory",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-default-off/CMakeCache.txt",
+          "kind": "build_configuration",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-default-off/CMakeFiles/TargetDirectories.txt",
+          "kind": "build_target_inventory",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i5-final7-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i5-final7-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i5-final8-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i5-final8-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/cmake/TextureReadInstrumentation.cmake",
+          "kind": "build_configuration",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/instrument_texture_read.py",
+          "kind": "source_tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_texture_read_observation.py",
+          "kind": "validation_tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_read_observation_oracle.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_read_oracle_stop.hpp",
+          "kind": "test_support",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_read_instrumentation.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_read_observation_runner.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-read-observation-c2c_a27f-i6-final2-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-read-observation-c2c_a27f-i6-final2-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i6-final1-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i6-final1-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i6-final2-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i6-final2-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-unowned-corpus-c2c_a27f-i6-final1.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-read-observation-c2c_a27f-i7-r1-sharded-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-read-observation-c2c_a27f-i7-r1-sharded-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i7-r1-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i7-r1-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i7-r1-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i7-r1-sanitized-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-command-instrumented-corpus-c2c_a27f-i7-r1.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-sources/B0-g1b-read-r1/observed_baseline_manifest.json",
+          "kind": "source_manifest",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -8819,9 +9209,336 @@
             "details": "Last executed34-call gate passed ASan/UBSan on tracker,SourceAuthority,routing and harness; original runtime/AOT/DSO retain production flags.7 registry cases passed CTest;8 lifetime Python tests,14 command Python tests and8 B0 staging tests passed. Independent read-only review found no blocking lease/ticket defect, retaining raw-alias refusal and copyable-receipt limits. Both current normal and sanitized oracle builds finished after assertion refinement; those latest binaries were not rerun."
           },
           {
-            "name": "Final strengthened readiness assertion",
+            "name": "Historical pause snapshot — final exact-NotReady assertion (superseded by resumed G0 checks)",
             "status": "not_run",
-            "details": "Changed the positive caller check from any denied permit to exact AuthorityError::NotReady with healthy authority; compiled both targets, then paused at explicit user request before rerunning. Refresh source-bound normal and sanitized reports first on explicit resume."
+            "details": "At the explicit pause on 2026-09-27, the strengthened exact AuthorityError::NotReady assertion had compiled but had not yet been executed. This is an accurate historical snapshot and is superseded for current status by the resumed normal and sanitized G0 reports below; retain this row to preserve the pause-time record."
+          },
+          {
+            "name": "Final exact-NotReady original lifetime gate after user resume",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i0-normal.json",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i0-sanitized.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i0-normal.json": "bdd35b6c1e9181c25024978291e89e562c341debd84ff8e45e4dad7730f936ce",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i0-sanitized.json": "2ecdc2eb2742b6f3d11c44ec011755b441fd4374f5b5b1d9b0fea8ff5ba67759"
+            },
+            "details": "Normal and ASan/UBSan oracles both execute the final assertion: healthy SourceAuthority plus an allocation/caller-only receipt must produce exactly AuthorityError::NotReady. Each report passes the 34-calls-per-AOT/interpreter-path,8 factory chains,7 caller chains,7 owner leases,4 consumed tickets,3 loss cases, full RAM/VRAM/CPU, and bounded interpreter checks. transfer_readiness remains false. The runner accepts the reports with 2 schema-scope tests passed."
+          },
+          {
+            "name": "Strict-fail ASan/UBSan exact-NotReady lifetime gate after resume",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i2-sanitized-strict.json",
+            "sha256": "cae76a15da2d2701bc4109c61bf70dd8e785b752cb039dbfa9ff612efc162005",
+            "details": "Fresh sanitized oracle run with ASAN_OPTIONS=halt_on_error=1:abort_on_error=1 and UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1. Passes 34 AOT/interpreter calls per path, 8 factory chains, 7 caller chains, 7 owner leases, 4 receipts issued once per observed frame, 3 loss cases, full CPU/RAM/VRAM, max 193515 slices and transfer_readiness=false. The strict runtime options make either sanitizer report a nonzero child exit and thus fail the evidence runner. The three G0 reports were independently recomputed locally: all 32 registered input/source/build/manifest identities match current files in every report; all three report-file hashes are stored in this check.",
+            "source_identity_audit": {
+              "report_hashes": {
+                "out/testing/texture-lifetime-exact-notready-c2c_a27f-i0-normal.json": "bdd35b6c1e9181c25024978291e89e562c341debd84ff8e45e4dad7730f936ce",
+                "out/testing/texture-lifetime-exact-notready-c2c_a27f-i0-sanitized.json": "2ecdc2eb2742b6f3d11c44ec011755b441fd4374f5b5b1d9b0fea8ff5ba67759",
+                "out/testing/texture-lifetime-exact-notready-c2c_a27f-i2-sanitized-strict.json": "cae76a15da2d2701bc4109c61bf70dd8e785b752cb039dbfa9ff612efc162005"
+              },
+              "identities_checked_per_report": 32,
+              "identity_mismatches_per_report": 0,
+              "checked_against_current_registered_inputs_sources_build_outputs_and_manifests": true,
+              "transfer_readiness": false
+            }
+          },
+          {
+            "name": "Historical iteration-3 G0 exact-NotReady source snapshot (superseded by iteration 5)",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i3-final3-normal.json",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i3-final3-sanitized-strict.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i3-final3-normal.json": "7a9dfa207e020592313af23e61fc749f16fc9bc844106c75286d3effc1d245a9",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i3-final3-sanitized-strict.json": "6b92a05e5caa6755cad372eb03b23cc8e33aedfc050b35001baf7b6258ae69e1"
+            },
+            "details": "The iteration-3 reports execute healthy SourceAuthority plus lifecycle-only permit == AuthorityError::NotReady. They retain 34 calls per path, 8 factory chains, 7 caller chains, 7 owner leases, 4 receipts issued once per observed frame, 3 loss cases, full CPU/RAM/VRAM comparisons, and transfer_readiness=false. The final2 runner binds the build-local 0023/0040 transfer manifests as well as lifetime sources; all 41 registered input/source/build/manifest identities match with zero mismatches. Raw report SHA-256: e1943886d108f7ac17236293b0a0c771deabfb8f4403d1047289a944738b4dbd."
+          },
+          {
+            "name": "Historical iteration-3 compiled G1a source snapshot (superseded by iteration 5)",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-transfer-observation-c2c_a27f-i3-final3-normal.json",
+              "out/testing/texture-transfer-observation-c2c_a27f-i3-final3-sanitized-strict.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-transfer-observation-c2c_a27f-i3-final3-normal.json": "002913769aa3335d10f15153eed8b88cd29b33e0daa50d19f0bf3b67a4698c26",
+              "out/testing/texture-transfer-observation-c2c_a27f-i3-final3-sanitized-strict.json": "67967def93c112f06245c30afe7f67f015e0d4defa173fb6f15f73e1beca6865"
+            },
+            "details": "The iteration-3 binaries execute unit 0040 load/provider and manager length lookup followed by unit 0023 enqueue, descriptor commit, and queue return. Each report matches all 39 registered input/source/build/manifest identities with zero mismatches and shares raw oracle report SHA-256 85b40b43c57c330198b3ed8fcd756abca1c4ead02245d6b7c855410c7f0a474b. Normal and sanitized oracle binary SHA-256 values are 7f19df0640492cdde934f5844c50485b25a7489e8ea2ee54bb7bbc7155c43d22 and a7ec1bce2ffda92307dc7c34f828808d4593dd47d5bd4eb9cf0bad2f3a67dc46. Reports compare 62 paired AOT/interpreter executions with a 193515-slice maximum; cover 3 same-ID requests, 3 descriptor generations, two controlled ring reuses (one same raw pointer and one cached/uncached alias), 3 retained pending writers, 13 lost/mismatched/duplicate/missing-return checkpoint cases, 2 capacity-loss cases, stale ctx.pc, owner reset/free/address reuse, and exact healthy-authority NotReady. Strict sanitizer options halt/abort on ASan findings and halt/stacktrace on UBSan findings. Imports return zero in the bounded allocator/queue fixture; no worker or game is run. transfer_readiness remains false."
+          },
+          {
+            "name": "Unowned original texture-command corpus regression after callback routing change",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-command-instrumented-corpus-c2c_a27f-i3-final.json",
+            "sha256": "46c4fd79ee3665302c50b4275f7862a1f7893dcfdcae10b43c607d73bbd6f86d",
+            "details": "The build with transfer boundaries enabled and no transfer callback owner passed 2256 original inputs, 8866 descriptors, 4512 builder calls and 11122 command slots; the runner source-checks its bound original resources and binary."
+          },
+          {
+            "name": "G1a focused registry and source-authority tests",
+            "status": "passed",
+            "details": "CTest passed 2/2: mhp3rd_source_authority_tests and mhp3rd_texture_command_dispatch_tests, including transfer-only routing and duplicate-owner protection. Eight related Python suites passed 39 tests total across lifetime/transfer/command injectors, report runners, and Baseline staging. Normal and strict-sanitized G1a oracles and refreshed G0 oracles built with cmake --build -j2."
+          },
+          {
+            "name": "Iteration-4 G1a-R1 descriptor/range gate before publication-writer hardening (superseded by iteration 5)",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-transfer-observation-c2c_a27f-i4-r1-final6-normal.json",
+              "out/testing/texture-transfer-observation-c2c_a27f-i4-r1-final6-sanitized-strict.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-transfer-observation-c2c_a27f-i4-r1-final6-normal.json": "eb634aee6913aa34d73c818b55969f67e747acac293a2adaeabe07d45808f885",
+              "out/testing/texture-transfer-observation-c2c_a27f-i4-r1-final6-sanitized-strict.json": "9d3287ecbefa2a42e2bd80508dd37ce47b8a03bc1ba165cd8d8f601e08703fa5"
+            },
+            "details": "Normal and strict-fail ASan/UBSan reports share raw-report SHA-256 e6bf5eb1a6dc667a3a8ff356ff6f87a130ab0e3e9bd05fb3d46fd3683ac2ac8a and match all 39 registered source/input/binary/build/manifest identities. Both compare full CPU/RAM/VRAM effects over exactly 117 AOT/interpreter calls; record four selected loads, five descriptor generations (including one unowned disjoint-destination reuse), three controlled descriptor-slot reuses, four live pending writers, 14 callback/correlation faults, two capacity losses and four range faults. Exact 0x5800/0x5801 boundaries, zero length, pointer wrap, destination-plus-offset overflow and rounded transform footprint are covered. Healthy authority remains NotReady; transfer_readiness=false. Normal/sanitized oracle SHA-256: a7321df0aaafc5b690b98c38aeab309b9fb2cc3b770f2cc837956c480abd1acd / 708c8d6df6f3ed0d4cee53833ceeca4b54918015f2572e10097e6cd121f4e0aa."
+          },
+          {
+            "name": "Iteration-4 G0 exact-NotReady report set before final runner-output correction (superseded by iteration 5)",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i4-r1-final6-normal.json",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i4-r1-final6-sanitized-strict.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i4-r1-final6-normal.json": "b61ee390b19c4e11c913b05f876d5b717ead0ec3c1f5a14f2cd0012169d20aa4",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i4-r1-final6-sanitized-strict.json": "0c233935f2b572ec8a81b07f339efa04cfd276f006362e19cec95c0ca9c3ed96"
+            },
+            "details": "Both runs compare 34 calls on each AOT/interpreter path, preserve healthy SourceAuthority and the exact permit NotReady result, and keep transfer_readiness=false. They share raw-report SHA-256 e1943886d108f7ac17236293b0a0c771deabfb8f4403d1047289a944738b4dbd and match all 41 registered input/source/build identities. Strict sanitizer settings halt on ASan/UBSan findings; production runtime/AOT objects are not sanitizer-instrumented."
+          },
+          {
+            "name": "Unowned original texture-command corpus after R1",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-command-instrumented-corpus-c2c_a27f-i4-r1-final6.json",
+            "sha256": "38db106a4fbb0e02d3ded5996d0a4785763d81bee72fb2f2ef0a03081e12bdac",
+            "details": "The source-bound unowned-path regression passed 2,256 inputs, 8,866 descriptor records, 4,512 builder calls and 11,122 emitted command slots. No game or GPU was run."
+          },
+          {
+            "name": "Focused ASSET-014 CTest, Python, default-off and optional-boundary checks",
+            "status": "passed",
+            "details": "CTest passed mhp3rd_source_authority_tests and mhp3rd_texture_command_dispatch_tests (2/2). Nine scoped Python modules passed 46 tests, including owned-output refresh and tamper/incomplete-pair refusal. Fresh CMake configurations with certified probes OFF retained the G1a oracle when transfer boundaries were ON and omitted it when the default-off option was OFF. git diff --check passed. No application was built or launched."
+          },
+          {
+            "name": "Iteration-4 full Python unittest discovery (TMH oracle variable not initialized by discovery)",
+            "status": "failed",
+            "details": "Unittest discovery ran 258 tests and returned FAILED (errors=7). The errors involve six test_tmh_pixel_oracle methods; one method has two failing subTests. Discovery imports the module without running its CLI argument parser, so its ORACLE variable stays None and FileNotFoundError occurs before any oracle invocation. Do not infer a pass count by subtracting errors from total tests. This is a test-runner invocation issue, not a pixel comparison or G1a failure."
+          },
+          {
+            "name": "Build-local G1a instrumenter ordinary-I/O failure safety",
+            "status": "passed",
+            "evidence_paths": [
+              "profiles/mhp3rd/tools/instrument_texture_transfer.py",
+              "profiles/mhp3rd/tests/test_texture_transfer_instrumentation.py"
+            ],
+            "details": "Ten transfer-instrumenter tests pass, including four publication I/O fault-injection tests: second-temp creation, backup movement, manifest install failure with successful rollback, and rollback unlink plus restore failure. Complete rollback restores both old byte sequences; incomplete rollback retains the old output backup and names its recovery path. Temporary files are cleaned. The transaction covers ordinary filesystem exceptions and does not claim process-crash atomicity across two renames."
+          },
+          {
+            "name": "Iteration-5 source-bound G1a-R1 normal and strict ASan/UBSan reports",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-transfer-observation-c2c_a27f-i5-final7-normal.json",
+              "out/testing/texture-transfer-observation-c2c_a27f-i5-final7-sanitized-strict.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-transfer-observation-c2c_a27f-i5-final7-normal.json": "ddfe6d72471769910af724b4ada49526255f999c2f9fc81e2faa57e9a14c6269",
+              "out/testing/texture-transfer-observation-c2c_a27f-i5-final7-sanitized-strict.json": "ff5b86dcb68fea19279f0195bfcba5509003d0c90de320dbaf0b4d0a760efef3"
+            },
+            "details": "Both reports share raw-report SHA-256 e6bf5eb1a6dc667a3a8ff356ff6f87a130ab0e3e9bd05fb3d46fd3683ac2ac8a, match all 39 current source/input/binary/build/manifest identities, and verify their exact final artifact and oracle-binary path mapping. Normal/sanitized binary SHA-256: a7321df0aaafc5b690b98c38aeab309b9fb2cc3b770f2cc837956c480abd1acd / 708c8d6df6f3ed0d4cee53833ceeca4b54918015f2572e10097e6cd121f4e0aa. Each compares full RAM/VRAM/CPU over 117 AOT/interpreter calls; 5 descriptor generations, 4 pending writers, 14 faults, 2 capacity losses, 4 range faults; transfer_readiness=false. Strict runner uses ASAN halt/abort and UBSAN halt/stacktrace."
+          },
+          {
+            "name": "Iteration-5 source-bound G0 exact-NotReady normal and strict ASan/UBSan reports",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i5-final8-normal.json",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i5-final8-sanitized-strict.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i5-final8-normal.json": "00ec2ba4147c8516092e8fae8129233914df10f1aee579c6b3471d693d4b4303",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i5-final8-sanitized-strict.json": "24020b131f2ba99d58829a645bee4e0a6747d75efc9e604f90b765315298b80e"
+            },
+            "details": "Both reports share raw-report SHA-256 e1943886d108f7ac17236293b0a0c771deabfb8f4403d1047289a944738b4dbd, match 41/41 current identities and compare 34 calls per path with full CPU/RAM/VRAM equality. The healthy authority check remains exactly NotReady and transfer_readiness=false. Normal/sanitized oracle binary SHA-256: 9f59154f14fbeba31b0e5d8fc418ed3d4a4042d000c6c7b611cb661cd8b6e56b / a0c3f8be7440ed29bbf737cfe81ac4ca4ad1e28f6f7d4b1cba0b05bac7c1654b. The sanitized child received ASAN_OPTIONS=halt_on_error=1:abort_on_error=1 and UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1. Runner output describes four receipts issued once per observed frame."
+          },
+          {
+            "name": "Iteration-5 rebuild and focused regression suite",
+            "status": "passed",
+            "details": "cmake --build -j2 rebuilt the bounded G0/G1a oracle and focused CTest targets after the instrumenter change; no application target was built. Nine scoped Python modules passed 50 tests. The transfer-instrumenter module itself passed 10 tests total, including four publication I/O fault-injection tests. CTest passed source-authority and texture-command-dispatch (2/2). git diff --check and task-ledger JSON validation passed."
+          },
+          {
+            "name": "Iteration-5 report/artifact/binary identity reconciliation",
+            "status": "passed",
+            "details": "For each of the four current reports, the final JSON artifact hash was recomputed, the listed oracle binary hash was checked against the current binary, and every registered source/input/build/manifest hash matched current files (G1a 39/39 per report; G0 41/41 per report). The raw-report SHA-256 is the value recorded by each source-bound runner; raw C++ report bytes are not retained as a separate artifact."
+          },
+          {
+            "name": "Oversized strict G1b-read matrices before final bounded sampling",
+            "status": "failed",
+            "details": "Strict ASan/UBSan variants at 185 and 105 G1b-read scenarios reached the 300-second runner limit without sanitizer diagnostics. The final 69-scenario matrix, with 12 representative descriptor-field samples distributed across all four full-snapshot callbacks, passed in both normal and strict builds."
+          },
+          {
+            "name": "Initial G1a strict-runner timeout budget",
+            "status": "failed",
+            "details": "The G1a strict oracle exceeded the runner's original 60-second limit without sanitizer diagnostics. The checker timeout was raised to 300 seconds and the same 117-call strict gate passed with exact NotReady and transfer_readiness=false."
+          },
+          {
+            "name": "Iteration-6 source-bound G1b-read prefix oracle, normal and strict ASan/UBSan",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-read-observation-c2c_a27f-i6-final2-normal.json",
+              "out/testing/texture-read-observation-c2c_a27f-i6-final2-sanitized-strict.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-read-observation-c2c_a27f-i6-final2-normal.json": "67189dea6d05733fe452c651979545e548c53bd7cc3b2a92db0fc28d4da166e8",
+              "out/testing/texture-read-observation-c2c_a27f-i6-final2-sanitized-strict.json": "c2d81d57efc929346797c99444ad5159fd17a13ba4de9c4b164a7e958ee095b1"
+            },
+            "details": "Both reports share raw-report SHA-256 4ee7731cdb322a1e714d37384a9e23226cda8fac1ac0705810c441fcb295214f, match all 30 input/source/binary/build/manifest identities, and pass 69 scenarios across 412 AOT/interpreter calls with full CPU/RAM/VRAM agreement. Read-result totals are 11 exact, 9 retry, 1 rejected and 1 unowned; all 68 selected scenarios retain pending writers. Twelve field samples are spread across state-8, helper, invocation and result callbacks; every callback rereads all 32 descriptor bytes. Healthy authority remains exact NotReady; no completion receipt is issued and transfer_readiness=false. Strict settings halt on ASan/UBSan findings."
+          },
+          {
+            "name": "Expanded strict read-matrix attempts before final bounded matrix",
+            "status": "failed",
+            "details": "Strict ASan/UBSan attempts at 185 and 105 scenarios reached the 300-second runner limit without sanitizer diagnostics. The final 69-scenario matrix retains all read/correlation/invalidation/capacity categories and passes in normal and strict builds; mutation sampling was limited to 12 descriptor fields distributed across four full-snapshot checkpoints."
+          },
+          {
+            "name": "Refreshed G0 exact-NotReady normal and strict gates for iteration 6",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i6-final1-normal.json",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i6-final1-sanitized-strict.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i6-final1-normal.json": "aaad03c326aad9f72dedaa9c5bf94d29af4b45dc25d8fd4becd4d4772f8f9312",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i6-final1-sanitized-strict.json": "4d045a49bf425e000f12d206a9787052f864d188c3ee127b241a14b6c78d1700"
+            },
+            "details": "Both reports share raw-report SHA-256 e1943886d108f7ac17236293b0a0c771deabfb8f4403d1047289a944738b4dbd and match all 41 identities. They pass 34 calls per path, full CPU/RAM/VRAM equality, the exact healthy-authority NotReady assertion and transfer_readiness=false."
+          },
+          {
+            "name": "Refreshed G1a-R1 normal and strict ASan/UBSan gates for iteration 6",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-transfer-observation-c2c_a27f-i6-final2-normal.json",
+              "out/testing/texture-transfer-observation-c2c_a27f-i6-final2-sanitized-strict.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-transfer-observation-c2c_a27f-i6-final2-normal.json": "63a07f90cfdd835562dadf0e79b37b30598d743bb2643a3b4578279bc42c5627",
+              "out/testing/texture-transfer-observation-c2c_a27f-i6-final2-sanitized-strict.json": "76337a40157c06f82526c7c9d5fbab2b17bb76291e6d36d6df1a5b0f6126cb35"
+            },
+            "details": "Both reports share raw-report SHA-256 e6bf5eb1a6dc667a3a8ff356ff6f87a130ab0e3e9bd05fb3d46fd3683ac2ac8a, match 39 identities and preserve the 117-call full CPU/RAM/VRAM gate, 14 faults, two capacity losses, four range faults, four pending writers, exact NotReady and transfer_readiness=false. An initial strict run exceeded the runner's 60-second timeout; raising the bounded timeout to 300 seconds allowed the same strict matrix to pass."
+          },
+          {
+            "name": "Refreshed unowned original texture-command corpus",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-lifetime-unowned-corpus-c2c_a27f-i6-final1.json",
+            "sha256": "36f10495c88874c78e0c1b3122319e08a7a34b2c6c4664bc60345ef9bb4a6920",
+            "details": "Probe-enabled offline command oracle passes 2,256 inputs, 8,866 descriptors, 4,512 builder/portable/adapter/plan calls and 11,122 command slots. No game or GPU was run."
+          },
+          {
+            "name": "Iteration-6 focused regression suite",
+            "status": "passed",
+            "details": "mhp3rd_source_authority_tests and mhp3rd_texture_command_dispatch_tests pass 2/2. Nine scoped Python modules pass 49 tests. git diff --check and docs/tasks.json parsing pass. The read-prefix build has read/transfer boundaries ON and certified probes OFF; the separate default-off build omits both optional boundary targets. Yakumo was not built or launched."
+          },
+          {
+            "name": "Iteration-6 CMake isolation and default-off target checks",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-read-prefix/CMakeCache.txt",
+              "out/testing/texture-read-prefix/CMakeFiles/TargetDirectories.txt",
+              "out/testing/texture-transfer-default-off/CMakeCache.txt",
+              "out/testing/texture-transfer-default-off/CMakeFiles/TargetDirectories.txt"
+            ],
+            "details": "The read-prefix build was restored to CERTIFIED_PROBES=OFF with transfer/read boundary test objects explicitly enabled. The separate default-off build has both boundary options OFF and omits mhp3rd_read_prefix_generated and mhp3rd_texture_read_observation_oracle. The Yakumo application target does not link the test-only read-prefix object library."
+          },
+          {
+            "name": "Iteration-6 report identity reconciliation",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-read-observation-c2c_a27f-i6-final2-normal.json",
+              "out/testing/texture-read-observation-c2c_a27f-i6-final2-sanitized-strict.json",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i6-final1-normal.json",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i6-final1-sanitized-strict.json",
+              "out/testing/texture-transfer-observation-c2c_a27f-i6-final2-normal.json",
+              "out/testing/texture-transfer-observation-c2c_a27f-i6-final2-sanitized-strict.json",
+              "out/testing/texture-lifetime-unowned-corpus-c2c_a27f-i6-final1.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-read-observation-c2c_a27f-i6-final2-normal.json": "67189dea6d05733fe452c651979545e548c53bd7cc3b2a92db0fc28d4da166e8",
+              "out/testing/texture-read-observation-c2c_a27f-i6-final2-sanitized-strict.json": "c2d81d57efc929346797c99444ad5159fd17a13ba4de9c4b164a7e958ee095b1",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i6-final1-normal.json": "aaad03c326aad9f72dedaa9c5bf94d29af4b45dc25d8fd4becd4d4772f8f9312",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i6-final1-sanitized-strict.json": "4d045a49bf425e000f12d206a9787052f864d188c3ee127b241a14b6c78d1700",
+              "out/testing/texture-transfer-observation-c2c_a27f-i6-final2-normal.json": "63a07f90cfdd835562dadf0e79b37b30598d743bb2643a3b4578279bc42c5627",
+              "out/testing/texture-transfer-observation-c2c_a27f-i6-final2-sanitized-strict.json": "76337a40157c06f82526c7c9d5fbab2b17bb76291e6d36d6df1a5b0f6126cb35",
+              "out/testing/texture-lifetime-unowned-corpus-c2c_a27f-i6-final1.json": "36f10495c88874c78e0c1b3122319e08a7a34b2c6c4664bc60345ef9bb4a6920"
+            },
+            "details": "Recomputed final artifact hashes and confirmed each G0/G1a/G1b runner raw-report SHA, oracle binary identity and registered inputs. G1b normal/strict match 30 identities; G0 normal/strict match 41; G1a normal/strict match 39. The unowned corpus report records its original resource manifest/layout/source/binary identities."
+          },
+          {
+            "name": "Iteration-6 independent G1b-read review",
+            "status": "needs_revision",
+            "details": "Independent review verified the 69-scenario execution record but found retry sequencing could skip a second State8 callback, historical-unowned descriptor generation was not initialized, the read CMake include was absent from Baseline staging, and upstream source/report count closure was incomplete. The 69-case normal/strict reports remain historical and are not evidence for R1."
+          },
+          {
+            "name": "Iteration-7 G1b-read-R1 normal three-shard gate",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-read-observation-c2c_a27f-i7-r1-sharded-normal.json",
+            "sha256": "1b65742457490d26deff6dd219227d6f6e395472eed6140ff3c0892c66ecc32f",
+            "details": "75 frozen scenario IDs pass in three contiguous 25-case shards; 450 AOT/interpreter calls, 85 modeled imports, 40 selected attempts, 11 exact, 12 retry, 1 rejected and 3 unowned results. Full CPU/RAM/VRAM checks pass; all 75 writer observations retain hazards. 52 identities; aggregate report SHA-256 86f0bc2890eaaee0d6a2d18297acfdb036696aec6f85244fbe4c8912dbb06320; oracle binary SHA-256 1b1e70db6d2bb3014b65aab31d6b0698e954949cdda8bec46769d8a1f011c17e; shard report SHA-256 values: 03cc6a6d514ed58e4b16213d9441fa8dfa54c811c11033cc7972a06a8ef4f633, dc9ef104ddc758322d290d8d71fb012b72e852d0ea8e37b8071ffffc5eae6191, e5ed9be95b0c746b98dad854ff6dfa36254e0b66936a05c61ece3201b1e02597. Exact NotReady and transfer_readiness=false."
+          },
+          {
+            "name": "Iteration-7 G1b-read-R1 strict ASan/UBSan three-shard gate",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-read-observation-c2c_a27f-i7-r1-sharded-sanitized-strict.json",
+            "sha256": "e51fc1f8c78094e7bc1c4580336269433bdd2f8c166ad4696343923d50d4af31",
+            "details": "The same frozen 75-case, 450-call matrix passes in three contiguous shards with strict child settings ASAN_OPTIONS=halt_on_error=1:abort_on_error=1 and UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1. 52 identities; aggregate report SHA-256 86f0bc2890eaaee0d6a2d18297acfdb036696aec6f85244fbe4c8912dbb06320; oracle binary SHA-256 868fe92e81f6c933522c9be42dd06a83a70b205964e36e9800d28a5e0dec0ebb. The three ordered child report hashes match the normal run."
+          },
+          {
+            "name": "Iteration-7 monolithic strict attempt before sharding",
+            "status": "failed",
+            "details": "The full 75-case strict child reached the existing 300-second timeout without an ASan/UBSan diagnostic. The fixed coverage was split into three contiguous 25-case shards; each shard keeps the same 300-second cap, and the merged report validates the complete ordered scenario list without omission or duplication."
+          },
+          {
+            "name": "Iteration-7 refreshed G0 exact-NotReady normal and strict",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i7-r1-normal.json",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i7-r1-sanitized-strict.json"
+            ],
+            "details": "Both reports pass 34 AOT/interpreter calls per path, exact healthy-authority NotReady, full state comparison and transfer_readiness=false; 41 identities. Artifact SHA-256 values: 49deb5f982a68ebded9aef40e0973cf92f5c9214c3b3ffd6b3a4810360150717 / 7a3657543533f0b512a3a85b9613c7fb99ce5e5017047c1c682f0f0fa68f9177; shared raw-report SHA-256 e1943886d108f7ac17236293b0a0c771deabfb8f4403d1047289a944738b4dbd; oracle binary hashes e96ec3cd6fc3a0dde8c9e379e7cf7919fdb37e7f238fe02cc0596fabf71abda4 / 0bbeae1147ae219ecb7b0069390073f84a44bfd276a0b1c62293bff1de5e7f68."
+          },
+          {
+            "name": "Iteration-7 refreshed G1a-R1 normal and strict",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-transfer-observation-c2c_a27f-i7-r1-normal.json",
+              "out/testing/texture-transfer-observation-c2c_a27f-i7-r1-sanitized-strict.json"
+            ],
+            "details": "Both reports match 39 identities and pass the 117-call gate, 14 faults, two capacity losses, four range faults, four retained writers, exact NotReady and transfer_readiness=false. Artifact SHA-256 values: 66e8a3481138817374e53742b648d70d83b599fc8dd54a5acf722f2739ef45c5 / 3fca2df6f2a9bcdbb9b1f8ba8dfe9a727935bf578f6b54a9d1ed27f475b550a5; shared raw-report SHA-256 e6bf5eb1a6dc667a3a8ff356ff6f87a130ab0e3e9bd05fb3d46fd3683ac2ac8a; oracle binary hashes e3c91eb64fb5c878a6df0540740a4ec6c71b645e77391a183011fe992288c35c / 3955cec28cc394b8eede9213e3bf1caded44c513c5b1746eb846df7d6ad1f7b9."
+          },
+          {
+            "name": "Iteration-7 unowned original texture-command corpus",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-command-instrumented-corpus-c2c_a27f-i7-r1.json",
+            "sha256": "184a2fd2b13a77fcb7b0e5c4584863f0e9d19cbeb27e9e6ec58f9062ccbe6793",
+            "details": "2,256 inputs, 8,866 descriptors, 4,512 builder/portable/adapter/plan calls and 11,122 command slots; metadata-only original AOT/interpreter gate."
+          },
+          {
+            "name": "Iteration-7 scoped Python regression modules",
+            "status": "passed",
+            "details": "53 tests passed: read instrumentation/report runner (14), transfer instrumentation/report runner (19), lifetime instrumentation/runner (9), observed Baseline staging (9) and command-dispatch report runner (2)."
+          },
+          {
+            "name": "Iteration-7 source-authority and dispatch CTest pair",
+            "status": "passed",
+            "details": "mhp3rd_source_authority_tests and mhp3rd_texture_command_dispatch_tests passed, 2/2."
+          },
+          {
+            "name": "Iteration-7 observed Baseline staging and default-off configure",
+            "status": "passed",
+            "evidence_path": "out/testing/observed-sources/B0-g1b-read-r1/observed_baseline_manifest.json",
+            "details": "Fresh stage is pinned to B0 4292eb66ee66eab37c327575382d071addcf6249 with source-content digest f9d047c3d73f04106db0f0704833167c6dbd241c0a1172a21a59407c3bc457cf. TextureReadInstrumentation.cmake is present in staging; default read and transfer options resolve to OFF; the read-prefix target is absent. Configure only; no application build/run."
+          },
+          {
+            "name": "Iteration-7 independent C2C review",
+            "status": "passed",
+            "details": "Independent review accepted G1b-read-R1 in scope and closed the four iteration-6 findings. It verified the second-State8 retry counterexample, selected-to-unowned descriptor generation initialization, staged Baseline module/configure, complete 75-scenario identity/counter merge, refreshed G0/G1a/corpus evidence, and strict shard hashes. The review explicitly retains the limitation that synthetic commit callbacks do not prove concurrent PSP scheduling; no new blocker or follow-up test/patch is required for R1. ASSET-014 remains in_progress, G1 incomplete, readiness false, and no later phase is authorized."
           }
         ],
         "limitations": [
@@ -8830,15 +9547,17 @@
           "Configured current-code validator must supply coherent epochs, including same-byte reload; production epoch integration is pending.",
           "Returned caller receipt is copyable metadata issued once per frame, not a one-use execution capability; future controller must scope it to current entry and revalidate authority.",
           "Factory/caller entry frames and source payloads are constructed; actual original tails/DSO constructor/allocator/free/reset execute. Thread switching is a host fault injection, not a real scheduler.",
-          "The final stricter NotReady assertion compiled but has not been rerun; last passing lifecycle reports bind the preceding source revision.",
-          "Existing delivered apps and user records unchanged; original game data remain local. Untracked .c2cignore untouched."
+          "Existing delivered apps and user records unchanged; original game data remain local. Untracked .c2cignore untouched.",
+          "Iteration-4 full Python discovery returned 258 tests with 7 errors across six TMH pixel-oracle test methods (one method has two failing subtests); unittest discovery leaves the module ORACLE variable as None, so errors occur before oracle invocation. No pass count is inferred; all 50 scoped ASSET-014 Python tests pass in iteration 5.",
+          "G1b-read models sceIoRead data and event scheduling; real file identity/open/seek and concurrent PSP worker scheduling are not exercised.",
+          "The exact read result is only evidence for that attempt; it does not certify target bytes or retire a pending writer. Copy, transform, acknowledgement, terminal, cancellation/quiescence, epochs, writer exclusion and Native control remain later work."
         ]
       },
       "implementation_commits": [
         "d6680718167df04d0361dbe14f38b0613308ec44",
         "9f79b3112e7a80dede8f73eca2231d6130fbeedf"
       ],
-      "pause_reason": "Explicit user request to checkpoint progress and stop running.",
+      "pause_reason": null,
       "blockers": [],
       "history": [
         {
@@ -8914,6 +9633,173 @@
           "from_status": "in_progress",
           "to_status": "paused",
           "description": "User requested a stage checkpoint, completed/remaining-work report and cessation of execution. Known build/test handles finished and all subagents are completed. No new tests or development started after this request."
+        },
+        {
+          "recorded_at": "2026-09-27T14:33:44Z",
+          "occurred_at": "2026-09-27T14:33:44Z",
+          "actor_id": "/root",
+          "action": "resumed_by_user",
+          "from_status": "paused",
+          "to_status": "in_progress",
+          "description": "User explicitly resumed development from Codex task 01a0de15-428d-71b2-becb-c93878a0cd71. Resume ASSET-014 at its pending exact-NotReady lifecycle gate before adding transfer receipts, writer exclusion and authority-backed mode control."
+        },
+        {
+          "recorded_at": "2026-09-27T14:54:00Z",
+          "occurred_at": "2026-09-27T14:54:00Z",
+          "actor_id": "/root",
+          "action": "g0_exact_notready_passed",
+          "description": "After the user resumed ASSET-014, reran normal and AddressSanitizer/UndefinedBehaviorSanitizer original lifetime gates against the final exact NotReady assertion. Both source-bound reports pass all expected counts and full-state comparisons; transfer readiness remains false. ChatGPT C2C planning confirmed G1-G3 remain gated on subsequent evidence."
+        },
+        {
+          "recorded_at": "2026-09-27T15:09:49Z",
+          "occurred_at": "2026-09-27T15:09:49Z",
+          "actor_id": "/root",
+          "action": "g0_report_identity_and_sanitizer_audit_passed",
+          "description": "Independently recomputed all 32 identity hashes for each of the three normal/sanitized G0 reports; all source, input, manifest and oracle identities match current files. The strict ASan/UBSan gate explicitly halts/exits on sanitizer findings. Historical not_run entry and receipt terminology are clarified; no implementation source changed."
+        },
+        {
+          "recorded_at": "2026-09-27T15:22:37Z",
+          "occurred_at": "2026-09-27T15:22:37Z",
+          "actor_id": "/root",
+          "action": "g1a_started",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "After the G0 independent review accepted the released source-bound evidence, started the first bounded G1a slice: observe real owner-bound load/provider and enqueue/descriptor-generation checkpoints in compiled original callbacks. Scope excludes read/copy/transform completion, terminal success, source readiness, code epochs and mode control."
+        },
+        {
+          "recorded_at": "2026-09-27T17:42:43Z",
+          "occurred_at": "2026-09-27T17:42:43Z",
+          "actor_id": "/root",
+          "action": "g1a_compiled_observation_gates_passed",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Implemented and locally passed the bounded G1a original load/provider, manager length lookup, enqueue and full descriptor-generation gate in normal and strict ASan/UBSan variants. Exact NotReady and pending writer hazards remain; refreshed G0 and the unowned 4512-call corpus pass. Stopped before read/copy/transform/terminal receipts pending independent C2C review."
+        },
+        {
+          "recorded_at": "2026-09-27T17:47:56Z",
+          "occurred_at": "2026-09-27T17:47:56Z",
+          "actor_id": "/root",
+          "action": "g0_final_source_identity_audit_passed",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "After extending the G0 checker to bind final G1a build-local copies and manifests, reran normal and strict-fail ASan/UBSan exact-NotReady reports. Both pass and independently match all 41 registered identities with zero mismatches."
+        },
+        {
+          "recorded_at": "2026-09-27T18:00:53Z",
+          "occurred_at": "2026-09-27T18:00:53Z",
+          "actor_id": "/root",
+          "action": "g0_final2_strict_regression_passed",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Rebuilt and reran the exact-NotReady G0 normal and strict-fail sanitizer oracles against the final G1a oracle source and manifest-binding runner. Both pass; 41/41 source/build identities match in each report."
+        },
+        {
+          "recorded_at": "2026-09-27T18:16:10Z",
+          "occurred_at": "2026-09-27T18:16:10Z",
+          "actor_id": "/root",
+          "action": "g1a_final_rebuild_and_reports_passed",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "After final tracker address/comment cleanup and CMake formatting, rebuilt G1a and G0 normal/sanitized oracles. Final G1a normal/strict reports pass all 13 fault cases, match 39/39 identities, and keep exact NotReady/readiness=false. Final G0 reports match 41/41 identities; the unowned 4512-call corpus remains green."
+        },
+        {
+          "recorded_at": "2026-09-27T19:40:47Z",
+          "occurred_at": "2026-09-27T19:40:47Z",
+          "actor_id": "/root",
+          "action": "g1a_r1_descriptor_range_hardening_passed",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Completed G1a-R1 descriptor-address reuse, writer-hazard retention and range-accounting hardening. Refreshed normal/strict G1a and G0 reports, the unowned corpus, focused CTest/Python gates and fresh CMake option checks. Exact NotReady/readiness=false remain; waiting for independent C2C review before expanding to later transfer phases."
+        },
+        {
+          "recorded_at": "2026-09-27T19:47:01Z",
+          "occurred_at": "2026-09-27T19:47:01Z",
+          "actor_id": "/root",
+          "action": "g1a_r1_review_outputs_recorded",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Recorded sanitized success and failure validation outputs for C2C iteration 4 review. The scoped G1a/G0/corpus/CTest/Python/config bundle passes; full Python discovery retains seven out-of-scope TMH pixel-oracle errors from an unset oracle path."
+        },
+        {
+          "recorded_at": "2026-09-27T20:06:03Z",
+          "occurred_at": "2026-09-27T20:06:03Z",
+          "actor_id": "/root",
+          "action": "g1a_r1_publication_failure_safety_and_identity_refresh_passed",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Fixed exception-safe build-local output/manifest publication; failed rollback now preserves recovery backups and names their paths, and temp creation is covered by cleanup. Added four I/O fault-injection tests. Rebuilt bounded targets, passed 50 scoped Python tests and 2 focused CTests, refreshed G0/G1a source-bound reports and audited 41/39 identities per report. Exact NotReady and transfer_readiness=false remain; awaiting independent C2C review."
+        },
+        {
+          "recorded_at": "2026-09-27T20:15:10Z",
+          "occurred_at": "2026-09-27T20:15:10Z",
+          "actor_id": "/root",
+          "action": "r1_review_count_wording_corrected",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Applied the nonblocking review wording correction: the instrumenter has 10 tests total, including four publication I/O fault-injection methods. The accepted scope remains G1a-R1 publication safety and evidence reconciliation; no later phase started."
+        },
+        {
+          "recorded_at": "2026-09-27T20:16:53Z",
+          "occurred_at": "2026-09-27T20:16:53Z",
+          "actor_id": "/root",
+          "action": "g1a_r1_publication_safety_review_accepted",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Independent C2C review accepted G1a-R1 descriptor/range fixes, ordinary-I/O-safe publication rollback, fault-injection tests, final G0/G1a report identity mapping and corrected full-discovery wording. Requested a separate finite iteration 6 plan; no later phase implementation started."
+        },
+        {
+          "recorded_at": "2026-09-27T20:21:45Z",
+          "occurred_at": "2026-09-27T20:21:45Z",
+          "actor_id": "/root",
+          "action": "instrumenter_test_count_clarified_after_review",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Clarified that the transfer-instrumenter module has 10 total test methods, of which four are publication I/O fault-injection methods; no code or test behavior changed and no rerun was required."
+        },
+        {
+          "recorded_at": "2026-09-27T20:37:06Z",
+          "occurred_at": "2026-09-27T20:37:06Z",
+          "actor_id": "/root",
+          "action": "g1b_read_observation_started",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "After iteration 5 review accepted publication safety and report identity evidence, received the finite iteration 6 plan for descriptor revalidation and state-8 read-attempt/result association. Local audit confirmed the relevant generated edges at 0x08863608, 0x0886365C, 0x088654D4 and 0x0886551C; continuing to validate an isolated read-prefix oracle boundary before integrating the new bounded read state. No read implementation or readiness receipt has been added yet."
+        },
+        {
+          "recorded_at": "2026-09-27T23:46:25Z",
+          "occurred_at": "2026-09-27T23:46:25Z",
+          "actor_id": "/root",
+          "action": "g1b_read_iteration6_locally_executed",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Implemented and locally passed the finite iteration-6 G1b-read plan: full descriptor resampling at state-8/helper/invoke/result, bounded per-attempt identity/outcomes and an isolated post-result prefix stop. Final normal/strict 69-scenario reports share raw SHA 4ee7731cdb322a1e714d37384a9e23226cda8fac1ac0705810c441fcb295214f. Refreshed G0/G1a normal/strict gates, the 2,256-input unowned corpus, 2 CTests and 49 scoped Python tests. Exact NotReady, pending writers and transfer_readiness=false remain. No app build/run or next transfer phase; waiting for independent C2C review."
+        },
+        {
+          "recorded_at": "2026-09-27T23:55:07Z",
+          "occurred_at": "2026-09-27T23:55:07Z",
+          "actor_id": "/root",
+          "action": "g1b_read_iteration6_executed_and_review_requested",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Recorded iteration-6 command outputs in C2C, set EXECUTED_LOCAL, and sent the bounded G1b-read result to the existing project conversation for independent review. G1b-read/G0/G1a normal and strict reports, the unowned corpus, 49 scoped Python tests and 2 focused CTests are recorded. Readiness remains false and Native Off; no subsequent phase was started."
+        },
+        {
+          "recorded_at": "2026-09-28T01:44:19Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "g1b_read_r1_locally_validated",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Independent iteration-6 review findings are addressed in the bounded G1b-read-R1 slice. Normal and strict pass in three contiguous 25-case shards with exact ordered 75-case coverage under a stable 52-identity source/binary set. Refreshed G0/G1a normal/strict, 2,256-input unowned corpus, 53 scoped Python tests, CTest 2/2, and staged-B0 default-off configure pass. Await independent review; readiness remains false, pending writers retained, Native Off."
+        },
+        {
+          "recorded_at": "2026-09-28T02:04:24Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "g1b_read_r1_review_accepted",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Independent C2C review accepted the bounded G1b-read-R1 slice in scope and closed the four iteration-6 findings. It found no new blocker or additional R1 work. G1 remains incomplete; source readiness false, pending writers retained, Native Off. No later phase is authorized; await the user before preparing another concrete implementation batch."
         }
       ],
       "updated_by_agent_id": "/root"

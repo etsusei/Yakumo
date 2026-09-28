@@ -21,6 +21,10 @@ using mhp3rd::native::texture_command_entry;
 using mhp3rd::native::texture_command_return;
 using mhp3rd::native::texture_lifetime_checkpoint;
 using mhp3rd::native::TextureLifetimeCheckpoint;
+using mhp3rd::native::texture_transfer_checkpoint;
+using mhp3rd::native::TextureTransferCheckpoint;
+using mhp3rd::native::texture_read_checkpoint;
+using mhp3rd::native::TextureReadCheckpoint;
 using psprecomp::AllegrexContext;
 using psprecomp::GuestMemory;
 using psprecomp::Runtime;
@@ -61,6 +65,9 @@ bool same_context(const AllegrexContext &left, const AllegrexContext &right) {
 struct Probe {
     std::size_t entries{};
     std::size_t returns{};
+    std::size_t lifetimes{};
+    std::size_t transfers{};
+    std::size_t reads{};
     Runtime *entry_runtime{};
     Runtime *return_runtime{};
     AllegrexContext *entry_context{};
@@ -68,9 +75,45 @@ struct Probe {
     AllegrexContext observed_entry{};
     AllegrexContext observed_return{};
     std::uint32_t return_pc{};
+    TextureLifetimeCheckpoint lifetime_checkpoint{};
+    TextureTransferCheckpoint transfer_checkpoint{};
+    TextureReadCheckpoint read_checkpoint{};
+    const Runtime *lifetime_runtime{};
+    const Runtime *transfer_runtime{};
+    const AllegrexContext *lifetime_context{};
+    const AllegrexContext *transfer_context{};
+    const Runtime *read_runtime{};
+    const AllegrexContext *read_context{};
     bool handle{};
     std::uint32_t continuation{};
 };
+
+void on_lifetime(void *user, const Runtime &runtime, const AllegrexContext &context,
+                 TextureLifetimeCheckpoint checkpoint) noexcept {
+    auto &probe = *static_cast<Probe *>(user);
+    ++probe.lifetimes;
+    probe.lifetime_runtime = &runtime;
+    probe.lifetime_context = &context;
+    probe.lifetime_checkpoint = checkpoint;
+}
+
+void on_transfer(void *user, const Runtime &runtime, const AllegrexContext &context,
+                 TextureTransferCheckpoint checkpoint) noexcept {
+    auto &probe = *static_cast<Probe *>(user);
+    ++probe.transfers;
+    probe.transfer_runtime = &runtime;
+    probe.transfer_context = &context;
+    probe.transfer_checkpoint = checkpoint;
+}
+
+void on_read(void *user, const Runtime &runtime, const AllegrexContext &context,
+             TextureReadCheckpoint checkpoint) noexcept {
+    auto &probe = *static_cast<Probe *>(user);
+    ++probe.reads;
+    probe.read_runtime = &runtime;
+    probe.read_context = &context;
+    probe.read_checkpoint = checkpoint;
+}
 
 bool on_entry(void *user, Runtime &runtime, AllegrexContext &context) noexcept {
     auto &probe = *static_cast<Probe *>(user);
@@ -258,6 +301,146 @@ void lifetime_only_observer_preserves_state() {
             "Lifetime-only observer mutated guest state");
 }
 
+void transfer_only_binding_dispatches_without_touching_lifetime_callback() {
+    Runtime runtime(kRamSize);
+    Probe probe;
+    TextureCommandCallbacks selected{};
+    selected.user = &probe;
+    selected.transfer = on_transfer;
+    TextureCommandDispatch binding(runtime, selected);
+    require(binding.installed(), "Transfer-only observation binding was rejected");
+
+    auto context = context_fixture(0x4493A177u);
+    const auto original = context;
+    const auto before = runtime.memory().bytes();
+    texture_transfer_checkpoint(runtime, context, TextureTransferCheckpoint::DescriptorCommit);
+    texture_lifetime_checkpoint(runtime, context, TextureLifetimeCheckpoint::OwnerReset);
+    require(probe.transfers == 1u && probe.transfer_runtime == &runtime &&
+            probe.transfer_context == &context &&
+            probe.transfer_checkpoint == TextureTransferCheckpoint::DescriptorCommit,
+            "Transfer callback did not receive its exact runtime/context/checkpoint");
+    require(probe.lifetimes == 0u, "Transfer checkpoint leaked to the lifetime callback");
+    require(same_context(context, original) && runtime.memory().bytes() == before,
+            "Transfer-only observer mutated guest state");
+}
+
+void mixed_binding_demultiplexes_lifetime_and_transfer_checkpoints() {
+    Runtime runtime(kRamSize);
+    Probe probe;
+    TextureCommandCallbacks selected{};
+    selected.user = &probe;
+    selected.lifetime = on_lifetime;
+    selected.transfer = on_transfer;
+    TextureCommandDispatch binding(runtime, selected);
+    require(binding.installed(), "Mixed observation binding was rejected");
+
+    auto context = context_fixture(0x18F320B5u);
+    const auto original = context;
+    texture_transfer_checkpoint(runtime, context, TextureTransferCheckpoint::OwnerLoadTail);
+    texture_lifetime_checkpoint(runtime, context, TextureLifetimeCheckpoint::OwnerReset);
+    require(probe.transfers == 1u && probe.lifetimes == 1u,
+            "Observation callback families were merged or dropped");
+    require(probe.transfer_checkpoint == TextureTransferCheckpoint::OwnerLoadTail &&
+            probe.lifetime_checkpoint == TextureLifetimeCheckpoint::OwnerReset &&
+            probe.transfer_runtime == &runtime && probe.lifetime_runtime == &runtime &&
+            probe.transfer_context == &context && probe.lifetime_context == &context,
+            "Mixed binding changed callback identity or checkpoint routing");
+    require(same_context(context, original), "Mixed observational callbacks changed guest context");
+}
+
+void rejected_transfer_binding_does_not_replace_lifetime_owner() {
+    Runtime runtime(kRamSize);
+    Probe first, replacement;
+    auto hooks = callbacks(first);
+    hooks.lifetime = on_lifetime;
+    TextureCommandDispatch owner(runtime, hooks);
+    require(owner.installed(), "Initial lifetime owner failed to install");
+
+    TextureCommandCallbacks transfer_only{};
+    transfer_only.user = &replacement;
+    transfer_only.transfer = on_transfer;
+    TextureCommandDispatch rejected(runtime, transfer_only);
+    require(!rejected.installed(), "A second transfer binding replaced the current owner");
+
+    auto context = context_fixture(0xAA701952u);
+    texture_transfer_checkpoint(runtime, context, TextureTransferCheckpoint::DescriptorCommit);
+    texture_lifetime_checkpoint(runtime, context, TextureLifetimeCheckpoint::OwnerReset);
+    require(first.transfers == 0u && first.lifetimes == 1u &&
+            replacement.transfers == 0u,
+            "Failed transfer registration displaced or leaked into the first owner");
+}
+
+void read_only_binding_dispatches_without_lifetime_or_transfer_callback() {
+    Runtime runtime(kRamSize);
+    Probe probe;
+    TextureCommandCallbacks selected{};
+    selected.user = &probe;
+    selected.read = on_read;
+    TextureCommandDispatch binding(runtime, selected);
+    require(binding.installed(), "Read-only observation binding was rejected");
+
+    auto context = context_fixture(0x7034D812u);
+    const auto original = context;
+    const auto ram = runtime.memory().bytes();
+    texture_read_checkpoint(runtime, context, TextureReadCheckpoint::ReadInvoke);
+    texture_transfer_checkpoint(runtime, context, TextureTransferCheckpoint::DescriptorCommit);
+    texture_lifetime_checkpoint(runtime, context, TextureLifetimeCheckpoint::OwnerReset);
+    require(probe.reads == 1u && probe.read_runtime == &runtime &&
+            probe.read_context == &context &&
+            probe.read_checkpoint == TextureReadCheckpoint::ReadInvoke,
+            "Read callback received a different runtime/context/checkpoint");
+    require(probe.transfers == 0u && probe.lifetimes == 0u,
+            "Read callback leaked into another observation family");
+    require(same_context(context, original) && runtime.memory().bytes() == ram,
+            "Read-only observer changed guest state");
+}
+
+void mixed_binding_demultiplexes_lifetime_transfer_and_read_checkpoints() {
+    Runtime runtime(kRamSize);
+    Probe probe;
+    TextureCommandCallbacks selected{};
+    selected.user = &probe;
+    selected.lifetime = on_lifetime;
+    selected.transfer = on_transfer;
+    selected.read = on_read;
+    TextureCommandDispatch binding(runtime, selected);
+    require(binding.installed(), "Mixed lifetime/transfer/read binding was rejected");
+    auto context = context_fixture(0x31048AE7u);
+    const auto original = context;
+    texture_lifetime_checkpoint(runtime, context, TextureLifetimeCheckpoint::OwnerReset);
+    texture_transfer_checkpoint(runtime, context, TextureTransferCheckpoint::DescriptorCommit);
+    texture_read_checkpoint(runtime, context, TextureReadCheckpoint::ReadResult);
+    require(probe.lifetimes == 1u && probe.transfers == 1u && probe.reads == 1u,
+            "Observation callback families were merged or dropped");
+    require(probe.lifetime_runtime == &runtime && probe.transfer_runtime == &runtime &&
+            probe.read_runtime == &runtime && probe.lifetime_context == &context &&
+            probe.transfer_context == &context && probe.read_context == &context &&
+            probe.lifetime_checkpoint == TextureLifetimeCheckpoint::OwnerReset &&
+            probe.transfer_checkpoint == TextureTransferCheckpoint::DescriptorCommit &&
+            probe.read_checkpoint == TextureReadCheckpoint::ReadResult,
+            "Mixed callback routing changed a family or checkpoint");
+    require(same_context(context, original), "Mixed observation callbacks changed guest CPU state");
+}
+
+void rejected_read_binding_does_not_replace_existing_owner() {
+    Runtime runtime(kRamSize);
+    Probe first, replacement;
+    auto hooks = callbacks(first);
+    hooks.transfer = on_transfer;
+    TextureCommandDispatch owner(runtime, hooks);
+    require(owner.installed(), "Initial transfer owner failed to install");
+    TextureCommandCallbacks read_only{};
+    read_only.user = &replacement;
+    read_only.read = on_read;
+    TextureCommandDispatch rejected(runtime, read_only);
+    require(!rejected.installed(), "A second read binding replaced the current owner");
+    auto context = context_fixture(0xAA12C973u);
+    texture_read_checkpoint(runtime, context, TextureReadCheckpoint::ReadResult);
+    texture_transfer_checkpoint(runtime, context, TextureTransferCheckpoint::EnqueueReturn);
+    require(first.reads == 0u && first.transfers == 1u && replacement.reads == 0u,
+            "Rejected read registration displaced or leaked into the first owner");
+}
+
 void capacity_exhaustion_and_refill() {
     constexpr std::size_t capacity = TextureCommandDispatch::kMaxRuntimes;
     std::array<std::unique_ptr<Runtime>, capacity + 1u> runtimes;
@@ -301,6 +484,12 @@ int main() {
         TestCase{"invalid callbacks", invalid_callbacks_do_not_install},
         TestCase{"destruction and rebinding", destruction_detaches_and_allows_rebinding},
         TestCase{"lifetime-only observation", lifetime_only_observer_preserves_state},
+        TestCase{"transfer-only binding", transfer_only_binding_dispatches_without_touching_lifetime_callback},
+        TestCase{"lifetime and transfer demultiplexing", mixed_binding_demultiplexes_lifetime_and_transfer_checkpoints},
+        TestCase{"rejected transfer binding preserves owner", rejected_transfer_binding_does_not_replace_lifetime_owner},
+        TestCase{"read-only binding", read_only_binding_dispatches_without_lifetime_or_transfer_callback},
+        TestCase{"lifetime/transfer/read demultiplexing", mixed_binding_demultiplexes_lifetime_transfer_and_read_checkpoints},
+        TestCase{"rejected read binding preserves owner", rejected_read_binding_does_not_replace_existing_owner},
         TestCase{"capacity exhaustion and refill", capacity_exhaustion_and_refill},
     };
     for (const auto &test : tests) {

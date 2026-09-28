@@ -33,9 +33,28 @@ class ObservedBaselineTests(unittest.TestCase):
             "cmake/TextureCommandInstrumentation.cmake", "tools/instrument_texture_commands.py",
             "host/native/texture_command_dispatch.hpp", "host/native/texture_command_dispatch.cpp",
             "tests/texture_command_dispatch_tests.cpp",
+            "cmake/TextureTransferInstrumentation.cmake", "tools/instrument_texture_transfer.py",
+            "cmake/TextureReadInstrumentation.cmake",
+            "host/native/texture_lifetime_tracker.hpp", "host/native/texture_lifetime_tracker.cpp",
+            "host/native/texture_transfer_tracker.hpp", "host/native/texture_transfer_tracker.cpp",
+            "tests/texture_transfer_observation_oracle.cpp",
         ):
             self.assertIn(PREP.PROFILE + relative, PREP.OBSERVATION_FILES)
         self.assertNotIn(PREP.PROFILE + "host/native/texture_commands_bridge.cpp", PREP.OBSERVATION_FILES)
+
+    def test_every_unconditional_profile_cmake_include_is_staged(self) -> None:
+        profile = TOOL.parents[1]
+        cmake = (profile / "CMakeLists.txt").read_text(encoding="utf-8")
+        includes = re.findall(
+            r'(?m)^include\("\$\{MHP3RD_PROFILE_DIR\}/([^"\n]+)"\)', cmake)
+        self.assertTrue(includes)
+        instrumentation_modules = [relative for relative in includes
+                                   if "Instrumentation" in relative]
+        self.assertTrue(instrumentation_modules)
+        for relative in instrumentation_modules:
+            self.assertTrue(relative.startswith("cmake/"), relative)
+            self.assertIn(PREP.PROFILE + relative, PREP.OBSERVATION_FILES)
+            self.assertTrue((profile / relative).is_file(), relative)
 
     def test_recording_revision_matches_cmake_input_order(self) -> None:
         repo = TOOL.parents[3]

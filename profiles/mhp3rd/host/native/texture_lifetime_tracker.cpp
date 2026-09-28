@@ -533,6 +533,11 @@ void TextureLifetimeTracker::observe_impl(const psprecomp::Runtime &runtime,
             fail(TextureLifetimeTrackerError::AuthorityRejected, true);
             return;
         }
+        if (lease->invalidation_generation == std::numeric_limits<std::uint64_t>::max()) {
+            fail(TextureLifetimeTrackerError::CounterExhausted, true);
+            return;
+        }
+        ++lease->invalidation_generation;
         forget_frames(lease->token);
         break;
     }
@@ -590,6 +595,39 @@ std::optional<resources::AuthorityToken> TextureLifetimeTracker::owner_token(
     const auto *lease = find_lease(LeaseKind::Owner, raw);
     if (lease == nullptr) return std::nullopt;
     return lease->token;
+}
+
+std::optional<std::uint64_t> TextureLifetimeTracker::owner_invalidation_generation(
+    std::uint32_t raw) const noexcept {
+    if (error_ != TextureLifetimeTrackerError::None) return std::nullopt;
+    const auto *lease = find_lease(LeaseKind::Owner, raw);
+    if (lease == nullptr || lease->invalidation_generation == 0u) return std::nullopt;
+    return lease->invalidation_generation;
+}
+
+bool TextureLifetimeTracker::selected_slot_owner(std::uint32_t raw,
+    std::uint32_t bytes, std::uint32_t &raw_owner,
+    resources::AuthorityToken &owner) const noexcept {
+    if (error_ != TextureLifetimeTrackerError::None || bytes == 0u ||
+        std::uint64_t{raw} + bytes > std::numeric_limits<std::uint32_t>::max() ||
+        !runtime_->memory().contains(raw, bytes)) return false;
+    const auto range_begin = std::uint64_t{psprecomp::GuestMemory::canonical(raw)};
+    const auto range_end = range_begin + bytes;
+    for (const auto &lease : leases_) {
+        if (lease.kind != LeaseKind::Owner) continue;
+        std::uint32_t slot_raw{};
+        if (!add_raw(lease.raw, resources::SourceAuthority::kSlotOffset, slot_raw) ||
+            !runtime_->memory().contains(slot_raw, resources::SourceAuthority::kSlotBytes))
+            continue;
+        const auto slot_begin = std::uint64_t{psprecomp::GuestMemory::canonical(slot_raw)};
+        const auto slot_end = slot_begin + resources::SourceAuthority::kSlotBytes;
+        if (range_begin < slot_end && slot_begin < range_end) {
+            raw_owner = lease.raw;
+            owner = lease.token;
+            return true;
+        }
+    }
+    return false;
 }
 
 std::optional<resources::AuthorityToken> TextureLifetimeTracker::command_token(

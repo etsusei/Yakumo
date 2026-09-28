@@ -17,7 +17,7 @@ std::array<Slot, TextureCommandDispatch::kMaxRuntimes> slots{};
 TextureCommandDispatch::TextureCommandDispatch(psprecomp::Runtime &runtime,
         TextureCommandCallbacks callbacks) : runtime_(&runtime) {
     if ((callbacks.entry == nullptr) != (callbacks.returned == nullptr)) return;
-    if (!callbacks.entry && !callbacks.lifetime) return;
+    if (!callbacks.entry && !callbacks.lifetime && !callbacks.transfer && !callbacks.read) return;
     std::lock_guard lock(mutex);
     Slot *vacant = nullptr;
     for (auto &slot : slots) {
@@ -65,6 +65,30 @@ void texture_lifetime_checkpoint(psprecomp::Runtime &runtime,
     for (const auto &slot : slots) {
         if (slot.runtime == &runtime && slot.callbacks.lifetime) {
             slot.callbacks.lifetime(slot.callbacks.user, runtime, context, checkpoint);
+            return;
+        }
+    }
+}
+
+void texture_transfer_checkpoint(psprecomp::Runtime &runtime,
+        const psprecomp::AllegrexContext &context,
+        TextureTransferCheckpoint checkpoint) {
+    std::lock_guard lock(mutex);
+    for (const auto &slot : slots) {
+        if (slot.runtime == &runtime && slot.callbacks.transfer) {
+            slot.callbacks.transfer(slot.callbacks.user, runtime, context, checkpoint);
+            return;
+        }
+    }
+}
+
+void texture_read_checkpoint(psprecomp::Runtime &runtime,
+        const psprecomp::AllegrexContext &context,
+        TextureReadCheckpoint checkpoint) {
+    std::lock_guard lock(mutex);
+    for (const auto &slot : slots) {
+        if (slot.runtime == &runtime && slot.callbacks.read) {
+            slot.callbacks.read(slot.callbacks.user, runtime, context, checkpoint);
             return;
         }
     }

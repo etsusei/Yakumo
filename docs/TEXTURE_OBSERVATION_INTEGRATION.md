@@ -38,13 +38,48 @@ claims that a register value by itself is a receipt.
 | `0x088BD074` before `0x08879F08`; `0x088BD07C` on return | 0046 | Capture actual reverse-allocator manager, requested `0x2F470`, alignment 16 and nonzero returned `s2`. Pair by guest context and caller frame; do not use a later matching vptr as allocation evidence. |
 | `0x088BD13C` before call to `0x0A0E7460`; `0x088BD144` after | 0046 | Require that `a0` is the same `s2`, the live overlay is entry 122, and the original constructor returned 1. After return check vptr `0x0896FBC8` and cleared selected slot before `construct_owner`. The constructor itself is in a prebuilt, read-only lobby library; these main-unit call edges observe it without recompiling that library. |
 | `0x088A5470` entry; `0x088A54EC` tail transfer | 0040 | Validate the selected owner, selector 7, vtable/provider and mapped resource ID. The tail transfer supplies `(manager, ID, destination, group, 0, 1)` to virtual `+0x30`; bind the owner/load token to that call frame. `begin_load` revokes old source data, including a cached-ID reuse. |
-| `0x08863CDC` enqueue entry; `0x08863DD8` after each descriptor commit; `0x08863E28` successful return | 0023 | Pair the manager call with the wrapper. At `DD8`, snapshot the complete 32-byte ring descriptor, including both flags after the optional hash choice, destination, offset, chunk count and original total; issue a fresh `begin_descriptor` and `begin_fragment` for **each** ring-slot reuse. The return value 1 means queued, not loaded. An unpaired/overlapping destination is an external pending writer or observation loss. |
+| `0x08863CDC` enqueue entry; `0x08863DD8` after each descriptor commit; `0x08863E28` successful return | 0023 | Pair the manager call with the wrapper. At `DD8`, snapshot the complete 32-byte ring descriptor, including both flags after the optional hash choice, destination, offset, chunk count and original total. The original stores the producer index at manager `+0x1090` at `DD4` before the `DD8` callback. At `DD8`, `a2` (`gpr[6]`) points to the descriptor start; the descriptor is at `manager + 0x80 + ((old_index & 0x7F) * 32) + 12`. The complete G1 adapter must issue a fresh `begin_descriptor` and `begin_fragment` for **each** ring-slot reuse. The return value 1 means queued, not loaded. An unpaired/overlapping destination is an external pending writer or observation loss. |
 | `0x088654D4` state-8 branch; `0x0886551C` after `sceIoRead` | 0024 | Preserve route identity and actual signed read result in `s0` against requested `record[+8]`. Reobserve the full descriptor before each attempt. Only positive equality receives `observe_read`; short/zero/error retries never advance the logical extent. |
 | `0x0886577C` classifier result; `0x088652AC` copy-helper return; `0x088659B4` helper return; `0x088659C4` policy result | 0024 | For the outside-region inline route, require the same active descriptor and actual byte-copy return at `652AC`, then the helper and policy results leading to `659CC`. `659B4` alone is insufficient: the helper also has a no-copy exit at `0x0886528C`. Only the complete chain gives `observe_copy(Inline)`. |
 | `0x08865368` worker copy return; `0x08865304` event-set return; `0x088657C0` main wait return | 0024 | These are the distinct copy-worker operation and acknowledgement candidates for the classifier's other route. Require one unchanged descriptor and prove its branch/event correlation in an original-code fixture before `observe_copy(Worker)`. Until then the route retains its pending writer and uses original builder. A worker signal alone cannot certify a copy. |
 | `0x08865420` before in-place transform; `0x08865428` after; `0x08865440/0x08865448` around conditional SHA-1; `0x088653C4` worker event-set return; `0x08865A10` main wait return | 0024 | For `record[+0x1B]=1`, require actual descriptor-bound transform and matching worker acknowledgement, then `observe_transform` with footprint `round_up_4(chunk_bytes)`. `record[+0x1C]` alone decides whether the SHA-1 helper ran; state-8 evidence is `ComputedOnly` or `NotChecked`, never an invented reference comparison. If deobfuscation is off, record the verbatim branch and no transform receipt. |
 | `0x088654F8` early group-4 abort; `0x08865814` before retirement call; `0x08865D8C` retirement entry; `0x0886581C` after return | 0024 | Mark abort independently of retirement. At `65814` retain the final full descriptor before `65D8C` clears its active marker; record postprocess. Only after the original retirement returns at `6581C`, with the complete same-token read/copy/transform chain and no intervening invalidation, call `observe_terminal(true)`. Other terminal routes call it with `false` and leave a pending hazard. |
-| `0x088B03DC` allocator call; `0x088B03E4` result; `0x0889E5C0` builder entry | 0043, 0038 | Capture actual manager, computed request `36*child[+8]`, alignment 16 and returned pointer. At `03DC` the final size addition is the call delay slot; capture after that statement or at allocator entry with RA `03E4`, not immediately after the label. `allocate_command` uses the **requested** successful extent, never heap rounding slack. At builder entry require the same owner `+0x13F0` state and `+0x13F4` pointer, exact child/source interval, selected vtable/provider/caller code, current permit and stable execution context. |
+
+## Current G1a implementation boundary
+
+The build-local G1a adapter currently implements only the unit 0040 load/provider
+edge and the unit 0023 enqueue/descriptor edge above. It resets the selected
+owner's prior source at load start, copies all 32 bytes at `DD8`, starts a new
+descriptor token and records a pending external writer for the checked
+destination span. It does not call `begin_load` or `begin_fragment`: the source
+route and actual transfer/completion facts are not observed yet. The manager
+length lookup and descriptor's original total are observed through the real
+compiled path, but that requested length is not a decoded-output size or slot
+capacity check. Enqueue return 1 closes the frame and leaves every writer
+pending. The controlled ring-reuse fixture resets the producer index to reuse
+slot 0; it tests generation and hazard retention without claiming that a
+natural 128-entry ring wrap was executed. The initial G1a-R0 reports are
+historical; the current G1a-R1 source-bound reports and hashes are recorded in
+`docs/tasks.json`. Both revisions compare full CPU/RAM/VRAM state and keep
+`transfer_readiness=false`.
+
+G1a-R1 confirms that `a2`/`gpr[6]` points to the 32-byte descriptor start at
+the commit callback. Physical overlap with descriptor history takes precedence
+over the destination filter: a reused descriptor address starts a new
+`SourceAuthority::begin_descriptor` generation even when an unowned request's
+valid destination is disjoint from every watched slot. Prior records become
+non-current, but prior pending-writer tokens are never removed. Destination
+validity is checked independently of overlap, so an invalid span cannot be
+mistaken for proof of disjointness. Selected requests at exactly 0x5800 bytes
+are observable; larger requests are rejected with their writer hazard retained.
+The transformer can refresh a previously verified build-local output/manifest
+pair for changed input, while tampered, unknown or incomplete pairs remain
+protected. Its publish transaction now cleans up both temporaries on failure,
+restores old files independently, and preserves any backup that could not be
+restored. That is exception recovery for ordinary I/O errors; it does not
+claim cross-process crash atomicity. These changes affect only the bounded
+G1a build-local oracle; the transfer-boundary CMake option remains off by
+default.
 
 The initial proposed integration path is the outside-region inline copy. The
 selected synthetic destination `0x09000000` takes that branch; a live owner
@@ -55,6 +90,66 @@ production callback coverage: the route receives no live permit until the
 actual observation chain and operation/acknowledgement pairing are proved. Multiple queued
 fragments are represented in the authority API; a one-fragment fixture does
 not establish live split-request coverage.
+
+## Current G1b-read implementation boundary
+
+Iteration 6 adds a separate read checkpoint channel at state-8 entry
+`0x088654D4`, helper entry `0x08863608`, the original `sceIoRead` call edge
+`0x0886365C` and result edge `0x0886551C`. At each checkpoint the adapter
+resamples the complete 32-byte descriptor and correlates the original
+descriptor generation, selected request/load generation, owner allocation
+token, owner-slot invalidation generation, runtime/context/execution identity,
+worker stack, manager/record, fd, scratch and requested length. Each read has
+its own bounded serial and signed result. Short, zero and negative results are
+retry attempts; bytes are not accumulated across them. An exact positive result
+only closes that attempt and is never submitted to `SourceAuthority` as a
+completion receipt.
+
+The separately compiled unit 0024 test copy stops after `ReadResult` and before
+the branch that compares the returned result with `record[+8]`. The interpreter
+stops at that same edge. Both sides compare full CPU, RAM and VRAM state, and
+the test confirms the owner destination remains unchanged. The stop hook is
+isolated from `mhp3rd_generated` and the Yakumo application. Iteration 6's
+69-case normal/strict matrix is retained as historical evidence; independent
+review found retry, historical-unowned-generation, Baseline-staging and
+report-closure gaps. The iteration-7 R1 normal matrix pins 75 scenario
+identities and 450 AOT/interpreter calls. It retains 12 representative
+descriptor-field samples and covers retry/result classes, callback/register
+faults, aliases, owner reset/free/reuse/reload invalidation, incomplete
+results, capacity loss, historical unowned reads, partial-overlap rejection
+and a late-result rejection after descriptor-generation change. Its normal and
+strict source-bound reports pass and are recorded in `docs/tasks.json`. The first strict
+single-process attempt reached the existing 300-second budget without a
+sanitizer diagnostic. R1 now runs the same fixed matrix in three ordered
+25-scenario shards and verifies their exact nonoverlapping ID union under one
+unchanged source/binary identity; this changes scheduling only, not coverage.
+
+After a short/zero/error result, a selected frame requires a fresh State8
+callback; HelperEntry cannot clear the retry requirement itself. At State8,
+the current descriptor generation is initialized independently of whether the
+read is selected, while owner/request invalidation checks remain selected-only.
+Two actual compiled selected-to-unowned enqueue cases reuse descriptor history
+through the same raw address and through cached/uncached aliases; they retain
+the old writer and issue no selected read attempt. A clearly labeled synthetic
+partial-overlap fault exercises fail-closed storage classification. The
+active-attempt same-byte generation case invokes the production tracker commit
+callbacks with a controlled context; it is not evidence of concurrent
+compiled producer scheduling. The source-bound runner hashes the complete
+probe/lifetime/transfer/read output and manifest chain and checks the fixed
+scenario IDs and counters.
+
+The new `TextureReadInstrumentation.cmake` is in the observed Baseline staging
+allowlist. A fresh staged B0 source tree configured with read, transfer and
+probe boundaries off; this verified the unconditional include resolves
+without building or launching the application.
+
+The read import data and event scheduling are modeled. No real file identity,
+open/seek behavior or concurrent PSP worker schedule is exercised, and a
+change restored between observation points is not detectable. G1b-read stops
+before target-byte copy, transform, worker acknowledgement, retirement,
+cancellation or quiescence; all selected pending writers remain live and the
+healthy authority result remains exactly `NotReady`. Transfer readiness and
+Native mode stay disabled.
 
 ## Invalidation checkpoints
 

@@ -83,6 +83,17 @@ public:
     // pointer actually observed at the selected call edges.
     [[nodiscard]] std::optional<resources::AuthorityToken> owner_token(
         std::uint32_t raw) const noexcept;
+    // Reset changes source eligibility without freeing the owner allocation.
+    // Read attempts snapshot this per-lease generation so reset cannot be
+    // mistaken for an unchanged request when the allocation token survives.
+    [[nodiscard]] std::optional<std::uint64_t> owner_invalidation_generation(
+        std::uint32_t raw) const noexcept;
+    // Resolve a live owner lease whose fixed selector-7 slot overlaps a
+    // checked guest interval. Used to fail closed when a transfer checkpoint
+    // is missing before the transfer tracker has watched the owner.
+    [[nodiscard]] bool selected_slot_owner(std::uint32_t raw,
+        std::uint32_t bytes, std::uint32_t &raw_owner,
+        resources::AuthorityToken &owner) const noexcept;
     [[nodiscard]] std::optional<resources::AuthorityToken> command_token(
         std::uint32_t raw) const noexcept;
     [[nodiscard]] TextureLifetimeTrackerStats stats() const noexcept;
@@ -94,6 +105,7 @@ private:
         LeaseKind kind{LeaseKind::Empty};
         resources::AuthorityToken token{};
         std::uint32_t raw{}, bytes{}, manager{};
+        std::uint64_t invalidation_generation{1u};
     };
     enum class FrameKind { Empty, Factory, Caller };
     enum class FramePhase {
