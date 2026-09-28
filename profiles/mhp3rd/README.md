@@ -662,6 +662,7 @@ The settings a player needs are in the [in-game menu](#in-game-menu). Environmen
 | `MHP3RD_WINDOW_TITLE` | `Yakumo` | Title of the game window, to tell instances apart |
 | `MHP3RD_UNTHROTTLED` | off | Let emulated time run ahead of real time, so the game runs as fast as it can be drawn (menu: Game speed) |
 | `MHP3RD_FAST_LOADING` | on | `0` keeps loads at the PSP's pace (menu: Fast loading). See [Fast loading](#fast-loading) |
+| `MHP3RD_HIDE_LOADING_SCREEN` | on | `0` shows the game's NOW LOADING screen at its own pace instead of drawing it black. See [Fast loading](#fast-loading) |
 | `MHP3RD_FAST_LOADING_HELD` | on | `0` keeps a load at real time while any button is down, even one held since before the load began. See [Fast loading](#fast-loading) |
 | `MHP3RD_FRAME_RATE` | `30` | `45`, `60`, `90`, `120` or `display`: present frames in between the game's 30 (menu: Frame rate). See [Frame rate](#frame-rate) |
 | `MHP3RD_FRAME_RATE_AUTO` | on | `0` keeps the chosen frame rate even when the game falls behind (menu: Lower when behind) |
@@ -784,6 +785,8 @@ On a Mac with an M1, from the button press to the new scene's first sound (for t
 | Quest end to the village | 6.0 s | 1.4 s |
 
 What is left is the game's own music fading out and its animations, which play at real time, the game's check of what it read (`sha1Thread`) and unpacking, and installing a code overlay. While a load runs fast, a flip reaches the window at most about 30 times a second and the others are drawn and not shown, so Vsync never holds it back; frame interpolation pauses and picks up again after it. Each fast stretch logs one line: `[load] fast 4922 ms of game time in 434 ms real, 4488 ms saved (sound; 18.4 s saved so far)`, with what ended it. `MHP3RD_FAST_LOADING=0` or the menu's Off keeps every load at the PSP's pace.
+
+**The loading screen is drawn black** (`MHP3RD_HIDE_LOADING_SCREEN`, on by default). The game shows its NOW LOADING screen, a painted map with animated letters, at every area change and scene load, and keeps it up at the PSP's pace after the data is in: about 0.6 s of the roughly 1 s an area change took once the load itself ran fast. Frames that draw that screen's texture (recognised when it is uploaded, by the key `00000000fc273a05f3ac9991` it has in a texture pack) are shown black, and the game's own fade-in from black follows. While it is on show the load counts as going on after its reads stop, and the sound the game plays under it is dropped rather than ending the fast stretch, so the screen passes in a few hundredths of a second. Each change logs `[load] loading screen drawn black` and `[load] loading screen gone`. `MHP3RD_HIDE_LOADING_SCREEN=0` shows the screen and plays its sound as before.
 
 ### Audio
 

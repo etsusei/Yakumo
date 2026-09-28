@@ -13,6 +13,7 @@
 #include "texture_pack_import.hpp"
 
 #include "install/game_identity.hpp"
+#include "kernel/fast_loading.hpp"
 #include "install/user_data.hpp"
 
 #include "perf/frame_stats.hpp"
@@ -625,6 +626,9 @@ struct VulkanRenderer::Impl {
         // How far down a 512-tall texture has been drawn, which decides how
         // much of it the pack's hash covers; see texture_pack.hpp.
         std::uint16_t max_seen_v{};
+        // The atlas of the game's NOW LOADING screen (the painted map and the
+        // letters), recognised by its texture pack key when it was uploaded.
+        bool loading_screen{};
     };
 
     RendererConfig config;
@@ -1141,6 +1145,12 @@ struct VulkanRenderer::Impl {
     std::chrono::steady_clock::time_point fast_forward_shown{};
     // Per-frame tally, so "no 3D" can be told from "3D drawn somewhere else".
     std::uint32_t frame_through_draws{};
+    // Draws of the loading screen's atlas in the frame being recorded, and
+    // whether the last game frame showed the loading screen; that frame and
+    // the presents until the next one are drawn black
+    // (MHP3RD_HIDE_LOADING_SCREEN).
+    std::uint32_t frame_loading_screen_draws{};
+    bool loading_screen_shown{};
     std::uint32_t frame_transformed_draws{};
     std::uint32_t frame_transformed_vertices{};
     std::uint32_t frame_onscreen_vertices{};
@@ -3216,7 +3226,7 @@ void VulkanRenderer::Impl::submit_and_present(VkCommandBuffer commands, VkFence 
         if (prerotated() && image_index < upright_images.size()) target = upright_images[image_index].image;
 #endif
         transition(commands, target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        if (source != VK_NULL_HANDLE) {
+        if (source != VK_NULL_HANDLE && !loading_screen_shown) {
             transition(commands, source, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
             record_game_blit(commands, source, target);
@@ -3224,7 +3234,11 @@ void VulkanRenderer::Impl::submit_and_present(VkCommandBuffer commands, VkFence 
                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         } else {
             // Behind the setup screens: the dark brown of the project's logo.
-            const VkClearColorValue background{{0.075f, 0.055f, 0.045f, 1.0f}};
+            // In place of the game's loading screen: black, which the game's
+            // own fade-in from black then continues.
+            const VkClearColorValue background = source != VK_NULL_HANDLE
+                ? VkClearColorValue{{0.0f, 0.0f, 0.0f, 1.0f}}
+                : VkClearColorValue{{0.075f, 0.055f, 0.045f, 1.0f}};
             const VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u};
             vkCmdClearColorImage(commands, target, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &background, 1u,
                                  &range);
@@ -3901,6 +3915,22 @@ VulkanRenderer::Impl::Texture &VulkanRenderer::Impl::texture_for(const GuestMemo
         pending_textures.push_back({std::move(job), texture.image, state.width, state.height});
     }
     texture.max_seen_v = max_seen_v;
+    // The loading screen's atlas: 512x512, known by the key it has in a
+    // texture pack (out of MHP3RD_TEXTURE_DUMP), hashed once here at upload.
+    if (fast_loading::hide_loading_screen() && state.width == 512u && state.height == 512u) {
+        static const TexturePackOptions kKeyOptions = [] {
+            TexturePackOptions options;
+            options.ignore_address = true;
+            return options;
+        }();
+        constexpr TexturePackKey kLoadingScreenAtlas{0x00000000FC273A05ull, 0xF3AC9991u};
+        TexturePackKey pack_key;
+        std::uint32_t covered_width = 0u;
+        std::uint32_t covered_height = 0u;
+        texture.loading_screen = compute_texture_pack_key(memory, state, max_seen_v, kKeyOptions, pack_key,
+                                                          covered_width, covered_height) &&
+                                 pack_key == kLoadingScreenAtlas;
+    }
     // The pack's hash reads the whole texture, so it is taken here, once per
     // upload, and never on the per-draw path above.
     if (pack) texture.replacement = pack->find(memory, state, max_seen_v);
@@ -3913,6 +3943,7 @@ VulkanRenderer::Impl::Texture &VulkanRenderer::Impl::texture_for(const GuestMemo
 VkDescriptorSet VulkanRenderer::Impl::texture_descriptor(const GuestMemory &memory, const DrawCall &call) {
     const perf::SplitScope split(perf::Split::Texture);
     Texture &texture = texture_for(memory, call);
+    if (texture.loading_screen) ++frame_loading_screen_draws;
     if (texture.replacement && pack) {
         // Until the image is decoded and on the GPU, the original is drawn.
         if (const VkDescriptorSet replaced = replacements.descriptor(*texture.replacement, *pack, frames)) {
@@ -7306,6 +7337,9 @@ bool VulkanRenderer::present(std::uint32_t display_address,
         }
     }
     impl.frame_views.clear();
+    impl.loading_screen_shown = impl.frame_loading_screen_draws != 0u;
+    impl.frame_loading_screen_draws = 0u;
+    fast_loading::note_loading_screen(impl.loading_screen_shown);
     impl.frame_through_draws = 0u;
     impl.frame_transformed_draws = 0u;
     impl.frame_transformed_vertices = 0u;

@@ -7,6 +7,7 @@
 #include "ui/ui.hpp"
 #endif
 
+#include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -34,6 +35,11 @@ State &state() {
     return instance;
 }
 
+std::atomic<bool> &loading_screen_shown() {
+    static std::atomic<bool> shown{false};
+    return shown;
+}
+
 bool windowed() {
     static const bool value = std::getenv("MHP3RD_NO_RENDER") == nullptr;
     return value;
@@ -49,6 +55,7 @@ Guards sample_guards() {
         return value == nullptr || std::string_view(value) != "0";
     }();
     guards.carry_held_buttons = carry;
+    guards.loading_screen = loading_screen_shown().load(std::memory_order_relaxed);
     guards.movie = mpeg_active();
     guards.online = adhoc_networking_on() || adhoc_session_active();
 #if defined(MHP3RD_HAS_RENDERER)
@@ -88,6 +95,22 @@ bool note_audio(int peak) {
 }
 
 void note_buttons(std::uint32_t buttons) { state().buttons = buttons; }
+
+bool hide_loading_screen() {
+    static const bool hide = [] {
+        const char *value = std::getenv("MHP3RD_HIDE_LOADING_SCREEN");
+        return value == nullptr || std::string_view(value) != "0";
+    }();
+    return hide;
+}
+
+void note_loading_screen(bool shown) {
+    const bool hidden = shown && hide_loading_screen();
+    if (loading_screen_shown().exchange(hidden, std::memory_order_relaxed) != hidden) {
+        std::printf("[load] loading screen %s\n", hidden ? "drawn black" : "gone");
+        std::fflush(stdout);
+    }
+}
 
 void update() {
     Detector &detector = state().detector;

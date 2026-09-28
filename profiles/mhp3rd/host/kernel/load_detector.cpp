@@ -27,6 +27,9 @@ bool Detector::audio(std::uint64_t now_us, int peak) {
     if (peak > kAudiblePeak) {
         sound_seen_ = true;
         last_sound_us_ = now_us;
+        // Behind the black loading screen nothing is shown to go with the
+        // sound, so it is dropped with the rest of the fast stretch.
+        if (fast_ && loading_screen_) return true;
         if (fast_) {
             fast_ = false;
             reason_ = Reason::Sound;
@@ -37,7 +40,9 @@ bool Detector::audio(std::uint64_t now_us, int peak) {
 }
 
 bool Detector::update(std::uint64_t now_us, const Guards &guards) {
-    const bool loading = read_seen_ && now_us - last_read_us_ <= kReadWindowUs;
+    const bool reading = read_seen_ && now_us - last_read_us_ <= kReadWindowUs;
+    const bool loading = reading || guards.loading_screen;
+    loading_screen_ = guards.loading_screen;
     // Outside a load every held button is a candidate to carry into the next
     // one; inside it only releases are followed.
     if (loading) carried_buttons_ &= guards.buttons;
@@ -51,7 +56,7 @@ bool Detector::update(std::uint64_t now_us, const Guards &guards) {
     else if (guards.menu) reason = Reason::Menu;
     else if (pressed != 0u) reason = Reason::Buttons;
     else if (!loading) reason = Reason::NotLoading;
-    else if (sound_seen_ && now_us - last_sound_us_ < kQuietUs) reason = Reason::Sound;
+    else if (!guards.loading_screen && sound_seen_ && now_us - last_sound_us_ < kQuietUs) reason = Reason::Sound;
     fast_ = reason == Reason::None;
     reason_ = reason;
     return fast_;

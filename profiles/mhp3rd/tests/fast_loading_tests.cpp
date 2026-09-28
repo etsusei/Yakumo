@@ -145,6 +145,37 @@ void test_carried_buttons_restart_between_loads() {
     check(detector.update(2001 * kMs, carrying(kDash)), "dash held since before the next load is carried");
 }
 
+Guards showing_loading_screen() {
+    Guards guards = open_guards();
+    guards.loading_screen = true;
+    return guards;
+}
+
+void test_loading_screen_keeps_the_load_fast() {
+    Detector detector;
+    detector.disc_read(1000 * kMs);
+    check(detector.update(1001 * kMs, showing_loading_screen()), "the loading screen with reads runs fast");
+    check(detector.audio(1002 * kMs, 5000), "sound under the black loading screen is dropped");
+    check(detector.fast(), "and does not end the fast stretch");
+    check(detector.update(1000 * kMs + kReadWindowUs + 100u * kMs, showing_loading_screen()),
+          "the lingering loading screen still runs fast after the reads stopped");
+    check(!detector.update(1000 * kMs + kReadWindowUs + 101u * kMs, open_guards()),
+          "the screen gone and no reads: real time");
+    check(detector.reason() == Reason::NotLoading, "because nothing loads any more");
+    check(!detector.audio(1000 * kMs + kReadWindowUs + 102u * kMs, 5000), "sound after it is played");
+}
+
+void test_loading_screen_keeps_the_other_guards() {
+    Detector detector;
+    Guards pressed = showing_loading_screen();
+    pressed.buttons = kAttack;
+    check(!detector.update(1001 * kMs, pressed), "a new press still keeps real time on the loading screen");
+    check(detector.reason() == Reason::Buttons, "because of the press");
+    Guards menu = showing_loading_screen();
+    menu.menu = true;
+    check(!detector.update(1002 * kMs, menu), "the in-game menu still keeps real time");
+}
+
 } // namespace
 
 int main() {
@@ -157,6 +188,8 @@ int main() {
     test_new_press_during_a_load_keeps_real_time();
     test_carrying_off_keeps_the_old_rule();
     test_carried_buttons_restart_between_loads();
+    test_loading_screen_keeps_the_load_fast();
+    test_loading_screen_keeps_the_other_guards();
     if (failures != 0) {
         std::cerr << failures << " failure(s)\n";
         return 1;

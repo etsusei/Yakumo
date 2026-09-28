@@ -46,6 +46,11 @@ struct Guards {
     // Let buttons held since before the load stay held while it runs fast.
     // Off (MHP3RD_FAST_LOADING_HELD=0): any button down keeps real time.
     bool carry_held_buttons{};
+    // The game's NOW LOADING screen is on show and drawn black instead
+    // (MHP3RD_HIDE_LOADING_SCREEN). While it is, the load counts as going on
+    // after its reads have stopped, and sound does not end it: the screen
+    // lingers after the data is in, and what plays under it is not heard.
+    bool loading_screen{};
     bool movie{};         // a movie is playing
     bool online{};        // ad hoc networking is on, or a session is going
     bool menu{};          // the in-game menu is open over the game
@@ -82,6 +87,7 @@ private:
     // Buttons held since before the current load; releases drop out of it,
     // so pressing one again counts as a new press.
     std::uint32_t carried_buttons_{};
+    bool loading_screen_{};
 };
 
 // The running game's detector and what goes with it: the log lines, the
@@ -92,6 +98,12 @@ void note_disc_read();
 [[nodiscard]] bool note_audio(int peak);
 // The buttons and D-pad directions the game just read.
 void note_buttons(std::uint32_t buttons);
+// Whether the game's loading screen is drawn black (MHP3RD_HIDE_LOADING_SCREEN,
+// on unless set to 0). Read once.
+[[nodiscard]] bool hide_loading_screen();
+// The renderer reports, once per game frame, whether that frame drew the
+// loading screen. Safe to call from the render thread.
+void note_loading_screen(bool shown);
 // Re-evaluates at a vblank and tells the kernel whether it may run ahead.
 void update();
 // Whether emulated time runs ahead of real time at the moment.
