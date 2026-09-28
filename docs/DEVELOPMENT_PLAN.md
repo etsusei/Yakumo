@@ -2,7 +2,7 @@
 
 Plan version: **1.3**. Decision date: **2026-09-26**; amended **2026-09-28** ([Amendment 1.2](#amendment-12--texture-path-and-working-rules)) and **2026-09-29** ([Amendment 1.3](#amendment-13--loading-experience-first)). Task ledger: [tasks.json](tasks.json).
 
-Handoff refreshed: **2026-09-29T03:00:00Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
+Handoff refreshed: **2026-09-29T05:30:00Z**. This refresh preserves the agreed scope and historical evidence; it records unfinished implementation explicitly.
 
 This is the durable handoff for the agreed development approach. Read this document and the task ledger before starting work. The ledger is authoritative for task status; checkboxes below are its human-readable summary. Update both in the same change when a task changes status. A future chat summary must not replace these recorded decisions silently. New explicit user instructions can amend the plan; record the amendment and update the ledger before acting on the new scope.
 
@@ -289,7 +289,7 @@ For each finite implementation task:
 
 ### Resume here
 
-Current continuation (Amendment 1.3): **LOAD-005 awaits the user's check.** LOAD-003 found that holding dash while crossing an area boundary kept in-quest loads at real time (about 1.0-1.5 s); fast loading now carries buttons held since before the load (`MHP3RD_FAST_LOADING_HELD=0` restores the old rule). The user plays `out/testing/load-measure-2` for a before/after comparison; LOAD-004 (black fade) is decided afterwards.
+Current continuation (Amendment 1.3): **LOAD-004 awaits the user's check.** Carrying held buttons (LOAD-005) cut an in-quest area change from about 1.7 s to about 1.0 s; a screen recording then showed the rest was the game's NOW LOADING screen lingering about 0.6 s before its fade-in. That screen is now drawn black and passes at fast-loading speed (`MHP3RD_HIDE_LOADING_SCREEN=0` restores it). The user plays `out/testing/load-measure-4`.
 
 G0 remains complete on the current G1a source: the latest normal and strict-fail ASan/UBSan reports each match all 41 registered input/source/build identities and pass the exact healthy-authority `NotReady` assertion, full CPU/RAM/VRAM checks, bounded calls and `transfer_readiness=false`. The pause-era `not_run` snapshot and earlier resumed reports remain historical evidence.
 

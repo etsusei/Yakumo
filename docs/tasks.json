@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.3",
-  "revision": 165,
+  "revision": 168,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-29T03:00:00Z",
+  "updated_at": "2026-09-29T05:30:00Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -770,13 +770,13 @@
     }
   },
   "execution_state": {
-    "current_task_id": "LOAD-005",
+    "current_task_id": "LOAD-004",
     "next_task_id": "LOAD-004",
-    "next_action": "User plays out/testing/load-measure-2 (same route, dash held while changing areas); compare its log with LOAD-002, then decide LOAD-004.",
+    "next_action": "User plays out/testing/load-measure-4 (a quest with several area changes); check the look and the log, then close LOAD-004/LOAD-005 or adjust.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
     "awaiting_user_task_ids": [
-      "LOAD-005"
+      "LOAD-004"
     ],
     "local_artifact_note": "Local-only artifacts removed at the user's request on 2026-09-28 to free disk space: out/testing/dist (all delivered app pairs), out/testing/observed-sources and out/testing/observed-builds (their source snapshots and archived binaries), out/testing/texture-read-prefix and other scratch build trees, sanitizer/test binaries and out/native-experiment (except the packaging font). Ledger deliverables at those paths are now unavailable; their recorded evidence and hashes remain historical facts. Kept: out/mhp3rd, out/testing/baselines, out/testing/runs (user records), reports, profiles/mhp3rd/analysis and out/ccache. The lobby overlay module used by the texture oracles was copied to out/testing/texture-transfer-inputs/."
   },
@@ -10855,28 +10855,67 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "not_started",
-      "owner_agent_id": null,
+      "status": "awaiting_user_test",
+      "owner_agent_id": "/claude_code",
       "responsible_actor_id": null,
-      "contributor_agent_ids": [],
+      "contributor_agent_ids": [
+        "/claude_code"
+      ],
       "created_at": "2026-09-29T01:10:00Z",
-      "updated_at": "2026-09-29T01:10:00Z",
-      "started_at": null,
+      "updated_at": "2026-09-29T05:30:00Z",
+      "started_at": "2026-09-29T04:10:00Z",
       "completed_at": null,
       "timestamp_note": null,
-      "scope": "Host-side presentation: fade to black at load start, hold, fade in on the first game frame after it; setting and environment switch to turn it off.",
+      "scope": "Host-side: recognise the game's NOW LOADING screen from the texture-pack key of what it draws, present black (with a short fade) instead of it, and let game time run fast while it is only lingering; the game's own fade-in from black completes the transition. Off switch required; no guest code change.",
       "depends_on": [
         "LOAD-003"
       ],
-      "work_summary": null,
-      "deliverables": [],
+      "work_summary": "The NOW LOADING atlas (texture pack key 00000000fc273a05f3ac9991, found in the session-3 texture dump) is tagged at upload; game frames that draw it are presented black until the next game frame, and fast loading treats the lingering screen as part of the load and drops the sound under it. MHP3RD_HIDE_LOADING_SCREEN=0 restores the original screen and sound.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/gpu/vulkan_renderer.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/kernel/fast_loading.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/fast_loading_tests.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/load-measure-3/texdump/00000000fc273a05f3ac9991.png",
+          "kind": "analysis",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/load-measure-4/开始测量.command",
+          "kind": "script",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
       "acceptance_criteria": [
         "Off restores the original presentation exactly.",
         "No guest code or game timing changes.",
         "Verified in a bounded run and by the user."
       ],
       "validation": {
-        "checks": [],
+        "checks": [
+          {
+            "name": "Unit tests and bounded windowed boot",
+            "status": "passed",
+            "details": "mhp3rd_fast_loading_tests passes with two new loading-screen cases. A 25 s windowed run without input or audio logged 'loading screen drawn black' then 'gone' at the boot loading screen; the first fast stretch covered 4488 ms of game time in 310 ms, including about 1.3 s of sound the game plays under that screen, which is now dropped."
+          }
+        ],
         "limitations": []
       },
       "implementation_commits": [],
@@ -10891,10 +10930,32 @@
           "from_status": null,
           "to_status": "not_started",
           "description": "Created from the user's Amendment 1.3 decision."
+        },
+        {
+          "recorded_at": "2026-09-29T04:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "started",
+          "from_status": "not_started",
+          "to_status": "in_progress",
+          "description": "Screen recording showed a loading screen, not a fade. Prepared out/testing/load-measure-3 (texture dump) to identify its textures."
+        },
+        {
+          "recorded_at": "2026-09-29T05:30:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "implemented_awaiting_user_check",
+          "from_status": "in_progress",
+          "to_status": "awaiting_user_test",
+          "description": "Loading screen drawn black and skipped; session 4 prepared."
         }
       ],
       "updated_by_agent_id": "/claude_code",
-      "limitations": []
+      "limitations": [
+        "Sound played under the loading screen is dropped (boot jingle; the start of a new area's ambience).",
+        "The switch from gameplay to black is a cut, as the game's switch to its loading screen is; no host fade-out is drawn.",
+        "In-quest area changes with the change are not yet verified by play."
+      ]
     },
     {
       "id": "LOAD-005",
@@ -10902,14 +10963,14 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "awaiting_user_test",
+      "status": "in_progress",
       "owner_agent_id": "/claude_code",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
         "/claude_code"
       ],
       "created_at": "2026-09-29T01:10:00Z",
-      "updated_at": "2026-09-29T03:00:00Z",
+      "updated_at": "2026-09-29T03:40:00Z",
       "started_at": "2026-09-29T03:00:00Z",
       "completed_at": null,
       "timestamp_note": null,
@@ -10936,6 +10997,12 @@
           "kind": "script",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "out/testing/load-measure-2/load-20260929-004150.log",
+          "kind": "session_log",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -10949,6 +11016,18 @@
             "name": "Fast-loading unit tests and headless boot",
             "status": "passed",
             "details": "mhp3rd_fast_loading_tests passes with four new cases (carried dash, new press, carrying off, carry reset between loads) and the unchanged guard cases; Yakumo rebuilt (74 s, no new warnings) and booted headless with 355 overlays from the session-2 data directory."
+          },
+          {
+            "name": "User session 2 (dash held, same route)",
+            "status": "passed",
+            "evidence_path": "out/testing/load-measure-2/load-20260929-004150.log",
+            "details": "Fast loading engaged on every in-quest area change (e.g. 1463 ms of game time in 115 ms real). Whole transition, from normal play stopping to resuming at 250 ms resolution: session 1 1.02-2.52 s (5 changes, mean about 1.7 s); session 2 0.75-1.29 s (4 changes, mean about 1.0 s). The remaining time is the game's own fade-out and fade-in at real time around a load of about 0.12 s. The user reported the loading screen is still visible and the change does not feel much faster."
+          },
+          {
+            "name": "Screen recording of one in-quest area change",
+            "status": "passed",
+            "evidence_path": "~/Desktop (user screen recording, not copied)",
+            "details": "Frame brightness and key frames: gameplay cuts directly (no fade-out) to a NOW LOADING screen (quest map, target area number, animated letters) held about 0.6 s, then the new area fades in from black over about 0.5 s. The load itself takes about 0.12 s, so the loading screen lingers after loading has finished."
           }
         ],
         "limitations": []
@@ -10974,6 +11053,15 @@
           "from_status": "not_started",
           "to_status": "awaiting_user_test",
           "description": "Carried-button rule implemented, tested and handed to the user for a second session."
+        },
+        {
+          "recorded_at": "2026-09-29T03:40:00Z",
+          "occurred_at": "2026-09-28T15:41:50Z",
+          "actor_id": "project-owner",
+          "action": "user_session_2",
+          "from_status": "awaiting_user_test",
+          "to_status": "in_progress",
+          "description": "Load portion now about 0.12 s; whole transition about 1.0 s; loading screen still visible. Next: identify what the game draws during its transition sequence."
         }
       ],
       "updated_by_agent_id": "/claude_code",
