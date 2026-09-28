@@ -279,3 +279,74 @@ path. Transfer readiness is deliberately absent. Next connect original
 read/copy/transform/terminal/cancellation receipts, coherent epochs and writer
 serialization, then the authority-backed mode controller. The application
 installs no callback owner yet; no new manual case or app has been delivered.
+
+**G1c — Selected inline completion (iteration 8; locally passed, independent acceptance pending).**
+The batch keeps the accepted R1 state-8 read association and runs unit 0024
+beyond `ReadResult` in an isolated completion object set. It observes the
+selected classifier, inline copy, policy, optional transform/digest, worker
+request/wait/acknowledgement and retirement callbacks through a finite progress
+state machine. The original 64-case AOT/interpreter oracle passes with 56
+completion-event cases and zero sequence failures; final normal/strict artifacts
+are `out/testing/texture-completion-c2c_a27f-i9-final3-normal.json` and
+`out/testing/texture-completion-c2c_a27f-i9-final3-strict.json`. A companion
+smoke fixture reuses the compiled R1 owner/enqueue/read path, forwards the
+completion sequence to the real tracker, and proves one exact writer reaches
+`Completed` and `prove_external_quiescent` while Authority remains `None` and
+readiness remains `NotReady`. G0/G1a/G1b normal/strict regressions, 51 scoped
+Python tests, focused CTest 2/2 and the progress test pass. The application
+target remains unchanged, file I/O and scheduling remain modeled, Native stays
+Off, and the positive copy-worker route remains unsupported.
+
+The build/evidence side now defines `mhp3rd_texture_completion_integration_oracle`
+and its Clang sanitizer variant behind exact completion-object, tracker,
+lifetime, command, source-authority, decoder and fixture guards. The default
+fixture entry point is present at
+`tests/texture_completion_integration_oracle.cpp`. These targets remain
+separate from the original 64-case oracle and the explicitly synthetic tracker
+smoke, and stay `EXCLUDE_FROM_ALL` with no application linkage. The integration
+runner contract is executable-owned: `--integration-oracle` accepts the real
+binary plus decoder and fixture-source paths, binds the fixture source for
+identity only, and invokes the executable with six runtime arguments (`ELF`,
+overlay, module, report, encoded and decoded). It publishes only the report's
+compiled/synthetic/retirement/readiness, source-receipt, named-case, writer and
+CPU/RAM/VRAM fields after validating all source/output hashes. Workflow B's
+decoder and workflow C's fixture sources are present and included in the source
+hash chain. The existing cache supplied a usable CMake 4.4.3 executable at
+`/private/tmp/yakumo-build-tools/lib/python3.9/site-packages/cmake/data/bin/cmake`;
+it is not on `PATH`. Reconfiguring the existing
+`out/testing/texture-read-prefix` tree generated both normal and sanitized
+integration targets. Both `cmake --build` targets completed; the compile
+database contains one decoder compile in each direct sanitized tracker target
+and none in normal integration, which receives it from the tracker library.
+The link step warns only about a duplicate `libmhp3rd_texture_commands.a`.
+Both integration executables then ran through the six-argument runner, but
+the executable-owned report was `success=false`: all healthy cases failed,
+`writer_released=0`, `writer_retained=5`, CPU/RAM/VRAM comparisons were zero,
+and `full_ram_vram_cpu_compared=false`. The report retained five fault cases
+and listed nine failed cases, so no successful compiled integration report was
+published. The progress and decoder CTests passed. Historical final3 reports
+remain separate evidence. The existing lower `--oracle` runner also passed in
+both normal and strict modes with `cases=64`, `events=56`,
+`tracker_completed=1`, `unsupported_copy=14` and `transfer_readiness=false`;
+fresh reports are `out/testing/texture-completion-c2c_a27f-i10-normal.json`
+and `out/testing/texture-completion-c2c_a27f-i10-strict.json`. These lower
+reports do not claim compiled integration execution.
+G1c, G1 and ASSET-014 remain in progress.
+
+**G1c compiled integration (iteration 11; locally passed, independent acceptance pending).**
+The executable-owned integration report now passes in normal and strict
+ASan/UBSan modes with 14 named cases: six healthy cases release their writer
+after full CPU/RAM/VRAM comparison and an observed original
+`RetirementReturn`, and eight fault cases (including the unsupported
+copy-worker route) retain it; `transfer_readiness=false` and no source
+completion receipt is issued. The repairs restore resource 17 in the fixture
+length table, seed the original RNG object (`0x09FC8BE8 = 0x08ABAE40`) that
+the deobfuscating enqueue reads, decode worker-frame edges from the worker's
+own registers, accept the post-digest join at `0x088653B4`, correlate
+syscalls of operations closed before the worker started, and inject register
+faults on the observed context object. The lower 64-case oracle again runs the
+complete original path. Details are in
+[TEXTURE_OBSERVATION_INTEGRATION.md](TEXTURE_OBSERVATION_INTEGRATION.md).
+G1 and ASSET-014 remain in progress: Native stays off, SourceAuthority stays
+`NotReady`, and the positive copy-worker route, file identity and scheduling
+are still unsupported or modeled.

@@ -277,3 +277,138 @@ checkpoint; reject a switched guest thread, missing callback, duplicate
 phase, ring reuse or budget exhaustion. Baseline receives the same read-only
 observations with Native mode off. Neither a clean recorder summary nor an
 outer-dispatch-only count proves these internal edges ran.
+
+## G1c selected inline completion batch (iteration 8)
+
+The accepted R1 read prefix now feeds one isolated completion observer for the
+selected state-8 inline route. The completion copy keeps the read callbacks but
+removes the read-result stop, then observes classifier return, inline copy,
+policy, optional transform/digest, worker request/wait/acknowledgement and the
+original retirement call/entry/return. Its bounded progress state rejects
+missing, duplicate or out-of-order events. A selected exact-read operation is
+identified by its read attempt serial, descriptor/request generations, owner
+token, descriptor token, writer token, destination and footprint.
+
+Only the matching pending writer may be ended, and only after the retirement
+return has been checked against the pre-retirement descriptor snapshot and
+generation. The observer calls `prove_external_quiescent` for that writer and
+leaves every other writer live. Unsupported copy-worker classifier results,
+cancellation, generation changes, missing acknowledgements and incomplete
+retirement keep their writer and continue the original guest path. No source
+load/fragment/completion API is called, so healthy authority remains exactly
+`NotReady`.
+
+The G1c oracle executes 64 bounded scenarios per AOT/interpreter path with
+full CPU/RAM/VRAM comparison. It covers retry-to-exact handoff, inline verbatim
+and transform paths, optional digest, rounded transform footprints, marker and
+group-cancellation faults, and 14 unsupported copy-worker cases. Normal and
+strict final artifacts are `out/testing/texture-completion-c2c_a27f-i9-final3-normal.json`
+and `out/testing/texture-completion-c2c_a27f-i9-final3-strict.json`; both record
+56 completion-event cases and zero sequence failures. The companion tracker smoke reuses the compiled R1 owner/enqueue/read fixture
+and forwards a synthetic completion sequence to the real tracker. It proves one
+matching writer is released while authority remains exactly `None`/`NotReady`; the smoke
+report is embedded in each artifact. The original 64-case lower oracle still
+provides the AOT/interpreter byte comparison, while file identity and scheduler
+behavior remain modeled.
+Production Native mode, global epochs, global writer exclusion and
+SourceAuthority source readiness remain future work.
+
+The remaining build/evidence seam is deliberately explicit. Workflow B provides
+the decoder source and workflow C now provides the compiled integration fixture
+source. The default CMake entry point is
+`tests/texture_completion_integration_oracle.cpp`; callers may override it with
+`MHP3RD_TEXTURE_COMPLETION_INTEGRATION_ORACLE_SOURCE`. The normal and Clang
+sanitized `mhp3rd_texture_completion_integration_*` targets then link the
+completion object set, tracker, lifetime tracker, command core/bridge, source
+authority and native callback registry. They are `EXCLUDE_FROM_ALL`, and the
+synthetic smoke macro is never defined for them.
+
+The runner's `--integration-oracle` mode requires `--decoder-source` and
+`--integration-fixture`. The latter names the fixture source used to compile
+the executable and is bound for identity only; it is not a runtime argument.
+The executable receives
+`<elf> <overlay> <module> <report> <encoded> <decoded>`. The
+executable must emit `compiled_integration=true`,
+`synthetic_completion_sequence_used=false`,
+`fixture_supplied_successful_retirement=false`, `transfer_readiness=false`,
+`source_completion_receipts`, unique `named_cases`, `writer_released`,
+`writer_retained`, positive CPU/RAM/VRAM comparison counts and
+`full_ram_vram_cpu_compared=true`. The runner copies those values from the
+report, rejects missing or synthetic evidence, and hashes the generated
+completion outputs/manifests, decoder source, fixture source, stop header, CMake
+module and executable. The cache supplies CMake 4.4.3 at
+`/private/tmp/yakumo-build-tools/lib/python3.9/site-packages/cmake/data/bin/cmake`,
+although it is not on `PATH`. Reconfiguring the existing
+`out/testing/texture-read-prefix` tree generated both normal and sanitized
+targets. Each `cmake --build --parallel 2` target completed; compile commands
+show one decoder compile in each direct sanitized tracker target and no direct
+decoder compile in normal integration. The link step warned only about a
+duplicate `libmhp3rd_texture_commands.a`. Both six-argument integration runner
+invocations reached the executable, which emitted `success=false` after all
+healthy cases failed, with no writer release or CPU/RAM/VRAM comparisons;
+therefore no successful compiled integration report was published. The
+progress and decoder CTests passed. G1c and ASSET-014 remain incomplete.
+The separate lower `--oracle` runner did pass in normal and strict modes with
+64 cases, 56 completion events, one tracker completion and 14 unsupported
+copy-worker cases. Fresh reports are
+`out/testing/texture-completion-c2c_a27f-i10-normal.json` and
+`out/testing/texture-completion-c2c_a27f-i10-strict.json`; they remain lower
+oracle evidence and do not claim compiled integration execution.
+
+### Compiled integration repair (iteration 11)
+
+The executable-owned integration report now passes. Each fix below was
+located with a trace of the failing run, not inferred:
+
+- **Fixture resource.** The selected request is resource 17 (`0x11`). A
+  diagnostic edit had seeded the manager length table (`manager + 0x11C0`)
+  with 11 after the hexadecimal trace value was read as decimal; the length
+  lookup then returned zero and every case failed at `DescriptorCommit` with
+  `InvalidRange`. The table entry is 17 again.
+- **Guest fault at `0x014FA816`.** With deobfuscation enabled, the original
+  enqueue (`0x08863EB4`) draws from the RNG helper `0x088E7D54(object, 1)`,
+  whose 16-bit state lives at `object + 0x014FA814 + 2`. The fixture left the
+  object pointer at `0x09FC8BE8` zero, so the helper read `0x014FA816`. Game
+  startup (`0x0888D8BC`..`0x0888D8E8`) stores `0x08ABAE40` there; the fixture
+  now does the same. The helper advances the state to
+  `176 * max(state, 1) mod 65363`, and the enqueue sets the descriptor digest
+  byte (offset 28) when that value `mod 100` is below 5. The fixture seeds the
+  state with 25 (digest) or 1 (no digest), so the original code selects the
+  scenario's branch.
+- **Worker-frame decoding.** The worker (`0x08865378`) keeps the manager in
+  `gpr18`, the descriptor in `gpr16` and `manager + 0x30000` in `gpr17`. The
+  `TransformCall` and `DigestCall` completion edges now read the call
+  arguments `a0`/`a1` (manager/descriptor), matching their call-boundary
+  decode, and the worker acknowledgement call uses `gpr18`/`gpr16`.
+  Reader-frame edges keep `gpr17`/`gpr18`.
+- **Digest join.** `0x088653B4` is reached both when the digest is skipped and
+  by the jump after the digest call (`0x08865448`). The decoder reads only the
+  digest byte (`lbu 28(s0)`) and reports `DigestJoined` when it is set; the
+  tracker accepts that only when a digest was requested and has returned.
+- **Closed operations.** An operation closed before its first worker syscall,
+  such as an unsupported classifier result, resolves the manager's event
+  handle at closure so the original reader's later syscalls correlate. A
+  changed handle does not match and fails closed.
+- **Fault injection.** The tracker binds operations to the guest context
+  object, so register faults are applied to that object for the forwarded
+  observation and restored before the guest resumes. The wrong-worker fault
+  now points the worker's `a1` at a word that is not the manager; the tracker
+  cannot pair that entry and locks authority with `UnpairedSelectedLoad`.
+- **Separate oracles.** The synthetic tracker smoke mirrors the real worker
+  frame and emits the retirement writes between `RetirementEntry` and
+  `RetirementReturn`, as the original routine does. The lower 64-case oracle
+  again compares the complete path through its terminal sleep; only the
+  compiled integration fixture stops at `RetirementReturn`. G1a/G1b builds
+  guard the G1c-only fixture state.
+
+The normal and strict integration runs report 14 named cases: six healthy
+cases (inline verbatim, inline transform, transform with digest, rounded
+5-byte footprint, short-to-full retry, and a new completion beside an older
+pending writer) release their writer after full CPU/RAM/VRAM comparison;
+eight fault cases, including the unsupported copy-worker route, retain it.
+Every healthy case observes the original `RetirementReturn`,
+`source_completion_receipts` is 0 and `transfer_readiness` stays false.
+Reports: `out/testing/texture-completion-integration-claude-i13-normal.json`
+and `out/testing/texture-completion-integration-claude-i13-strict.json`.
+Native mode stays off, SourceAuthority stays exactly `NotReady`, the
+application target is unchanged, and file I/O and scheduling remain modeled.

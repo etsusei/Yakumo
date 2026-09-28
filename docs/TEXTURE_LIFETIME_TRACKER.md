@@ -413,3 +413,74 @@ calls per path and 11,122 command slots; artifact SHA-256 is
 scoped Python tests and two focused CTests pass.
 
 G1b-read-R1 ends at the read-result prefix and has been accepted in scope by the independent C2C review. Copy, transform, worker acknowledgement, terminal, cancellation/quiescence, epochs, writer exclusion, the Native controller and new paired applications remain outside this slice. ASSET-014 stays in progress; no next phase is authorized until the user requests another concrete batch.
+
+## G1c selected inline completion (iteration 8)
+
+G1c keeps the accepted R1 read association and runs a separate completion copy
+of unit 0024 past `ReadResult`. The original classifier, inline copy, policy,
+optional transform/digest, worker acknowledgement and retirement edges are
+observed through a bounded `CompletionProgress` state machine. The application
+continues to use the uninstrumented generated object set; completion objects
+and their terminal hook are `EXCLUDE_FROM_ALL` oracle inputs.
+
+An exact read starts one operation record identified by read serial, descriptor
+and request generations, owner/descriptor/writer tokens, destination, logical
+bytes and rounded footprint. A matching retirement return may call
+`prove_external_quiescent` for that exact writer and close exactly one writer.
+Every other writer remains live. Unsupported copy-worker classifier results,
+cancellation, generation changes, missing acknowledgements and incomplete
+retirement remain `Unsupported`/`Cancelled`/`Invalid` and retain the writer.
+No source load, source fragment or source readiness API is called; healthy
+authority remains exactly `NotReady`.
+
+The isolated original-code oracle passes 64 scenarios per AOT/interpreter path,
+with 56 completion-event cases and zero completion sequence failures. Its final
+normal/strict artifacts are
+`out/testing/texture-completion-c2c_a27f-i9-final3-normal.json` and
+`out/testing/texture-completion-c2c_a27f-i9-final3-strict.json`; both share raw
+report SHA-256
+`3fee3934c169bf239373002dd8e858f645a78228666b8cf077482b839704cc37` and bind
+24 source/build/manifest/input identities. The embedded real-tracker smoke
+reports each record one started and one completed operation, zero live writers,
+authority failure `None`, and exact `transfer_readiness=false`. The completion
+object set and progress test remain isolated from the application. The full R1
+read, G0 and G1a normal/strict regressions were refreshed after the tracker
+handoff; their final report paths use the `c2c_a27f-i9` suffix.
+
+The smoke sequence reuses the compiled R1 exact-read fixture and forwards a
+bounded synthetic completion sequence to the real tracker; it is explicitly a
+smoke check, not a compiled completion-path proof. The
+original 64-case oracle still models file I/O and scheduling. The positive
+copy-worker route, real PSP scheduling, global epochs, global writer exclusion,
+SourceAuthority source creation and Native controller remain outside this
+batch.
+
+The build/evidence handoff keeps the original oracle and synthetic smoke as
+separate `EXCLUDE_FROM_ALL` targets. It also defines normal and sanitized
+integration targets that appear only when the completion object set, real
+tracker/lifetime/command/source targets, the workflow-B decoder and the
+workflow-C integration entry point are all present. The default workflow-C
+entry point is now present in the checkout. The integration runner's
+`--integration-oracle` mode requires executable-owned values for compiled
+integration, synthetic-sequence use, fixture retirement, readiness, source
+completion receipts, named cases, writer release/retention and CPU/RAM/VRAM
+comparisons; it hashes the generated decoder/fixture/stop/CMake inputs and
+outputs before publishing. The existing cache supplied CMake 4.4.3 at
+`/private/tmp/yakumo-build-tools/lib/python3.9/site-packages/cmake/data/bin/cmake`
+(it is not on `PATH`). Reconfiguration of the existing
+`out/testing/texture-read-prefix` tree generated both integration targets, and
+normal and sanitized `cmake --build --parallel 2` completed. The compile
+database confirms one decoder compile in each direct sanitized tracker target;
+normal integration receives it through the tracker library. The link step
+reported only a duplicate `libmhp3rd_texture_commands.a` warning. The
+executable-owned normal and strict integration reports were both
+`success=false`: healthy cases failed, no writer was released, comparisons
+were zero and `full_ram_vram_cpu_compared=false`; no successful compiled
+integration report was published. The progress and decoder CTests passed.
+Historical final3 artifacts remain separate.
+The existing lower `--oracle` runner also passed in normal and strict modes
+with 64 cases, 56 completion events, one tracker completion and 14 unsupported
+copy-worker cases. Fresh runner reports are
+`out/testing/texture-completion-c2c_a27f-i10-normal.json` and
+`out/testing/texture-completion-c2c_a27f-i10-strict.json`; they do not claim
+compiled integration execution.

@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "plan_version": "1.1",
-  "revision": 145,
+  "plan_version": "1.2",
+  "revision": 160,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-28T02:04:24Z",
+  "updated_at": "2026-09-28T12:47:00Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -27,6 +27,14 @@
       "role": "Primary implementation and planning agent",
       "model": null,
       "model_note": "Exact primary model was not exposed; do not invent it."
+    },
+    {
+      "id": "/root/g1c_build_execute",
+      "type": "agent",
+      "role": "G1c CMake integration build and evidence wiring",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "fork_turns": "none"
     },
     {
       "id": "/root/recorder_audit",
@@ -706,14 +714,19 @@
       "model": "gpt-6-sol",
       "reasoning_effort": "max",
       "fork_turns": "none"
+    },
+    {
+      "id": "/claude_code",
+      "type": "agent",
+      "role": "G1c compiled integration repair and regression refresh (Claude Code session, no subagents)",
+      "model": "claude-opus-5-5"
     }
   ],
   "future_subagent_policy": {
-    "fork_turns": "none",
-    "model": "gpt-6-sol",
-    "reasoning_effort": "max",
+    "tool_and_model": "Any tool or model may be used; record the actual tool and model for each agent (Amendment 1.2).",
     "context_requirement": "Provide all task context, constraints, paths, expected outputs and verification requirements in the task message.",
-    "historical_note": "The earlier planning audits used gpt-5.6-luna under the then-current instructions; their provenance is not rewritten."
+    "file_ownership": "Parallel agents never edit the same file; a shared fixture has one owner per iteration.",
+    "historical_note": "Earlier sessions used gpt-6-sol and later gpt-5.6-luna (fork_turns=none, reasoning_effort=max) under the then-current instructions; their provenance is not rewritten."
   },
   "decisions": {
     "target": "Preserve original content and feel while removing PSP execution dependencies.",
@@ -742,15 +755,23 @@
       "new native Metal backend",
       "public room-code hosting",
       "App Store distribution"
-    ]
+    ],
+    "amendment_1_2": {
+      "decided_at": "2026-09-28T12:40:00Z",
+      "decided_by": "project-owner",
+      "summary": "Close G1c with one focused review plus the staged-B0 default-off configure; measure live texture routes in observe-only mode before proving the remaining G1 routes; first enable observed, proved routes in Verify mode with original fallback, then Native; tool-neutral agents; working rules for fresh rebuilds, frozen evidence trees, one editor per file, traced constants and a proportional ledger.",
+      "plan_section": "docs/DEVELOPMENT_PLAN.md#amendment-12--texture-path-and-working-rules"
+    }
   },
   "execution_state": {
     "current_task_id": "ASSET-014",
-    "next_task_id": "ASSET-014",
-    "next_action": "Iteration 7 G1b-read-R1 is accepted in scope. Do not start another phase until the user requests a concrete implementation-ready batch; keep readiness false, pending writers retained and Native Off.",
+    "next_task_id": "ASSET-015",
+    "next_action": "Paused by the user on 2026-09-28. ASSET-014 needs the Amendment 1.2 focused review (stopped before reporting) and the staged-B0 default-off configure. ASSET-015..019 are not started; the user is reconsidering the direction (e.g. loading/performance). Confirm direction with the user before further work.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
-    "awaiting_user_task_ids": []
+    "awaiting_user_task_ids": [
+      "ASSET-014"
+    ]
   },
   "references": {
     "chinese_ui_pr": "https://github.com/etsusei/Yakumo/pull/1",
@@ -8468,7 +8489,7 @@
       "phase": "milestone_4",
       "kind": "finite",
       "parent_task_id": "ITER-002",
-      "status": "in_progress",
+      "status": "paused",
       "owner_agent_id": "/root",
       "responsible_actor_id": null,
       "contributor_agent_ids": [
@@ -8478,18 +8499,19 @@
         "/root/texture_controller_admission",
         "/root/texture_dispatch_registry_tests",
         "/root/texture_lifetime_injector",
-        "/root/texture_lifetime_tracker"
+        "/root/texture_lifetime_tracker",
+        "/claude_code"
       ],
       "created_at": "2026-09-27T12:54:25Z",
-      "updated_at": "2026-09-28T02:04:24Z",
+      "updated_at": "2026-09-28T12:47:00Z",
       "started_at": "2026-09-27T13:16:30Z",
       "completed_at": null,
-      "scope": "Connect certified original owner/command allocation, descriptor, transfer and invalidation observations to the source authority. Prepare a non-mutating guest command plan for verification and guarded commit, with explicit off/verify/native behavior, original fallback and scoped recording. Prove actual production call paths offline before a new user delivery.",
+      "scope": "Amended 2026-09-28 (Amendment 1.2): connect original owner/command allocation, descriptor, transfer, read and inline completion observations (G0, G1a-R1, G1b-read-R1, G1c) to the tracker and source authority in bounded offline harnesses, keeping Native Off and authority NotReady. The remaining original scope - authority readiness, Verify/Native enablement and the unproved G1 routes - moves to ASSET-015..ASSET-019. Original scope: Connect certified original owner/command allocation, descriptor, transfer and invalidation observations to the source authority. Prepare a non-mutating guest command plan for verification and guarded commit, with explicit off/verify/native behavior, original fallback and scoped recording. Prove actual production call paths offline before a new user delivery.",
       "depends_on": [
         "ASSET-013",
         "ASSET-011"
       ],
-      "work_summary": "Iteration 7 G1b-read-R1 is implemented, source-bound and independently accepted in scope. Normal and strict ASan/UBSan pass the frozen 75-scenario matrix in three contiguous shards, with 450 AOT/interpreter calls and a verified 52-identity input/build/manifest closure. Refreshed G0/G1a normal/strict, the 2,256-input unowned corpus, 53 focused Python tests, two CTests, and staged-B0 default-off configure pass. Exact NotReady, pending writers and transfer_readiness=false remain. ASSET-014 stays in_progress; G1 is incomplete and no later phase is authorized until the user requests another concrete batch.",
+      "work_summary": "Iteration 10 closes the G1c source/evidence wiring and executes the converged build. The tracker library owns texture_completion_decode.cpp exactly once; every sanitized target that directly compiles texture_transfer_tracker.cpp compiles the decoder once, while normal integration receives it through the tracker library. The runner binds decoder, fixture source, terminal-stop header, completion CMake module, generated outputs/manifests and the selected executable, and invokes the integration executable with six runtime arguments; the fixture source is identity-only. A usable CMake 4.4.3 binary was recovered from the existing cache, and the existing out/testing/texture-read-prefix tree reconfigured and built both normal and sanitized integration targets. The progress and decoder CTests pass. Both six-argument integration runner invocations reach their executables but emit success=false after healthy cases fail: writer_released=0, writer_retained=5, CPU/RAM/VRAM comparisons=0 and full_ram_vram_cpu_compared=false. No successful compiled integration report exists. The lower normal/strict oracle runner still passes its 64-case evidence. Native remains Off; SourceAuthority readiness remains false; ASSET-014 and G1 remain in_progress.",
       "deliverables": [
         {
           "path": "docs/NEXT_NATIVE_BATCHES.md",
@@ -9126,6 +9148,234 @@
           "kind": "source_manifest",
           "state": "existing",
           "local_only": true
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_completion_tracker_smoke.cpp",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/texture_completion_decode.hpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/host/native/texture_completion_decode.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/cmake/TextureCompletionInstrumentation.cmake",
+          "kind": "build_configuration",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/texture_completion_integration_oracle.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tools/check_texture_completion_observation.py",
+          "kind": "tool",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "profiles/mhp3rd/tests/test_texture_completion_observation_runner.py",
+          "kind": "test",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/texture-read-prefix/CMakeCache.txt",
+          "kind": "build_configuration",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-read-prefix/bin/mhp3rd_texture_completion_integration_oracle",
+          "kind": "executable",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-read-prefix/bin/mhp3rd_texture_completion_integration_sanitized",
+          "kind": "executable",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-completion-c2c_a27f-i9-final3-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-completion-c2c_a27f-i9-final3-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-completion-c2c_a27f-i10-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-completion-c2c_a27f-i10-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-read-observation-c2c_a27f-i9-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-read-observation-c2c_a27f-i9-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i9-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i9-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i9-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i9-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/observed-sources/B0-g1c-r2/observed_baseline_manifest.json",
+          "kind": "analysis",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/baseline-g1c-r2-default-off/CMakeCache.txt",
+          "kind": "build_configuration",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-read-observation-c2c_a27f-i9-final2-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-read-observation-c2c_a27f-i9-final2-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i9-final2-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-c2c_a27f-i9-final2-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i9-final2-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-c2c_a27f-i9-final2-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-completion-integration-claude-i13-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-completion-integration-claude-i13-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-completion-claude-i13-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-completion-claude-i13-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-read-observation-claude-i12-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-read-observation-claude-i12-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-claude-i12-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-transfer-observation-claude-i12-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-claude-i12-normal.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
+        },
+        {
+          "path": "out/testing/texture-lifetime-exact-notready-claude-i12-strict.json",
+          "kind": "validation_report",
+          "state": "existing",
+          "local_only": true
         }
       ],
       "acceptance_criteria": [
@@ -9134,7 +9384,8 @@
         "Separate bounded command preparation from commit so Verify runs the original only once without speculative guest mutation; compare certified CPU/memory effects.",
         "Keep default Off, sealed Baseline original behavior, explicit mode/probe metadata, bounded counters and original fallback. No unverified default Native.",
         "Exercise actual registration, original production AOT chains, successful and rejected authority, mismatch/fallback, lifecycle loss and worker completion in bounded offline harnesses.",
-        "Retain no-command, alternate-file, multi-fragment live and broader gameplay gaps explicitly; create a related paired case only after integration/build/recording prerequisites pass."
+        "Retain no-command, alternate-file, multi-fragment live and broader gameplay gaps explicitly; create a related paired case only after integration/build/recording prerequisites pass.",
+        "Amendment 1.2 closure: one focused review of the iteration-11 fixture/decoder/tracker changes by a different session or agent, and a passing rerun of the staged-B0 default-off configure."
       ],
       "validation": {
         "checks": [
@@ -9539,6 +9790,143 @@
             "name": "Iteration-7 independent C2C review",
             "status": "passed",
             "details": "Independent review accepted G1b-read-R1 in scope and closed the four iteration-6 findings. It verified the second-State8 retry counterexample, selected-to-unowned descriptor generation initialization, staged Baseline module/configure, complete 75-scenario identity/counter merge, refreshed G0/G1a/corpus evidence, and strict shard hashes. The review explicitly retains the limitation that synthetic commit callbacks do not prove concurrent PSP scheduling; no new blocker or follow-up test/patch is required for R1. ASSET-014 remains in_progress, G1 incomplete, readiness false, and no later phase is authorized."
+          },
+          {
+            "name": "Iteration-9 G1c original completion and synthetic tracker smoke normal/strict",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-completion-c2c_a27f-i9-final3-normal.json",
+              "out/testing/texture-completion-c2c_a27f-i9-final3-strict.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-completion-c2c_a27f-i9-final3-normal.json": "7a9d502f1778336d9a446ceb6f06be18a5bf918938b9319b0dac765a38ceb6f9",
+              "out/testing/texture-completion-c2c_a27f-i9-final3-strict.json": "5c2442052f38b870bc7af2c96f3ec1fbc3c8cc8b307d7047131acfff97fd9a6a"
+            },
+            "details": "Original transfer oracle passes 64 AOT/interpreter scenarios per path, 56 completion-event cases, zero sequence failures and 14 unsupported copy-worker cases. The embedded tracker smoke reuses compiled R1 owner/enqueue/read observations, forwards a bounded completion sequence to TextureTransferTracker, and records one Completed operation, one exact writer release, live_writers=0, authority_failure=None, transfer_readiness=false and source_completion_receipts=0. Raw original report SHA-256 3fee3934c169bf239373002dd8e858f645a78228666b8cf077482b839704cc37; smoke raw SHA-256 bb6d15ea6ebb78c49fa07b9423d780ac9a7d26c08bff6b9ee98c4c447421915c. Normal and strict final artifacts bind 24 source/build/manifest/input identities; the smoke scope is synthetic-g1c-completion-tracker-smoke and is clearly separated from the compiled original report.."
+          },
+          {
+            "name": "Iteration-9 refreshed G0/G1a/G1b normal and strict after shared tracker changes",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i9-final2-normal.json",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i9-final2-strict.json",
+              "out/testing/texture-transfer-observation-c2c_a27f-i9-final2-normal.json",
+              "out/testing/texture-transfer-observation-c2c_a27f-i9-final2-strict.json",
+              "out/testing/texture-read-observation-c2c_a27f-i9-final2-normal.json",
+              "out/testing/texture-read-observation-c2c_a27f-i9-final2-strict.json"
+            ],
+            "details": "G0 exact-NotReady 34-call paths, G1a 117-call descriptor gate and G1b 75-scenario/450-call three-shard read prefix all pass in normal and strict variants. Read raw SHA-256 86f0bc2890eaaee0d6a2d18297acfdb036696aec6f85244fbe4c8912dbb06320; transfer raw SHA-256 e6bf5eb1a6dc667a3a8ff356ff6f87a130ab0e3e9bd05fb3d46fd3683ac2ac8a; G0 raw SHA-256 e1943886d108f7ac17236293b0a0c771deabfb8f4403d1047289a944738b4dbd. All keep transfer_readiness=false and exact NotReady.",
+            "evidence_sha256": {
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i9-final2-normal.json": "d0fb1036913f4701f3cf0b5987f4ca3f0d184b4c906fcc81f69a320dd707bc0d",
+              "out/testing/texture-lifetime-exact-notready-c2c_a27f-i9-final2-strict.json": "51a6b88e88e56e1e7be4279e52a78181707ba690ccb110d7bd722eb1bb95708f",
+              "out/testing/texture-transfer-observation-c2c_a27f-i9-final2-normal.json": "94c4bf78dbabff897c781127f082c4a5887a80add71175422418da21432bb0b2",
+              "out/testing/texture-transfer-observation-c2c_a27f-i9-final2-strict.json": "f575ccd01a6148dd963c49b6c5f9d2bfd458e55f88db1ecb31a1f52e8b0d4974",
+              "out/testing/texture-read-observation-c2c_a27f-i9-final2-normal.json": "d520b6c658644b50dea63b11f319d8bf787de2afa3e91ca58f083764858e6a28",
+              "out/testing/texture-read-observation-c2c_a27f-i9-final2-strict.json": "0678dd43542acf9d0af12a4df71d1d2b20f9b3e5c0a2e71e7a7bd8d32466dbb0"
+            }
+          },
+          {
+            "name": "Iteration-9 focused regression suite",
+            "status": "passed",
+            "details": "The completion progress binary passed; focused CTest source-authority and texture-command-dispatch pair passed 2/2; 51 scoped Python tests passed; git diff --check and docs/tasks.json parsing passed. No application was built or launched."
+          },
+          {
+            "name": "Iteration-9 independent C2C review revision",
+            "status": "needs_review",
+            "details": "Independent final3 review accepts the layered compiled 64-case oracle and clearly scoped synthetic tracker smoke, but keeps G1c incomplete. It requires exact consumer successor/state retirement checks, a correctly independent smoke CMake guard, and final ledger/hash cleanup before acceptance; no later phase is authorized."
+          },
+          {
+            "name": "Iteration-9 observed Baseline staging and default-off completion configure",
+            "status": "passed",
+            "evidence_path": "out/testing/observed-sources/B0-g1c-r2/observed_baseline_manifest.json",
+            "details": "Fresh staging includes the completion tracker smoke fixture and shared completion sources, pinned to B0 commit 4292eb66ee66eab37c327575382d071addcf6249 with source-content SHA-256 fcf9e09445fc1e5bb33c6b14291178716f75840d46aaa09d5d09637a567b11ca and recording revision source-sha256:22944767d718ac660d72ed329d2dd2d708f6f4597f874ce7bc3fd94f134841c0. Default-off configure completed without building or launching the application; completion/read/transfer options resolve OFF and no completion oracle target is present."
+          },
+          {
+            "name": "Iteration-9 build/evidence integration contract",
+            "status": "passed",
+            "details": "Added guarded normal and Clang-sanitized completion integration target wiring, kept the original oracle and synthetic smoke separate and EXCLUDE_FROM_ALL, registered decoder/progress CTests and focused Python tests, replaced assert-only progress checks with always-executed require checks, staged workflow-B's texture_completion_decode.cpp/.hpp and decoder test source pair, and added executable-owned --integration-oracle report validation with source/output hash binding. Workflow-C's integration executable/result does not exist yet. Python AST/static checks, 11 focused completion Python tests, 9 observed-Baseline tests, decoder/decoder-test syntax compilation and the direct warning-as-error progress compile/run passed; cmake is unavailable in this shell, so configure/build and CTest execution were not run."
+          },
+          {
+            "name": "Iteration-10 four-workflow G1c source validation",
+            "status": "passed",
+            "details": "Completed the web-planned four-workflow source pass: tracker identity/call receipts/cancellation, decoder and call-boundary instrumentation, the compiled integration fixture, and normal/sanitized integration CMake plus runner evidence wiring. The fixture entry point is now present and the integration CMake cache defaults to it. Targeted completion and baseline Python tests, JSON/AST/static checks, git diff --check, direct completion-progress execution, and warning-as-error Clang syntax checks for tracker, decoder, lifetime, smoke and integration sources passed. CMake is unavailable in this shell, so no configure, CTest or CMake build result is claimed; no game/app was launched and Native remains Off."
+          },
+          {
+            "name": "Iteration-10 existing CMake reconfigure and integration target generation",
+            "status": "passed",
+            "evidence_path": "out/testing/texture-read-prefix/CMakeCache.txt",
+            "details": "Used the CMake 4.4.3 executable recorded in the existing cache at /private/tmp/yakumo-build-tools/lib/python3.9/site-packages/cmake/data/bin/cmake. Reconfigured the existing out/testing/texture-read-prefix tree with completion/read/transfer/lifetime boundaries ON, certified probes OFF and PSPRECOMP_BUILD_TESTS ON. Normal and sanitized integration target directories were generated; no new build tree was created."
+          },
+          {
+            "name": "Iteration-10 decoder/progress CTest pair",
+            "status": "failed",
+            "details": "The progress CTest passed. The decoder target built, but its CTest failed with: valid inline call was not observed. Decoder implementation remains workflow-B follow-up work."
+          },
+          {
+            "name": "Iteration-10 normal and sanitized integration builds",
+            "status": "failed",
+            "details": "cmake --build out/testing/texture-read-prefix --target mhp3rd_texture_completion_integration_oracle mhp3rd_texture_completion_integration_sanitized --parallel 2 was attempted with CCACHE_DISABLE=1. Both targets reached the fixture compile and stopped on unfinished workflow-B symbols: completion_worker_contexts_, completion_reader_contexts_, run_actual_side, run_reference_side, Observations::completion_decode_errors and Gate::completion_decode_error_count(). No integration executable or integration runner report exists."
+          },
+          {
+            "name": "Iteration-10 lower normal and strict runner regression",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-completion-c2c_a27f-i10-normal.json",
+              "out/testing/texture-completion-c2c_a27f-i10-strict.json"
+            ],
+            "evidence_sha256": {
+              "out/testing/texture-completion-c2c_a27f-i10-normal.json": "698d60053e32863abfaca408c40ebf632de4c85c481483f1ea950bc259d0b84f",
+              "out/testing/texture-completion-c2c_a27f-i10-strict.json": "35b74fa6771981e4545a8442bc7cbb97572e4dcf867848b6ded3e3f11387a736"
+            },
+            "details": "The existing lower --oracle mode passed in both normal and sanitized strict modes: cases=64, completion events=56, tracker_completed=1, unsupported_copy=14 and transfer_readiness=false. These reports are lower oracle evidence and do not claim compiled integration execution."
+          },
+          {
+            "name": "Iteration-10 converged normal and sanitized integration build",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-read-prefix/bin/mhp3rd_texture_completion_integration_oracle",
+              "out/testing/texture-read-prefix/bin/mhp3rd_texture_completion_integration_sanitized"
+            ],
+            "details": "Both integration targets built with cmake --build --parallel 2 after the workflow-B convergence edits. The compile database shows one decoder compile in each direct sanitized tracker target and zero direct decoder sources in normal integration. The link step emitted only a duplicate libmhp3rd_texture_commands.a warning."
+          },
+          {
+            "name": "Iteration-10 executable-owned integration runner normal and strict",
+            "status": "failed",
+            "details": "Both six-argument --integration-oracle invocations reached the normal and sanitized executables, but each executable emitted success=false after healthy cases failed. The normal report had writer_released=0, writer_retained=5, cpu_comparisons=0, ram_comparisons=0, vram_comparisons=0, full_ram_vram_cpu_compared=false, five retained fault cases and nine failed cases. The runner therefore published no successful integration report."
+          },
+          {
+            "name": "Iteration-10 post-build tracker/fixture convergence",
+            "status": "needs_review",
+            "details": "Removed temporary diagnostics after exercising the compiled target and tightened the real decoder/tracker seam: syscall call receipts now use their observed event identity without treating repurposed worker registers as manager/descriptor claims; wait-return execution aliases are accepted only for the registered reader SP/thread; WorkerEntry binds a worker context; worker wait resumes at its return edge; and the fixture initializes the worker descriptor slot. Warning-as-error Clang syntax, focused Python/JSON/diff checks, normal/sanitized target builds and progress/decoder CTests pass. The compiled integration now reaches the full inline-verbatim acknowledgement/retirement path, but transform/digest and several fault cases still fail before a consolidated success report; no successful integration report is published."
+          },
+          {
+            "name": "G1c compiled integration and refreshed G0-G1c gates (iteration 11)",
+            "status": "passed",
+            "evidence_paths": [
+              "out/testing/texture-completion-integration-claude-i13-normal.json",
+              "out/testing/texture-completion-integration-claude-i13-strict.json",
+              "out/testing/texture-completion-claude-i13-normal.json",
+              "out/testing/texture-completion-claude-i13-strict.json",
+              "out/testing/texture-read-observation-claude-i12-normal.json",
+              "out/testing/texture-read-observation-claude-i12-strict.json",
+              "out/testing/texture-transfer-observation-claude-i12-normal.json",
+              "out/testing/texture-transfer-observation-claude-i12-strict.json",
+              "out/testing/texture-lifetime-exact-notready-claude-i12-normal.json",
+              "out/testing/texture-lifetime-exact-notready-claude-i12-strict.json"
+            ],
+            "sha256": {
+              "integration-normal": "ec5c97a7374be42d40b9ea3e3468b30ce4503cb0aafc7ff746e79a09e632adee",
+              "integration-strict": "ac5ea89735964ca04a40d970275d7351d588cddec631d63be65b89c9d823949d",
+              "lower-normal": "a4b21f719e47853f93cef5d0e2b3ebc3d978f6586a101d171ba003a7c0893348",
+              "lower-strict": "563526ee5c202a947057f40d8866ab17e570cd8093fe482dfab23d4786548c18",
+              "g1b-normal": "0dd7f2a58126f0ecad3a532eeb22706860ed53cc9c319c0b9290958cb4ded654",
+              "g1b-strict": "d14ed0211aa20446027a48ce981aff6c0122723e9d5e6bae44b0d810ee183ae1",
+              "g1a-normal": "c07e2bdd6e8d515655522781a5987ae9f46c8ff9f8359137e73214036d4f71c2",
+              "g1a-strict": "bbbd1c6e33dc2202e229552b89bf7f35ce008ef88d43fffae27b3376d807a23d",
+              "g0-normal": "4a22ef1560248c633dd77ee6bfd525107d1f18b0d0c93f988d78a916c5001390",
+              "g0-strict": "25bf7a8caea43f1fead6540e051db0d47930127abd315393a2cc15bd0e942336"
+            },
+            "details": "Apple Silicon macOS, CMake 4.4.3 from the existing cache, out/testing/texture-read-prefix. Integration normal/strict: 14 named cases, writer_released=6, writer_retained=9, CPU/RAM/VRAM compared in 6 healthy cases, source_completion_receipts=0, transfer_readiness=false. Lower oracle normal/strict: 64 cases, 56 completion events, tracker_completed=1, unsupported_copy=14. G1b 75 scenarios in 3 shards, G1a 39 identities/14 faults, G0 34 calls per path. CTest completion 4/4; 47 focused Python tests."
           }
         ],
         "limitations": [
@@ -9557,7 +9945,7 @@
         "d6680718167df04d0361dbe14f38b0613308ec44",
         "9f79b3112e7a80dede8f73eca2231d6130fbeedf"
       ],
-      "pause_reason": null,
+      "pause_reason": "User-requested pause on 2026-09-28 while the project direction is reconsidered (loading/performance was discussed as an alternative focus). The focused review required by Amendment 1.2 was started and stopped by the user before it reported; no review result exists. Resume by rerunning that review and the staged-B0 default-off configure, or by an explicit user decision to change direction.",
       "blockers": [],
       "history": [
         {
@@ -9800,10 +10188,372 @@
           "from_status": "in_progress",
           "to_status": "in_progress",
           "description": "Independent C2C review accepted the bounded G1b-read-R1 slice in scope and closed the four iteration-6 findings. It found no new blocker or additional R1 work. G1 remains incomplete; source readiness false, pending writers retained, Native Off. No later phase is authorized; await the user before preparing another concrete implementation batch."
+        },
+        {
+          "recorded_at": "2026-09-28T04:52:10.488934Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "g1c_iteration8_review_needs_revision",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Independent C2C review found the completion oracle was test-side only and did not prove real tracker writer release. It requested the same G1c batch be completed by binding the compiled R1 read fixture to TextureTransferTracker, adding identity/retirement/verbatim/digest handling, and source-binding the smoke evidence. Native remains Off."
+        },
+        {
+          "recorded_at": "2026-09-28T04:52:10.488934Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "g1c_iteration9_real_tracker_revision_locally_validated",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Bound a real tracker smoke to the compiled R1 owner/enqueue/read path, forwarded completion callbacks, added exact writer retirement checks and explicit verbatim/digest branch handling, and source-bound normal/strict smoke reports inside the final G1c artifacts. Refreshed G0/G1a/G1b normal/strict gates, passed 51 scoped Python tests, CTest 2/2 and the progress test. Await independent C2C review; readiness remains false and Native Off."
+        },
+        {
+          "recorded_at": "2026-09-28T05:22:56.063661Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "g1c_live_completion_smoke_finalized",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Kept the tracker smoke explicitly synthetic after the compiled R1 exact read; the compiled 64-case original oracle remains a separate lower layer. Strict consumer/state retirement checks, policy result handling, explicit verbatim/digest join handling and late-event closure pass normal/strict. Refreshed final2 G1c/G1b/G1a/G0 reports, focused CTest/Python gates and B0 default-off staging; awaiting independent review."
+        },
+        {
+          "recorded_at": "2026-09-28T06:20:39.304403Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "g1c_iteration9_review_needs_further_revision",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Final independent review accepts the separated compiled-original oracle and synthetic tracker smoke evidence but identifies three remaining same-batch fixes: require exact ring successor and state zero at retirement, keep smoke targets behind an independent read-prefix target guard, and reconcile the final ledger/hash records. G1c/G1/ASSET-014 remain incomplete; Native Off and no later phase."
+        },
+        {
+          "recorded_at": "2026-09-28T07:17:26Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "g1c_build_evidence_contract_locally_validated",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Added independent completion/integration CMake guards and normal/sanitized integration target wiring for workflow-B/C decoder and fixture inputs; kept the original oracle and synthetic smoke separate and EXCLUDE_FROM_ALL. Added executable-owned integration report validation, generated-output/decoder/fixture/stop/CMake hash binding, CTest registrations and always-executed progress checks. Python AST/static checks, 11 focused completion tests and 9 observed-Baseline tests passed. No workflow-C integration executable or real result exists; cmake is unavailable in this shell, so no configure/build or CTest claim is made."
+        },
+        {
+          "recorded_at": "2026-09-28T07:35:29Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "g1c_decoder_build_evidence_source_closure",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Workflow B's texture_completion_decode.cpp/.hpp and decoder test source became available. Added them to observed-Baseline staging and the recording revision, registered the decoder CTest target, and passed strict decoder/decoder-test syntax compilation. Workflow-C integration entry point/fixture and real integration result remain absent; cmake remains unavailable."
+        },
+        {
+          "recorded_at": "2026-09-28T08:00:00Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "g1c_iteration10_four_workflow_source_pass",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Executed the web-planned four-workflow G1c pass with at most four subagents: tracker, decoder/observation, compiled integration fixture, and build/evidence wiring. The decoder and fixture sources are present, the integration CMake entry point defaults to the fixture, and source/static validation passes. CMake remains unavailable, so compiled integration execution is still pending; Native Off, SourceAuthority readiness false, and no later phase authorized."
+        },
+        {
+          "recorded_at": "2026-09-28T08:11:52Z",
+          "occurred_at": null,
+          "actor_id": "/root/g1c_build_execute",
+          "action": "g1c_existing_cmake_configured_build_blocked",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Recovered the CMake 4.4.3 executable recorded by the existing cache and reconfigured the active out/testing/texture-read-prefix tree. Normal and sanitized integration targets were generated. Both cmake --build --parallel 2 attempts reached the fixture compile but stopped on unfinished workflow-B symbols in the shared lifetime oracle (completion_worker_contexts_, completion_reader_contexts_, run_actual_side, run_reference_side and Observations::completion_decode_errors) and integration wrapper (Gate::completion_decode_error_count()); no integration executable or integration runner report is claimed. The independent progress CTest passed; the decoder CTest built but failed with valid inline call was not observed. The separate lower --oracle runner passed in normal and strict modes with 64 cases, 56 completion events, one tracker completion and 14 unsupported copy-worker cases; reports are out/testing/texture-completion-c2c_a27f-i10-normal.json and out/testing/texture-completion-c2c_a27f-i10-strict.json. The tracker/decoder source closure, six-argument runner contract and source/output identity chain are present. Native remains Off and SourceAuthority readiness remains false."
+        },
+        {
+          "recorded_at": "2026-09-28T08:26:28Z",
+          "occurred_at": null,
+          "actor_id": "/root/g1c_build_execute",
+          "action": "g1c_lower_runner_normal_strict_passed",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "After the integration build blocker was recorded, reran the existing lower --oracle runner in normal and sanitized strict modes. Both passed with cases=64, completion events=56, tracker_completed=1, unsupported_copy=14 and transfer_readiness=false. Published local reports at out/testing/texture-completion-c2c_a27f-i10-normal.json and out/testing/texture-completion-c2c_a27f-i10-strict.json. These are lower-oracle evidence; no compiled integration execution is claimed."
+        },
+        {
+          "recorded_at": "2026-09-28T08:32:51Z",
+          "occurred_at": null,
+          "actor_id": "/root/g1c_build_execute",
+          "action": "g1c_converged_integration_build_and_runner_blocked",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "After workflows A/B converged the six-argument fixture and decoder ownership, reconfigured and built both normal and sanitized integration targets successfully. The compile database verifies one decoder compile in each direct sanitized tracker target and none in normal integration. Both integration executables reached the runner but emitted success=false: healthy cases failed, writer_released=0, writer_retained=5, comparison counts were zero and full_ram_vram_cpu_compared=false. Progress and decoder CTests passed; no successful compiled integration report was published. Native remains Off, readiness remains false and G1/ASSET-014 stay incomplete."
+        },
+        {
+          "recorded_at": "2026-09-28T09:00:00Z",
+          "occurred_at": null,
+          "actor_id": "/root",
+          "action": "g1c_post_build_tracker_fixture_convergence",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Exercised the rebuilt integration target and removed temporary diagnostics. The real inline-verbatim path now reaches WorkerEntry, acknowledgement, wait return and retirement; decoder/tracker call handling was tightened for syscall event identities, reader wait execution aliases and repurposed worker registers, and the fixture resumes worker execution at import return. Transform/digest and several fault cases still fail before a consolidated success report, so G1c remains incomplete. Native Off, SourceAuthority readiness false, and no later phase authorized."
+        },
+        {
+          "recorded_at": "2026-09-28T12:10:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "g1c_compiled_integration_repaired_locally_validated",
+          "from_status": "in_progress",
+          "to_status": "in_progress",
+          "description": "Repaired the compiled G1c integration from traced failures: restored fixture resource 17 (a diagnostic edit had read hexadecimal 0x11 as 11 and broke every case at DescriptorCommit); seeded the original RNG object pointer 0x09FC8BE8=0x08ABAE40 (as stored by 0x0888D8BC..0x0888D8E8) whose null value produced the 0x014FA816 fault, with per-scenario state seeds selecting the original digest branch; decoded worker-frame TransformCall/DigestCall edges from a0/a1 and the worker acknowledgement from gpr18/gpr16; accepted the post-digest join at 0x088653B4 as DigestJoined with a byte-sized flag read; resolved event identity when an operation closes before the worker starts; applied register faults to the observed context object and made wrong-worker bind a non-manager word. Also fixed two pre-existing breaks hidden by stale binaries: G1a/G1b oracles compiled G1c-only fixture state, and the lower 64-case oracle stopped at retirement before its terminal sleep; the synthetic smoke now mirrors the worker frame and retirement ordering. Normal/strict integration passes 14 named cases (6 released, 9 retained); lower oracle, G1b, G1a and G0 normal/strict pass; decoder tests extended; 4 completion CTests and 47 focused Python tests pass. Native Off, SourceAuthority NotReady, transfer_readiness=false; application not built or launched; staged-B0 default-off configure not rerun; no independent review yet."
+        },
+        {
+          "recorded_at": "2026-09-28T12:40:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "scope_narrowed_by_amendment_1_2",
+          "from_status": "in_progress",
+          "to_status": "awaiting_review",
+          "description": "User decision (Amendment 1.2): ASSET-014 is limited to the delivered G0-G1c observation work and closes after one focused review of the iteration-11 changes plus the staged-B0 default-off configure. Remaining enablement scope moved to ASSET-015..ASSET-019."
+        },
+        {
+          "recorded_at": "2026-09-28T12:47:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "paused_at_user_request",
+          "from_status": "awaiting_review",
+          "to_status": "paused",
+          "description": "User stopped the in-progress focused review (no findings were produced) and asked for a checkpoint push and local cleanup; direction is being reconsidered."
         }
       ],
-      "updated_by_agent_id": "/root"
+      "updated_by_agent_id": "/claude_code",
+      "limitations": [
+        "The tracker smoke reuses a compiled R1 exact-read fixture but supplies a synthetic completion/retirement sequence; it does not prove the original completion path, file identity or scheduler behavior.",
+        "CMake is absent from PATH but the 4.4.3 executable recorded by the existing cache was usable. Reconfiguration and both integration builds succeeded in out/testing/texture-read-prefix; the link step emitted only a duplicate libmhp3rd_texture_commands.a warning. The progress and decoder CTests passed.",
+        "The compiled integration executable passes 14 named cases in normal and strict modes, but file identity, open/seek and scheduler behaviour remain modeled, the positive copy-worker route remains unsupported, and the result has not been independently reviewed. The staged-B0 default-off configure was not rerun after the iteration-11 changes."
+      ]
+    },
+    {
+      "id": "ASSET-015",
+      "title": "Observe-only live texture route coverage delivery",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-28T12:40:00Z",
+      "updated_at": "2026-09-28T12:40:00Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Install the transfer/completion tracker in the candidate application with Native Off and authority NotReady. Count each live route (selected inline verbatim, transform, digest, retry, copy-worker, cancellation, unsupported, unowned, observation loss) and record them per case. Deliver a matched Baseline/candidate pair and one 15-30 minute Chinese coverage case.",
+      "depends_on": [
+        "ASSET-014"
+      ],
+      "work_summary": null,
+      "deliverables": [],
+      "acceptance_criteria": [
+        "Candidate tracker is observe-only: no native texture result is used and Baseline stays sealed.",
+        "Route counters and observation-loss reasons are recorded per case and survive abnormal exit.",
+        "Fresh matched builds pass signed preparation-only readiness; prior apps and records are preserved."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-28T12:40:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "created_by_amendment_1_2",
+          "from_status": null,
+          "to_status": "not_started",
+          "description": "Created from the user's Amendment 1.2 decision."
+        }
+      ],
+      "updated_by_agent_id": "/claude_code",
+      "limitations": []
+    },
+    {
+      "id": "ASSET-016",
+      "title": "User runs the observe-only texture coverage case",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-28T12:40:00Z",
+      "updated_at": "2026-09-28T12:40:00Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "The user runs the ASSET-015 case in both applications, 15-30 minutes in total.",
+      "depends_on": [
+        "ASSET-015"
+      ],
+      "work_summary": null,
+      "deliverables": [],
+      "acceptance_criteria": [
+        "Both record packages are complete, or their incompleteness is recorded."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-28T12:40:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "created_by_amendment_1_2",
+          "from_status": null,
+          "to_status": "not_started",
+          "description": "Created from the user's Amendment 1.2 decision."
+        }
+      ],
+      "updated_by_agent_id": "/claude_code",
+      "limitations": []
+    },
+    {
+      "id": "ASSET-017",
+      "title": "Analyze live texture route coverage and define the minimal proof set",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-28T12:40:00Z",
+      "updated_at": "2026-09-28T12:40:00Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Analyze the recorded route counts and losses. Rank routes by live frequency and decide which need additional offline proof before enablement; routes absent from live play remain on the original path.",
+      "depends_on": [
+        "ASSET-016"
+      ],
+      "work_summary": null,
+      "deliverables": [],
+      "acceptance_criteria": [
+        "Per-route live counts and observation losses are reported with their evidence tier.",
+        "The proof set for ASSET-018 names each route, its missing evidence and its fallback."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-28T12:40:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "created_by_amendment_1_2",
+          "from_status": null,
+          "to_status": "not_started",
+          "description": "Created from the user's Amendment 1.2 decision."
+        }
+      ],
+      "updated_by_agent_id": "/claude_code",
+      "limitations": []
+    },
+    {
+      "id": "ASSET-018",
+      "title": "Verify-mode native texture loading for observed routes",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-28T12:40:00Z",
+      "updated_at": "2026-09-28T12:40:00Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "Close the proof gaps named by ASSET-017 for observed routes only. Let the source authority report readiness for those routes and enable the existing native texture command/decoder path in Verify mode, comparing with the original result; every other route falls back to original code. Deliver a matched pair and a case.",
+      "depends_on": [
+        "ASSET-017"
+      ],
+      "work_summary": null,
+      "deliverables": [],
+      "acceptance_criteria": [
+        "Offline gates pass from freshly rebuilt binaries for every enabled route.",
+        "Unsupported or lost evidence falls back to the original path without mutation.",
+        "Default remains Off outside the candidate profile; Baseline is sealed."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-28T12:40:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "created_by_amendment_1_2",
+          "from_status": null,
+          "to_status": "not_started",
+          "description": "Created from the user's Amendment 1.2 decision."
+        }
+      ],
+      "updated_by_agent_id": "/claude_code",
+      "limitations": []
+    },
+    {
+      "id": "ASSET-019",
+      "title": "User-led Verify texture batch and Native decision",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "not_started",
+      "owner_agent_id": null,
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [],
+      "created_at": "2026-09-28T12:40:00Z",
+      "updated_at": "2026-09-28T12:40:00Z",
+      "started_at": null,
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "The user runs the Verify case; the assistant analyzes mismatches, fixes defects and decides with the user whether Native mode may be enabled for the verified routes.",
+      "depends_on": [
+        "ASSET-018"
+      ],
+      "work_summary": null,
+      "deliverables": [],
+      "acceptance_criteria": [
+        "Verify reports zero unexplained mismatches on covered routes, or the routes stay disabled.",
+        "The Native decision and its limits are recorded."
+      ],
+      "validation": {
+        "checks": [],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-28T12:40:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "created_by_amendment_1_2",
+          "from_status": null,
+          "to_status": "not_started",
+          "description": "Created from the user's Amendment 1.2 decision."
+        }
+      ],
+      "updated_by_agent_id": "/claude_code",
+      "limitations": []
     }
   ],
-  "last_updated_by_agent_id": "/root"
+  "last_updated_by_agent_id": "/claude_code"
 }
