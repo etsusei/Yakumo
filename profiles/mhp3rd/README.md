@@ -910,6 +910,7 @@ build provenance, isolated saves and supervised local record collection.
 | `MHP3RD_SAMPLED_TEXTURE_KEYS=1` | Recognise changed textures of up to 64 KiB by one word in every 256 bytes, as for larger ones, instead of by all of their contents. Glyphs the game adds to its text atlas are then often missed, and text shows stale or missing characters |
 | `MHP3RD_NO_CULL=1`, `MHP3RD_NO_DEPTH=1` | Disable face culling or the depth test, to bisect missing geometry |
 | `MHP3RD_TRACE_AUDIO=1` | One line per second of output: frames, peak, RMS, silence and drops |
+| `MHP3RD_TRACE_SAS=1` | One `[sas-note]` line per SAS note keyed on (voice, sample address and size, loop, pitch, dry and effect-send volumes, envelope) and one when it ends, with the loudest sample it reached in the dry mix. A note sent only to the effect bus stays silent, since reverb is not modelled |
 | `MHP3RD_TRACE_ATRAC=1` | Every `sceAtrac3plus` call with its arguments, result and decode position |
 | `MHP3RD_TRACE_FONT=1` | Every `sceLibFont` call with its arguments: the font the game asks for, the font info and character metrics returned, and each glyph image's buffer and 26.6 position, with the caller's return address |
 | `MHP3RD_TRACE_MPEG=1` | Every `sceMpeg` and `sceJpegCsc` call, and each call the ring buffer makes to the game's read callback |

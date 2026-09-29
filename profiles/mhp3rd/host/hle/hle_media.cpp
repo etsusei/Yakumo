@@ -658,7 +658,9 @@ void register_audio(HleRegistrar &hle) {
     });
     hle.add("sceSasCore", "__sceSasSetVolume", [](Runtime &, AllegrexContext &ctx) {
         audio::sas_core(arg(ctx, 0)).set_volume(arg(ctx, 1), static_cast<std::int32_t>(arg(ctx, 2)),
-                                                static_cast<std::int32_t>(arg(ctx, 3)));
+                                                static_cast<std::int32_t>(arg(ctx, 3)),
+                                                static_cast<std::int32_t>(arg(ctx, 4)),
+                                                static_cast<std::int32_t>(arg(ctx, 5)));
         kernel().finish(ctx, 0u);
     });
     hle.add("sceSasCore", "__sceSasSetSimpleADSR", [](Runtime &, AllegrexContext &ctx) {

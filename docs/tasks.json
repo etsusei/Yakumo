@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "plan_version": "1.3",
-  "revision": 169,
+  "revision": 170,
   "project": "Yakumo MHP3 native migration",
   "plan_path": "docs/DEVELOPMENT_PLAN.md",
   "path_base": "repository_root",
   "created_at": "2026-09-26T14:31:18Z",
-  "updated_at": "2026-09-29T06:30:00Z",
+  "updated_at": "2026-09-29T07:30:00Z",
   "timezone": "Asia/Tokyo",
   "timestamp_policy": "ISO 8601 UTC. created_at/updated_at are ledger timestamps. Historical execution times remain null if unknown; commit IDs provide evidence provenance. Never fabricate timestamps.",
   "status_definitions": {
@@ -770,12 +770,14 @@
     }
   },
   "execution_state": {
-    "current_task_id": null,
+    "current_task_id": "AUDIO-001",
     "next_task_id": null,
-    "next_action": "Loading work (Amendment 1.3) is complete and accepted. Possible follow-ups, only on the user's request: an official release build with bundled libraries (docs/RELEASING.md), a host fade-out into the black screen, or resuming ASSET-014.",
+    "next_action": "User runs out/testing/sas-trace (greatsword charges to levels 1, 2 and 3); compare the traced notes.",
     "implementation_after_documentation_started": true,
     "parallel_task_ids": [],
-    "awaiting_user_task_ids": [],
+    "awaiting_user_task_ids": [
+      "AUDIO-001"
+    ],
     "local_artifact_note": "Local-only artifacts removed at the user's request on 2026-09-28 to free disk space: out/testing/dist (all delivered app pairs), out/testing/observed-sources and out/testing/observed-builds (their source snapshots and archived binaries), out/testing/texture-read-prefix and other scratch build trees, sanitizer/test binaries and out/native-experiment (except the packaging font). Ledger deliverables at those paths are now unavailable; their recorded evidence and hashes remain historical facts. Kept: out/mhp3rd, out/testing/baselines, out/testing/runs (user records), reports, profiles/mhp3rd/analysis and out/ccache. The lobby overlay module used by the texture oracles was copied to out/testing/texture-transfer-inputs/. 2026-09-29: the load-measurement sessions out/testing/load-measure-1..4 were removed at the user's request; their logs and the loading-screen atlas are kept in out/testing/load-evidence."
   },
   "references": {
@@ -11096,6 +11098,71 @@
           "from_status": "in_progress",
           "to_status": "completed",
           "description": "Accepted together with LOAD-004: carrying held buttons plus the black loading screen make in-quest area changes pass in about 0.14 s real."
+        }
+      ],
+      "updated_by_agent_id": "/claude_code",
+      "limitations": []
+    },
+    {
+      "id": "AUDIO-001",
+      "title": "Find why the greatsword level-3 charge sound is silent",
+      "phase": "milestone_4",
+      "kind": "finite",
+      "parent_task_id": "ITER-002",
+      "status": "awaiting_user_test",
+      "owner_agent_id": "/claude_code",
+      "responsible_actor_id": null,
+      "contributor_agent_ids": [
+        "/claude_code"
+      ],
+      "created_at": "2026-09-29T07:30:00Z",
+      "updated_at": "2026-09-29T07:30:00Z",
+      "started_at": "2026-09-29T07:30:00Z",
+      "completed_at": null,
+      "timestamp_note": null,
+      "scope": "The user reports no sound at the greatsword's third charge level, which a PSP plays. Trace the SAS notes the game keys on while charging and find whether the note is missing, silent in the dry mix (for example sent only to the unmodelled effect bus), or otherwise lost.",
+      "depends_on": [],
+      "work_summary": "Added MHP3RD_TRACE_SAS (per-note key-on parameters including effect-send volumes, and per-note dry peak at its end); prepared out/testing/sas-trace for a charge session. Ruled out: no logging stub was called in the recorded sessions; the loading changes only drop sound while a load or the loading screen is on show.",
+      "deliverables": [
+        {
+          "path": "profiles/mhp3rd/host/audio/sas_core.cpp",
+          "kind": "source",
+          "state": "existing",
+          "local_only": false
+        },
+        {
+          "path": "out/testing/sas-trace/开始记录.command",
+          "kind": "script",
+          "state": "existing",
+          "local_only": true
+        }
+      ],
+      "acceptance_criteria": [
+        "The cause is identified from traced notes, not inferred.",
+        "Any fix has an off switch and is checked by the user in play."
+      ],
+      "validation": {
+        "checks": [
+          {
+            "name": "Trace smoke test",
+            "status": "passed",
+            "details": "20 s headless boot logged [sas-note] on/end lines with volumes, effect sends, envelope and dry peak."
+          }
+        ],
+        "limitations": []
+      },
+      "implementation_commits": [],
+      "pause_reason": null,
+      "blockers": [],
+      "history": [
+        {
+          "recorded_at": "2026-09-29T07:30:00Z",
+          "occurred_at": null,
+          "actor_id": "/claude_code",
+          "action": "created_from_user_report",
+          "from_status": null,
+          "to_status": "awaiting_user_test",
+          "description": "User report: greatsword level-3 charge has no sound. Trace prepared; awaiting a charge session."
         }
       ],
       "updated_by_agent_id": "/claude_code",

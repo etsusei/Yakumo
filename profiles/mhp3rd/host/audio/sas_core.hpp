@@ -24,6 +24,14 @@ struct SasVoice {
     std::uint32_t pitch{0x1000u};
     std::int32_t left{0x1000};
     std::int32_t right{0x1000};
+    // The effect (reverb) sends __sceSasSetVolume also takes. Reverb is not
+    // modelled, so they are kept only for MHP3RD_TRACE_SAS.
+    std::int32_t effect_left{};
+    std::int32_t effect_right{};
+    // MHP3RD_TRACE_SAS: the note keyed on last, and how loud it came out.
+    bool traced{};
+    std::uint64_t traced_frames{};
+    std::int32_t traced_peak{};
 
     bool playing{};
     bool paused{};
@@ -63,7 +71,8 @@ public:
     void set_voice(std::uint32_t voice, std::uint32_t address, std::uint32_t size, bool looping);
     void set_voice_pcm(std::uint32_t voice, std::uint32_t address, std::uint32_t size, std::int32_t loop);
     void set_pitch(std::uint32_t voice, std::uint32_t pitch);
-    void set_volume(std::uint32_t voice, std::int32_t left, std::int32_t right);
+    void set_volume(std::uint32_t voice, std::int32_t left, std::int32_t right,
+                    std::int32_t effect_left = 0, std::int32_t effect_right = 0);
     void set_simple_adsr(std::uint32_t voice, std::uint32_t adsr1, std::uint32_t adsr2);
     void set_pause(std::uint32_t mask, bool paused);
     void key_on(std::uint32_t voice);
@@ -84,6 +93,9 @@ private:
     std::uint32_t max_voices_{kSasMaxVoices};
     std::uint32_t output_mode_{};
     std::array<SasVoice, kSasMaxVoices> voices_{};
+    // Frames rendered so far, the clock of MHP3RD_TRACE_SAS lines.
+    std::uint64_t rendered_frames_{};
+    void end_note_trace(std::uint32_t index, const char *why);
 };
 
 // One core per guest SAS handle. MHP3rd only ever opens one, but the handle is

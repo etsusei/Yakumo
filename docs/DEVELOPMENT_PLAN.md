@@ -198,6 +198,7 @@ Finite work beneath these ongoing workstreams:
 - [x] **LOAD-003** — Analyze each load's real/game time, fast-loading engagement and time split; set the scope of LOAD-004/LOAD-005.
 - [x] **LOAD-004** — Present a black fade instead of the loading screen, host-side, with an off switch.
 - [x] **LOAD-005** — Make in-quest area loads fast within the scope set by LOAD-003, with an off switch.
+- [ ] **AUDIO-001** — Find why the greatsword level-3 charge sound is silent (user report), from traced SAS notes.
 
 The initial inventory is [NATIVE_MODULES.md](NATIVE_MODULES.md); finite requirements are in [NEXT_NATIVE_BATCHES.md](NEXT_NATIVE_BATCHES.md). ITER-001/002 stay in progress as workstreams. Finite tasks depend on INV-001 or other finite prerequisites, not on treating an ongoing workstream as already finished.
 

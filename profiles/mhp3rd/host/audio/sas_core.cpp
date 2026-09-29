@@ -61,6 +61,15 @@ struct EnvelopeRate {
     return enabled;
 }
 
+// MHP3RD_TRACE_SAS: one line per note keyed on, with what it was given, and
+// one when it ends, with how loud it came out of the dry mix. A note that
+// plays only into the effect sends is silent here, since reverb is not
+// modelled.
+[[nodiscard]] bool tracing_notes() {
+    static const bool enabled = std::getenv("MHP3RD_TRACE_SAS") != nullptr;
+    return enabled;
+}
+
 // Per-second view of what the SAS is actually doing, so a silent mix can be
 // told apart from a mix nobody asked for.
 struct RenderTrace {
@@ -110,10 +119,22 @@ void SasCore::set_pitch(std::uint32_t voice, std::uint32_t pitch) {
     voices_[voice].pitch = std::min(pitch, kPitchMax);
 }
 
-void SasCore::set_volume(std::uint32_t voice, std::int32_t left, std::int32_t right) {
+void SasCore::set_volume(std::uint32_t voice, std::int32_t left, std::int32_t right, std::int32_t effect_left,
+                         std::int32_t effect_right) {
     if (voice >= kSasMaxVoices) return;
     voices_[voice].left = std::clamp(left, -kVolumeUnity, kVolumeUnity);
     voices_[voice].right = std::clamp(right, -kVolumeUnity, kVolumeUnity);
+    voices_[voice].effect_left = effect_left;
+    voices_[voice].effect_right = effect_right;
+}
+
+void SasCore::end_note_trace(std::uint32_t index, const char *why) {
+    SasVoice &v = voices_[index];
+    if (!v.traced) return;
+    v.traced = false;
+    std::printf("[sas-note] %.3fs end v=%u %s frames=%llu peak=%d\n", rendered_frames_ / 44100.0, index, why,
+                static_cast<unsigned long long>(v.traced_frames), v.traced_peak);
+    std::fflush(stdout);
 }
 
 void SasCore::set_simple_adsr(std::uint32_t voice, std::uint32_t adsr1, std::uint32_t adsr2) {
@@ -145,6 +166,17 @@ void SasCore::key_on(std::uint32_t voice) {
     v.playing = !v.source_ended;
     v.envelope_counter = 0;
     if (tracing()) ++trace().key_ons;
+    if (tracing_notes()) {
+        end_note_trace(voice, "retriggered");
+        v.traced = true;
+        v.traced_frames = 0u;
+        v.traced_peak = 0;
+        std::printf("[sas-note] %.3fs on v=%u addr=0x%08X size=%u loop=%d pcm=%d pitch=0x%X vol=%d,%d fx=%d,%d "
+                    "adsr=%s0x%04X,0x%04X\n",
+                    rendered_frames_ / 44100.0, voice, v.address, v.size, v.looping ? 1 : 0, v.pcm ? 1 : 0, v.pitch,
+                    v.left, v.right, v.effect_left, v.effect_right, v.have_adsr ? "" : "none ", v.adsr1, v.adsr2);
+        std::fflush(stdout);
+    }
     if (v.have_adsr && !envelopes_disabled()) {
         v.stage = EnvelopeStage::Attack;
         v.envelope = 0;
@@ -165,6 +197,7 @@ void SasCore::key_off(std::uint32_t voice) {
         v.playing = false;
         v.stage = EnvelopeStage::Off;
         v.envelope = 0;
+        end_note_trace(voice, "keyed off");
     }
 }
 
@@ -340,6 +373,11 @@ void SasCore::render(const psprecomp::GuestMemory &memory, std::int16_t *output,
             step_envelope(voice);
             const std::int32_t scaled = (sample * voice.envelope) >> 15;
             const std::size_t slot = frame * 2u;
+            if (voice.traced) {
+                ++voice.traced_frames;
+                voice.traced_peak = std::max({voice.traced_peak, std::abs((scaled * voice.left) >> 12),
+                                              std::abs((scaled * voice.right) >> 12)});
+            }
             output[slot] = static_cast<std::int16_t>(
                 clamp16(output[slot] + ((scaled * voice.left) >> 12)));
             output[slot + 1u] = static_cast<std::int16_t>(
@@ -358,7 +396,9 @@ void SasCore::render(const psprecomp::GuestMemory &memory, std::int16_t *output,
             }
             if (!voice.playing) break;
         }
+        if (!voice.playing) end_note_trace(index, "finished");
     }
+    rendered_frames_ += frames;
     if (!tracing()) return;
     RenderTrace &stats = trace();
     stats.frames += frames;
