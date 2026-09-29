@@ -30,6 +30,11 @@ struct SasVoice {
     std::int32_t effect_right{};
     // MHP3RD_TRACE_SAS: the note keyed on last, and how loud it came out.
     bool traced{};
+    // How the sample data ended, for MHP3RD_TRACE_SAS: the VAG end flag
+    // without repeat, the 7 terminator, or running past `size`; and whether a
+    // loop-start block (flag 4) was seen.
+    const char *source_end{"none"};
+    bool loop_start_seen{};
     std::uint64_t traced_frames{};
     std::int32_t traced_peak{};
 

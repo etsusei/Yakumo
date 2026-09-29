@@ -133,8 +133,9 @@ void SasCore::end_note_trace(std::uint32_t index, const char *why) {
     SasVoice &v = voices_[index];
     if (!v.traced) return;
     v.traced = false;
-    std::printf("[sas-note] %.3fs end v=%u %s frames=%llu peak=%d\n", rendered_frames_ / 44100.0, index, why,
-                static_cast<unsigned long long>(v.traced_frames), v.traced_peak);
+    std::printf("[sas-note] %.3fs end v=%u %s frames=%llu peak=%d source=%s loop_start=%d looping=%d\n",
+                rendered_frames_ / 44100.0, index, why, static_cast<unsigned long long>(v.traced_frames),
+                v.traced_peak, v.source_end, v.loop_start_seen ? 1 : 0, v.looping ? 1 : 0);
     std::fflush(stdout);
 }
 
@@ -170,6 +171,8 @@ void SasCore::key_on(std::uint32_t voice) {
     if (tracing_notes()) {
         end_note_trace(voice, "retriggered");
         v.traced = true;
+        v.source_end = "none";
+        v.loop_start_seen = false;
         v.traced_frames = 0u;
         v.traced_peak = 0;
         std::printf("[sas-note] %.3fs on v=%u sink=%llu addr=0x%08X size=%u loop=%d pcm=%d pitch=0x%X vol=%d,%d "
@@ -191,6 +194,12 @@ void SasCore::key_on(std::uint32_t voice) {
 void SasCore::key_off(std::uint32_t voice) {
     if (voice >= kSasMaxVoices) return;
     SasVoice &v = voices_[voice];
+    if (tracing_notes()) {
+        std::printf("[sas-note] %.3fs off v=%u sink=%llu %s addr=0x%08X envelope=%d\n", rendered_frames_ / 44100.0,
+                    voice, static_cast<unsigned long long>(AudioSink::instance().written_frames()),
+                    v.playing ? "playing" : "idle", v.address, v.envelope);
+        std::fflush(stdout);
+    }
     if (!v.playing) return;
     if (v.have_adsr && !envelopes_disabled()) {
         v.stage = EnvelopeStage::Release;
@@ -218,6 +227,7 @@ std::int32_t SasCore::envelope_height(std::uint32_t voice) const noexcept {
 void SasCore::decode_block(const psprecomp::GuestMemory &memory, SasVoice &voice) {
     if (voice.block + 16u > voice.size) {
         voice.source_ended = true;
+        voice.source_end = "past-size";
         return;
     }
     const std::uint8_t *block = memory.raw_pointer(voice.address + voice.block, 16u);
@@ -230,9 +240,13 @@ void SasCore::decode_block(const psprecomp::GuestMemory &memory, SasVoice &voice
     // flags only decide where playback goes next.
     if (flags == 7u) {
         voice.source_ended = true;
+        voice.source_end = "terminator";
         return;
     }
-    if ((flags & 4u) != 0u) voice.loop_block = voice.block;
+    if ((flags & 4u) != 0u) {
+        voice.loop_block = voice.block;
+        voice.loop_start_seen = true;
+    }
 
     std::int32_t shift = block[0] & 0x0F;
     std::int32_t predictor = block[0] >> 4;
@@ -254,6 +268,7 @@ void SasCore::decode_block(const psprecomp::GuestMemory &memory, SasVoice &voice
         // Past this block playback either repeats or stops; a block offset at
         // the end of the sample makes the next decode report the end.
         voice.block = (flags & 2u) != 0u ? voice.loop_block : voice.size;
+        if ((flags & 2u) == 0u) voice.source_end = "end-flag";
     } else {
         voice.block += 16u;
         if (voice.block + 16u > voice.size && voice.looping) voice.block = voice.loop_block;
