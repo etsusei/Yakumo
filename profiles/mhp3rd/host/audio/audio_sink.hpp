@@ -44,6 +44,9 @@ public:
     // Whether a playback device is open (not with MHP3RD_NO_AUDIO, or when
     // none could be opened).
     [[nodiscard]] bool has_device() const;
+    // Frames written into the output timeline so far, the timeline the
+    // MHP3RD_AUDIO_DUMP file follows; for traces that point into that file.
+    [[nodiscard]] std::uint64_t written_frames() const;
 
     // Public only so the device callback, which lives outside the class, can
     // name it.

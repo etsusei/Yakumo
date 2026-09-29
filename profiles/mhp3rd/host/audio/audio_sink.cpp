@@ -281,6 +281,11 @@ bool AudioSink::has_device() const {
 #endif
 }
 
+std::uint64_t AudioSink::written_frames() const {
+    std::lock_guard<std::mutex> guard(impl_->lock);
+    return impl_->write_end;
+}
+
 void AudioSink::set_paused(bool paused) {
 #if defined(MHP3RD_HAS_SDL_AUDIO)
     Impl &impl = *impl_;

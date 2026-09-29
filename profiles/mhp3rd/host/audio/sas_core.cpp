@@ -1,4 +1,5 @@
 #include "audio/sas_core.hpp"
+#include "audio/audio_sink.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -171,9 +172,10 @@ void SasCore::key_on(std::uint32_t voice) {
         v.traced = true;
         v.traced_frames = 0u;
         v.traced_peak = 0;
-        std::printf("[sas-note] %.3fs on v=%u addr=0x%08X size=%u loop=%d pcm=%d pitch=0x%X vol=%d,%d fx=%d,%d "
-                    "adsr=%s0x%04X,0x%04X\n",
-                    rendered_frames_ / 44100.0, voice, v.address, v.size, v.looping ? 1 : 0, v.pcm ? 1 : 0, v.pitch,
+        std::printf("[sas-note] %.3fs on v=%u sink=%llu addr=0x%08X size=%u loop=%d pcm=%d pitch=0x%X vol=%d,%d "
+                    "fx=%d,%d adsr=%s0x%04X,0x%04X\n",
+                    rendered_frames_ / 44100.0, voice,
+                    static_cast<unsigned long long>(AudioSink::instance().written_frames()), v.address, v.size, v.looping ? 1 : 0, v.pcm ? 1 : 0, v.pitch,
                     v.left, v.right, v.effect_left, v.effect_right, v.have_adsr ? "" : "none ", v.adsr1, v.adsr2);
         std::fflush(stdout);
     }
